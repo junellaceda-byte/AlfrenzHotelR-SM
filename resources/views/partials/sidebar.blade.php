@@ -2,8 +2,8 @@
             <div class="col-auto col-md-3 col-xl-2 px-sm-3 px-0 bg-white border-end vh-100 d-flex flex-column py-4">
                 <div class="mt-2 text-center mb-4">
                     <!-- Logo Placeholder -->
-                    <div class="rounded-circle bg-light border d-inline-flex align-items-center justify-content-center text-secondary fw-bold" style="width: 80px; height: 80px;">
-                        LOGO
+                    <div class="align-items-center justify-content-center text-secondary fw-bold" style="width: 225px; height: 225px;">
+                       <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-100 h-100 object-fit-cover">
                     </div>
                 </div>
                 <!-- Navigation Items Sidebar -->
