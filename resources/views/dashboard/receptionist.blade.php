@@ -63,6 +63,8 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="rounded-circle border border-2 border-secondary text-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                     <span class="fw-bold fs-5">⚠</span>
+                                    <!-- <img class="icon-img icon-gear"
+                                    src="icons/gear.svg" alt="Belle Mariano"> -->
                                 </div>
                                 <span class="fs-1 fw-bold text-secondary">1</span>
                             </div>
