@@ -1,8 +1,8 @@
-@extends('layouts.reserve')
+@extends('layouts.guest')
 
-@section('title','RESERVATION')
+@section('title','Guest Records')
 
-@section('reservation-content')
+@section('guestlist-content')
 
     <div class="container-fluid p-0">
       <!-- Main Content -->
@@ -10,25 +10,17 @@
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Room Number</th>
+                    <th>Guest's Name</th>
+                    <th>Phone</th>
                     <th>Check-In</th>
                     <th>Check-out</th>
-                    <th>Nights</th>
                     <th>Status</th>     
                     <th>Actions</th>
-                    <th>Amounts</th>
-
                 </tr>
             </thead>
             <tbody>
                 
                 <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
                     <td></td>
                     <td></td>
                     <td></td>

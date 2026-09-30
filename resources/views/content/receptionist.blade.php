@@ -20,7 +20,7 @@
                                 <div class="rounded-circle border border-2 border-success text-success d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                                     <img src="{{ asset('icons/check.svg') }}" alt="Available" width="45" height="45">
                                 </div>
-                                <span class="fs-1 fw-bold text-success">8</span>
+                                <span class="fs-1 fw-bold text-success">{{ $availableRooms }}</span>
                             </div>
                         </div>
                     </div>
@@ -34,7 +34,7 @@
                                 <div class="rounded-circle border border-2 border-danger text-danger d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                                     <img src="{{ asset('icons/person.svg') }}" alt="Available" width="45" height="45">
                                 </div>
-                                <span class="fs-1 fw-bold text-danger">7</span>
+                                <span class="fs-1 fw-bold text-danger">{{ $occupiedRooms }}</span>
                             </div>
                         </div>
                     </div>
@@ -46,7 +46,7 @@
                             <h6 class="card-title text-uppercase text-secondary fw-bold mb-3">Reserved</h6>
                             <div class="d-flex justify-content-between align-items-center">
                                     <img src="{{ asset('icons/bookmark.svg') }}" alt="Reserved" width="40" height="40">
-                                <span class="fs-1 fw-bold text-warning">3</span>
+                                <span class="fs-1 fw-bold text-warning">{{ $reservedRooms }}</span>
                             </div>
                         </div>
                     </div>
@@ -58,7 +58,7 @@
                             <h6 class="card-title text-uppercase text-secondary fw-bold mb-3" style="font-size: 0.8rem;">Under Maintenance</h6>
                             <div class="d-flex justify-content-between align-items-center">
                                     <img src="{{ asset('icons/cone.svg') }}" alt="Under Maintenance" width="50" height="50">
-                                <span class="fs-1 fw-bold text-secondary">1</span>
+                                <span class="fs-1 fw-bold text-secondary">{{ $underMaintenanceRooms }}</span>
                             </div>
                         </div>
                     </div>
@@ -77,7 +77,7 @@
                             
                         </div>
                         <div class="col-6">
-                            <button class="btn btn-outline-secondary w-100 py-2 text-start fw-semibold">CHECK-IN</button>
+                            <button class="btn btn-outline-secondary w-100 py-2 text-start fw-semibold" data-bs-toggle="modal" data-bs-target="#avail-modal">CHECK-IN</button>
                         </div>
                         <div class="col-6">
                             <button class="btn btn-outline-secondary w-100 py-2 text-start fw-semibold">CHECK OUT</button>

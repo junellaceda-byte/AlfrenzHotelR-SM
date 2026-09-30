@@ -4,11 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Reserve extends Model
+class Guest extends Model
 {
     //
     protected $fillable = [
         'fname',
         'lname',
+        'phone',
     ];
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
 }

@@ -9,25 +9,25 @@
                 <!-- Navigation Items Sidebar -->
                 <ul class="nav flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start w-100 gap-2" >
                     <li class="nav-item w-100">
-                        <a href="/dashboard" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
+                        <a href="{{ route('dashboard.index') }}" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
                             <span class="ms-1 d-none d-sm-inline">DASHBOARD</span>
                         </a>
                     </li>
 
                     <li class="nav-item w-100">
-                        <a href="/reservation" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
-                            <span class="ms-1 d-none d-sm-inline">RESERVATIONS</span>
+                        <a href="{{ route('booking.index') }}" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
+                            <span class="ms-1 d-none d-sm-inline">BOOKINGS</span>
                         </a>
                     </li>
 
                     <li class="nav-item w-100">
-                        <a href="#" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
+                        <a href="{{ route('guest.index') }}" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
                             <span class="ms-1 d-none d-sm-inline">GUESTS</span>
                         </a>
                     </li>
 
                     <li class="nav-item w-100">
-                        <a href="/billing" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
+                        <a href="{{ route('content.billing') }}" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
                             <span class="ms-1 d-none d-sm-inline">BILLING</span>
                         </a>
                     </li>
