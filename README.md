@@ -1,58 +1,105 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Hotel Reservation & Sales Management System (SalesMS)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 1. Executive Summary & Purpose
+The **Hotel Reservation & Sales Management System (SalesMS)** is a robust web application designed to streamline hotel operations. Built on the Laravel framework, this system provides a comprehensive solution for managing guest records, room availability, bookings, and billing operations. 
 
-## About Laravel
+Its core business logic revolves around simplifying the receptionist's workflow, ensuring accurate tracking of room statuses (e.g., available, occupied, reserved), and providing an efficient checkout and invoicing process.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 2. Architecture Overview
+The application strictly adheres to the Laravel **Model-View-Controller (MVC)** architectural pattern, ensuring a clean separation of concerns:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Controllers (`app/Http/Controllers`)
+- **`DashboardController`**: Handles the primary dashboard view and aggregates data for the receptionist overview.
+- **`BookingController`**: Manages the reservation lifecycle, including creating new bookings and updating booking statuses (e.g., check-in, check-out, cancel).
+- **`BillingController`**: Responsible for financial operations, processing invoices, adding extra amenities to a booking, and handling payments.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Models (`app/Models`)
+Models provide an object-oriented interface for database interactions using the Eloquent ORM. Key models include:
+`Guest`, `Room`, `Booking`, `Invoices`, `Amenities`, and `Payment_logs`.
 
-## Learning Laravel
+### Middlewares (`app/Http/Middleware`)
+The application leverages standard Laravel middleware for HTTP request filtering, session management, and CSRF protection, ensuring secure and authenticated access to the dashboard and management routes.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 3. Database & Schema Design
+The SQLite database schema is defined in `@database/migrations` and is structured around the following primary tables and Eloquent relationships:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **`guests`**: Stores guest information (`first_name`, `last_name`, `phone`).
+  - *Relationship*: One-to-Many with `bookings`.
+- **`rooms`**: Manages room details and pricing (`room_number`, `short_stay_rate`, `overnight_rate`, `status`).
+  - *Relationship*: One-to-Many with `bookings`.
+- **`bookings`**: The central pivot table connecting guests and rooms (`guest_id`, `room_id`, `stay_type`, `check_in_date`, `status`).
+  - *Relationship*: Belongs to `Guest` and `Room`. Has One/Many `Invoices`, `Amenities`, and `PaymentLogs`.
+- **`invoices`**: Tracks financial records per booking (`booking_id`, `room_charges`, `grand_total`, `status`).
+- **`amenities`**: Logs extra items or services requested during a stay (`booking_id`, `item_name`, `unit_price`, `quantity`).
+- **`payment_logs`**: Records individual payment transactions linked to a booking.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## 4. UI & Styling Architecture
+The frontend architecture relies exclusively on **Bootstrap 5 utilities** for its styling footprint, ensuring a responsive, mobile-first design without the need for extensive custom CSS. 
 
-## Agentic Development
+The core layout templates and views reside in `@resources/views`:
+- **Layouts (`resources/views/layouts/`)**: Contains the foundational structures that wrap the content:
+  - `dashboard.blade.php`
+  - `payment.blade.php`
+  - `guest.blade.php`
+  - `booked.blade.php`
+- **Content (`resources/views/content/`)**: Holds the specific page views:
+  - `receptionist.blade.php` (main interface)
+  - `booking.blade.php`
+  - `guestlist.blade.php`
+  - `billing.blade.php`
+- **Partials & Modals**: Modular Blade components are used for reusable UI elements (e.g., forms, confirmation modals).
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## 5. Routing & API Endpoints
+The web routes are defined in `@routes/web.php` and map directly to the system's controllers:
 
-```bash
-composer require laravel/boost --dev
+| Method | Endpoint | Controller Action | Description |
+|--------|----------|-------------------|-------------|
+| `GET` | `/` | `Closure` | Redirects to the dashboard |
+| `GET` | `/login` | `Closure` | Displays the login view |
+| `GET` | `/dashboard` | `DashboardController@index`| Renders the main dashboard |
+| `GET` | `/bookings` | `BookingController@index` | Lists booking records |
+| `POST` | `/bookings` | `BookingController@store` | Creates a new booking |
+| `PUT` | `/bookings/{id}/status` | `BookingController@updateStatus`| Updates a booking's status |
+| `GET` | `/guest` | `Closure` | Displays the guest list view |
+| `GET` | `/billing` | `BillingController@index` | Renders the billing dashboard |
+| `POST` | `/billing/{id}/add-amenity` | `BillingController@addAmenity`| Adds an amenity to an invoice |
+| `POST` | `/billing/{id}/process-payment`| `BillingController@processPayment`| Processes an invoice payment |
 
-php artisan boost:install
-```
+## 6. Getting Started & Installation
+For documentation writers and front-end developers, follow these steps to set up the project locally:
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+1. **Clone the repository and install dependencies:**
+   ```bash
+   git clone <repository-url>
+   cd HotelReservation-SalesMS
+   composer install
+   npm install
+   ```
 
-## Contributing
+2. **Set up the environment file:**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. **Configure the Database (SQLite):**
+   Ensure your `.env` file is set to use SQLite:
+   ```env
+   DB_CONNECTION=sqlite
+   ```
+   Then, create the database file and run the migrations:
+   ```bash
+   touch database/database.sqlite
+   php artisan migrate
+   ```
 
-## Code of Conduct
+4. **Run the local development server:**
+   ```bash
+   php artisan serve
+   ```
+   *In a separate terminal, compile the frontend assets if necessary:*
+   ```bash
+   npm run dev
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+You can now access the application at `http://localhost:8000`.
