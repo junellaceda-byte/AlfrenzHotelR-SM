@@ -8,6 +8,16 @@
     <!-- Main Content -->
     <!-- Top Section: Status Cards & Quick Actions -->
     <div class="row mb-4 g-4">
+        <!-- Date and Time -->
+        <div class="d-flex gap-2 justify-content-end">
+            <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary">
+                <span id="current-date">{{ date('M d, Y') }}</span>
+            </div>
+            <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary">
+                <span id="current-time">{{ date('h:i A') }}</span>
+            </div>
+        </div>
+        
         <!-- Status Cards Column -->
         <div class="col-xl-8">
             <div class="row g-3 h-100">
@@ -196,10 +206,239 @@
                     </div>
                 </div>
             </div>
+            <!-- Room Card 5 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 6 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 06</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 7 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 8 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 9 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 10 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 11 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 12 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>  
+            <!-- Room Card 13 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 14 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 15 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Room Card 16 (Available - Success) -->
+            <div class="col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                <div class="card shadow-sm bg-white overflow-hidden border">
+                    <!-- Room Image -->
+                    <div class="border-bottom" style="height: 140px;">
+                        <img src="{{ asset('images/room.png') }}" alt="Room Image" class="w-100 h-100 object-fit-cover">
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-3">
+                        <h6 class="card-title text-secondary fw-bold mb-2">ROOM 05</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <span class="text-uppercase fw-bold text-success d-flex align-items-center" style="font-size: 0.8rem;">
+                                <span class="badge bg-success rounded-circle p-1 me-2 border border-light"></span> AVAILABLE
+                            </span>
+                            <span class="text-muted fw-semibold" style="font-size: 0.75rem;">00:00-23:59</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
         </div>
     </div>
 
     
 </div>
+@include('modals.quickresmodal')
 @endsection

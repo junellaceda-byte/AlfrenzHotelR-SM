@@ -28,10 +28,8 @@
 
         <!-- Scripts -->
         @include('partials.scripts')
+        @stack('scripts')
         <!--End of Scripts  -->
 
-        <!-- Modals -->
-        @include('modals.quickresmodal')
-        <!-- End of Modals -->
     </body>
 </html>

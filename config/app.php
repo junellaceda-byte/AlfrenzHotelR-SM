@@ -11,6 +11,7 @@ return [
     | framework needs to place the application's name in a notification or
     | other UI elements where an application name needs to be displayed.
     |
+    |
     */
 
     'name' => env('APP_NAME', 'Laravel'),
@@ -62,11 +63,12 @@ return [
     | Here you may specify the default timezone for your application, which
     | will be used by the PHP date and date-time functions. The timezone
     | is set to "UTC" by default as it is suitable for most use cases.
+    | I also change it to Asia / Manila
     |
     */
 
-    'timezone' => 'UTC',
-
+    // 'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Asia/Manila'),
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

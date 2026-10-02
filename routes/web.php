@@ -1,10 +1,11 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-// use App\Http\Controllers\ReserveController; Turns to Booking instead
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BillingController;
+// use App\Http\Controllers\ReserveController; Turns to Booking instead
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReservationController;
+use Illuminate\Support\Facades\Route;
 
 // Gets
 // Redirect root "/" to the First page
@@ -12,46 +13,43 @@ Route::get('/', function () {
     return redirect('/dashboard');
 });
 
-// Show the Login page 
-Route::get('/login',function(){
+// Show the Login page
+Route::get('/login', function () {
     return view('content.login');
 });
 
-// Dashboard 
+// Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
-//Bookings Records View
+// Bookings Records View
 Route::get('/bookings', [BookingController::class, 'index'])->name('booking.index');
 
-//Post Route for BookingController
+// Post Route for BookingController
 Route::post('/bookings', [BookingController::class, 'store'])->name('booking.store');
 
-// Update Booking Status Route 
+// Update Booking Status Route
 Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus'])->name('booking.updateStatus');
 
 // Guest Records
-Route::get('/guest',function(){
+Route::get('/guest', function () {
     return view('content.guestlist');
 })->name('guest.index');
 
 // Billing Records
 Route::get('/billing', [BillingController::class, 'index'])->name('content.billing');
 Route::post('/billing/{invoice_id}/add-amenity', [BillingController::class, 'addAmenity'])->name('billing.addAmenity');
-Route::post('/billing/{invoicce_id}/process-payment', [BillingController::class, 'processPayment'])->name('billing.processPayment');
-
-
+Route::post('/billing/{invoice_id}/process-payment', [BillingController::class, 'processPayment'])->name('billing.processPayment');
 
 // Posts
-// Route::post('/reservation', function(Request $request){
+Route::post('/reservation', [ReservationController::class, 'store'])->name('reservation.store');
 
-//     // Secured Validate
-//     $request->validate([
-//         'fname' => 'required|min:5|max:30',
-//         'lname' => 'required|min:5|max:30',
-//         'phone' => 'required|min:11|max:11',
-//     ]);
-//     // Getting Input
-//     $fName = $request->input('fname');
-//     $lName = $request->input('lname');
-//     $phone = $request->input('phone');
-// });
+Route::get('/reservation', [ReservationController::class, 'index'])->name('reservation.index');
+Route::get('/api/available-rooms', [ReservationController::class, 'getAvailableRooms'])->name('api.available-rooms');
+
+// Reservation edit & delete
+Route::put('/reservation/{id}', [ReservationController::class, 'update'])->name('reservation.update');
+Route::delete('/reservation/{id}', [ReservationController::class, 'destroy'])->name('reservation.destroy');
+
+// Booking edit & delete
+Route::put('/bookings/{id}', [BookingController::class, 'update'])->name('booking.update');
+Route::delete('/bookings/{id}', [BookingController::class, 'destroy'])->name('booking.destroy');

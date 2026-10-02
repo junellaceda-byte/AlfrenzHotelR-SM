@@ -15,14 +15,14 @@
                     </li>
 
                     <li class="nav-item w-100">
-                        <a href="{{ route('booking.index') }}" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
-                            <span class="ms-1 d-none d-sm-inline">BOOKINGS</span>
+                        <a href="/reservation" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
+                            <span class="ms-1 d-none d-sm-inline">RESERVATION</span>
                         </a>
                     </li>
 
                     <li class="nav-item w-100">
-                        <a href="{{ route('guest.index') }}" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
-                            <span class="ms-1 d-none d-sm-inline">GUESTS</span>
+                        <a href="{{ route('booking.index') }}" class="nav-link align-middle px-3 py-2 text-secondary fw-semibold text-uppercase">
+                            <span class="ms-1 d-none d-sm-inline">BOOKING</span>
                         </a>
                     </li>
 

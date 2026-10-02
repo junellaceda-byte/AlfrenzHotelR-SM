@@ -2,87 +2,116 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Guest;
-use App\Models\Room;
 use App\Models\Booking;
+use App\Models\Guest;
 use App\Models\Invoice;
+use App\Models\Room;
+use Illuminate\Http\Request;
 
-class BookingController 
+class BookingController
 {
-    //Validated Form Data
     public function index()
     {
-        $bookings = Booking::with('guest', 'room')->get();
+        $bookings = Booking::with('guest')->latest()->paginate(10);
+
         return view('content.booking', compact('bookings'));
     }
-    public function store (Request $request)
+
+    public function store(Request $request)
     {
         $request->validate([
-            'fname' => 'required|string|min:4|max:30',
-            'lname' => 'required|string|min:5|max:30',
-            'phone' => 'nullable|string|regex:/^[0-9+\-\s()]+$/|max:11',
-            'room_id' => 'required|integer|exists:rooms,id',
+            'fname' => 'nullable|string|min:2|max:30',
+            'lname' => 'nullable|string|min:2|max:30',
+            'phone' => 'nullable|string|regex:/^[0-9+\-\s()]+$/|max:15',
+            'room_ids' => 'required|array',
+            'room_ids.*' => 'integer|exists:rooms,id',
             'stay_type' => 'required|in:short_stay,overnight',
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
-            'action_type' =>'required|in:reserved,check_in',
+            'action_type' => 'required|in:reserved,check_in',
         ]);
-        $guest = Guest::create([
-            'first_name' => $request->filled('fname') ? $request->fname : 'Walk-In',
-            'last_name'  => $request->filled('lname') ? $request->lname : 'Guest #' . rand(100, 999),
-            'phone_number' => $request->phone,
-        ]);
-        
-        //Finds the room based on the room_id from the request
-        $room = Room::findOrFail($request->room_id);
-        if ($request->stay_type ==='short_stay') {
-            $roomRate = $room->short_stay_rate;
-        } else {
-            $checkIn=$request->date('check_in');
-            $checkOut=$request->date('check_out');
-            $nights = $checkIn->diffInDays($checkOut)?:1;
 
-            $roomRate = $nights * $room->overnight_rate;
-        }
+        $fname = trim($request->fname) ?: 'Walk-in';
+        $lname = trim($request->lname) ?: 'Guest';
+
+        $guest = Guest::create([
+            'fname' => $fname,
+            'lname' => $lname,
+            'phone' => $request->phone,
+        ]);
 
         $booking = Booking::create([
             'guest_id' => $guest->id,
-            'room_id' => $room->id,
-            'stay_type' => $request->stay_type,
-            'check_in' => $request->check_in,
-            'check_out' => $request->check_out,
-            'status' => $request->action_type === 'reserved' ? 'reserved' : 'checked_in',
+            'phone' => $request->phone,
+            'check_in_datetime' => $request->check_in,
+            'check_out_datetime' => $request->check_out,
+            'booked_rooms' => $request->room_ids,
         ]);
 
         if ($request->action_type === 'check_in') {
-            $room->update(['status' => 'occupied']);
+            Room::whereIn('id', $request->room_ids)->update(['status' => 'occupied']);
         }
+
+        // Calculate room charges using PHP native dates (no Carbon)
+        $rooms = Room::whereIn('id', $request->room_ids)->get();
+        $roomCharges = 0;
+
+        if ($request->stay_type === 'overnight') {
+            $checkIn = new \DateTime(date('Y-m-d', strtotime($request->check_in)));
+            $checkOut = new \DateTime(date('Y-m-d', strtotime($request->check_out)));
+            $nights = max(1, (int) $checkIn->diff($checkOut)->days);
+
+            foreach ($rooms as $room) {
+                $roomCharges += $room->overnight_rate * $nights;
+            }
+        } else {
+            foreach ($rooms as $room) {
+                $roomCharges += $room->short_stay_rate;
+            }
+        }
+
+        // Auto-create unpaid Invoice — makes the booking appear in Billing > Pending Payments
         Invoice::create([
             'booking_id' => $booking->id,
-            'invoice_number' => 'INV-' . strtoupper(uniqid()),
-            'room_charges' => $roomRate,
-            'extra_charges_total' => 0.00,
-            'discount_amount' => 0.00,
-            'tax_amount' => 0.00,
-            'grand_total' => $roomRate,
+            'invoice_number' => 'INV-'.strtoupper(uniqid()),
+            'room_charges' => $roomCharges,
+            'grand_total' => $roomCharges,
             'status' => 'unpaid',
-            // 'due_date' => now()->addDays(7), Optional
+            'due_date' => date('Y-m-d', strtotime($request->check_out)),
         ]);
+
         return redirect()->back()->with('success', 'Booking created & recorded successfully.');
     }
 
-    public function updateStatus(Request $request, $id)
+    /**
+     * Update the guest info linked to a booking.
+     */
+    public function update(Request $request, int $id)
     {
-       $booking = Booking::findOrFail($id);
-       $booking->update(['status' => $request->new_status]);
+        $booking = Booking::with('guest')->findOrFail($id);
 
-       if ($request->new_status === 'checked_in'){
-        $booking->room->update(['status' => 'occupied']);
-       }
-       else if ($request->new_status === 'checked_out'){
-        $booking->room->update(['status' => 'available']);
-       }
-        return redirect()->back()->with('success', 'Booking status updated!');
+        $request->validate([
+            'fname' => 'nullable|string|min:2|max:30',
+            'lname' => 'nullable|string|min:2|max:30',
+            'phone' => 'nullable|string|max:15',
+        ]);
+
+        $booking->guest->update([
+            'fname' => trim($request->fname) ?: $booking->guest->fname,
+            'lname' => trim($request->lname) ?: $booking->guest->lname,
+            'phone' => $request->phone,
+        ]);
+
+        return redirect()->route('booking.index')->with('success', 'Booking updated successfully.');
+    }
+
+    /**
+     * Delete a booking and its associated invoice.
+     */
+    public function destroy(int $id)
+    {
+        Booking::findOrFail($id)->delete();
+
+        return redirect()->route('booking.index')->with('success', 'Booking deleted successfully.');
     }
 }

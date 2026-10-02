@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Room extends Model
 {
-    //
+    // Protects the fillable attributes
     protected $fillable = [
         'room_number',
         'price',
@@ -14,8 +14,4 @@ class Room extends Model
         'short_stay_rate',
         'overnight_rate',
     ];
-    public function bookings()
-    {
-        return $this->hasMany(Booking::class);
-    }
 }

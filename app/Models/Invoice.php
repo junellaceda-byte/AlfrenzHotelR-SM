@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Invoices extends Model
+class Invoice extends Model
 {
     //
     protected $fillable = [
@@ -18,16 +18,17 @@ class Invoices extends Model
         'status',
         'due_date',
     ];
-    public function bookings()
+
+    public function booking()
     {
         return $this->belongsTo(Booking::class);
     }
 
-    public function amenities()
+    public function availableAmenities()
     {
-        return $this->hasMany(Amenities::class);
+        return $this->hasMany(AvailableAmenity::class, 'invoice_id');
     }
-    
+
     public function paymentLogs()
     {
         return $this->hasMany(PaymentLog::class);

@@ -13,12 +13,11 @@ return new class extends Migration
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('guest_id')->constrained()->onDelete('cascade');
-            $table->foreignId('room_id')->constrained()->onDelete('cascade');
-            $table->enum('stay_type', ['short_stay', 'overnight'])->default('short_stay');
-            $table->date('check_in_date');
-            $table->date('check_out_date');
-            $table->enum('status', ['reserved', 'checked_in', 'checked_out', 'cancelled'])->default('reserved');
+            $table->foreignId('guest_id')->constrained('guests')->onDelete('cascade');
+            $table->string('phone')->nullable();
+            $table->dateTime('check_in_datetime');
+            $table->dateTime('check_out_datetime');
+            $table->json('booked_rooms');
             $table->timestamps();
         });
     }

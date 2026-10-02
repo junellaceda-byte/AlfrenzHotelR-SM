@@ -2,41 +2,51 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AvailableAmenity;
+use App\Models\Invoice;
+use App\Models\PaymentLogs;
 use Illuminate\Http\Request;
-use App\Models\Invoices;
-use App\Models\ExtraCharge;
-use App\Models\PaymentLog;
 
-class BillingController 
+class BillingController
 {
     //
     public function index(Request $request)
-    {
-        $pendingPayments = Invoices::where('status', 'unpaid')
-            ->with(['booking.guest', 'booking.room'])
+    {   
+        //This is the logic for pending payments
+        $pendingPayments = Invoice::where('status', 'unpaid')
+            ->with(['booking.guest'])
             ->get();
 
-        $confirmedPayments = Invoices::where('status', 'paid')
-            ->with(['booking.guest', 'booking.room', 'paymentLogs'])
+        //This is the logic for confirmed payments
+        $confirmedPayments = Invoice::where('status', 'paid')
+            ->with(['booking.guest', 'paymentLogs'])
             ->get();
+
+        //This is the logic for selected invoice
         $selectedInvoice = null;
         if ($request->has('edit_id')) {
-            $selectedInvoice = Invoices::with(['booking.guest', 'booking.room', 'extraCharges'])
-                ->find($request->edit_id);  
+            $selectedInvoice = Invoice::with(['booking.guest', 'availableAmenities'])
+                ->find($request->edit_id);
         }
-        return view('content.billing', compact('pendingPayments', 'confirmedPayments', 'selectedInvoice'));
+
+        //This is the logic for available amenities
+        $availableAmenities = AvailableAmenity::all();
+
+        return view('content.billing', compact('pendingPayments', 'confirmedPayments', 'selectedInvoice', 'availableAmenities'));
     }
 
-    public function addAmenity(Request $request, $invoiceId)
+    //This is the logic for adding amenities
+    public function addAmenity(Request $request, $invoice_id)
     {
         $invoice = Invoice::findOrFail($invoice_id);
 
-        ExtraCharge::create([
+        AvailableAmenity::create([
             'booking_id' => $invoice->booking_id,
+            'invoice_id' => $invoice->id,
             'item_name' => $request->item_name,
             'quantity' => 1,
             'unit_price' => $request->price,
-            'total_amount' => $request->price
+            'total_amount' => $request->price,
         ]);
         $invoice->increment('extra_charges_total', $request->price);
         $invoice->increment('grand_total', $request->price);
@@ -45,17 +55,18 @@ class BillingController
             ->with('success', 'Amenity added successfully.');
     }
 
+    //This is the logic for processing payment
     public function processPayment(Request $request, $invoice_id)
     {
         $invoice = Invoice::findOrFail($invoice_id);
 
-        // Record transaction log 
+        // Record transaction log
         PaymentLog::create([
             'invoice_id' => $invoice->id,
             'amount_paid' => $invoice->grand_total,
             'payment_method' => $request->payment_method,
             'status' => 'successful',
-            'created_at' => now()
+            'created_at' => now(),
         ]);
 
         // Change status to paid (moves it automatically to Confirmed Payment table)
