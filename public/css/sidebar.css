@@ -1,0 +1,11 @@
+/* Sidebar Link Container - Set base color */
+.sidebar-link {
+    color: #b0b0b0 !important; 
+    transition: color 0.2s ease;
+}
+
+/* Hover & Active States for the text color ONLY */
+.sidebar-link:hover,
+.sidebar-link.active {
+    color: #D4AF37 !important; /* Golden Brown Text */
+}

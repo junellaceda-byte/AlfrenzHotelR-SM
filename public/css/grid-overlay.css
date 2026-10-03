@@ -1,0 +1,20 @@
+/* Gray overlay for Occupied rooms */
+.overlay-occupied {
+    background-color: rgba(100, 100, 100, 0.6);
+}
+
+/* Red diagonal stripe overlay for Maintenance rooms */
+.overlay-maintenance {
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(220, 53, 69, 0.5),
+        rgba(220, 53, 69, 0.5) 10px,
+        rgba(220, 53, 69, 0.2) 10px,
+        rgba(220, 53, 69, 0.2) 20px
+    );
+}
+
+/* Dark Charcoal overlay with low opacity for Reserved rooms */
+.overlay-reserved {
+    background-color: rgba(37, 40, 189, 0.6); /* 54, 69, 79 is Dark Charcoal */
+}

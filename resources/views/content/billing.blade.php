@@ -4,7 +4,8 @@
 
 @section('billing-content')
 
-<div class="container-fluid p-0">
+<!-- Added background color and min-height so the color fills the screen -->
+<div class="container-fluid p-0" style="background-color: #EFDCAB; min-height: 100vh;">
     <!-- Top Row: Pending and Confirmed Payments Tables -->
     <div class="row g-4 mb-4">
         <!-- Card 1: Pending Payments -->
@@ -59,9 +60,30 @@
                             </tbody>
                         </table>
                     </div>
+                    <!-- Compact Static Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                        <span class="text-muted" style="font-size: 0.8rem;">
+                            Showing {{ $pendingPayments->count() }} result(s)
+                        </span>
+                        
+                        <nav aria-label="Table pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item disabled">
+                                    <span class="page-link text-muted" aria-hidden="true">&laquo;</span>
+                                </li>
+                                <li class="page-item active" aria-current="page">
+                                    <span class="page-link" style="background-color: #76380e; border-color: #76380e;">1</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link text-muted" aria-hidden="true">&raquo;</span>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </div> 
+        
                             
         <!-- Card 2: Confirmed Payments -->
         <div class="col-md-6">
@@ -114,6 +136,26 @@
                                 @endforelse
                             </tbody>
                         </table>
+                    </div>
+                    <!-- Compact Static Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                        <span class="text-muted" style="font-size: 0.8rem;">
+                            Showing {{ $pendingPayments->count() }} result(s)
+                        </span>
+                        
+                        <nav aria-label="Table pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item disabled">
+                                    <span class="page-link text-muted" aria-hidden="true">&laquo;</span>
+                                </li>
+                                <li class="page-item active" aria-current="page">
+                                    <span class="page-link" style="background-color: #76380e; border-color: #76380e;">1</span>
+                                </li>
+                                <li class="page-item disabled">
+                                    <span class="page-link text-muted" aria-hidden="true">&raquo;</span>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>

@@ -3,7 +3,7 @@
 @section('title','Reservation')
 
 @section('receptionist-content')
-<div class="container-fluid p-0">
+<div class="container-fluid p-0" style="min-height: 100vh;">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <!-- Search Bar -->
         <div class="input-group w-50">
@@ -94,8 +94,25 @@
                 </tbody>
             </table>
         </div>
-        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+        
+        <!-- Footer with Visual-Only Pagination -->
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
             <span class="text-muted small">Showing {{ $reservations->count() }} result(s)</span>
+            
+            <!-- Static HTML Pagination (Grayed out/Disabled) -->
+            <nav aria-label="Table pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item disabled">
+                        <span class="page-link text-muted">Previous</span>
+                    </li>
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link" style="background-color: #76380e; border-color: #76380e;">1</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link text-muted">Next</span>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>

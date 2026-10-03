@@ -99,13 +99,28 @@
         <!-- Pagination Footer -->
         <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
             <span class="text-muted small">
+                <!-- Keep the original counting logic -->
                 @if($bookings->total() > 0)
                     Showing {{ $bookings->firstItem() }}–{{ $bookings->lastItem() }} of {{ $bookings->total() }} bookings
                 @else
                     No bookings found
                 @endif
             </span>
-            {{ $bookings->links() }}
+            
+            <!-- Static HTML Pagination (Grayed out/Disabled) replacing $bookings->links() -->
+            <nav aria-label="Table pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item disabled">
+                        <span class="page-link text-muted">Previous</span>
+                    </li>
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link" style="background-color: #76380e; border-color: #76380e;">1</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link text-muted">Next</span>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </div>

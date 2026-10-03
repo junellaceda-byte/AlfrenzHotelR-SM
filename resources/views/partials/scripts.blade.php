@@ -1,6 +1,5 @@
 <!-- Scripts -->
     <script src="{{ asset('bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ asset('bootstrap-5.3.8-dist/css/bootstrap.bundle.min.css') }}"></script>
     <!-- For the Auto Fetching of Rooms -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -71,6 +70,199 @@
             }
         }
     </script>
+
+
+    <!-- Load Chart.js locally from public/js folder -->
+    <script src="{{ asset('js/chart.min.js') }}"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('occupancyChart');
+        if (!ctx) return;
+
+        const chartLoader = document.getElementById('chartLoader');
+        
+        // Dummy Data
+        const chartData = {
+            today: { labels: ['Morning', 'Afternoon', 'Evening', 'Night'], data: [5, 12, 18, 15] },
+            weekly: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], data: [45, 50, 48, 60, 85, 90, 75] },
+            monthly: { labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'], data: [200, 250, 220, 310] }
+        };
+
+        // 1. Initialize the chart with ZEROES so it starts completely flat at the bottom
+        let occupancyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.today.labels, 
+                datasets: [{
+                    label: 'Rooms Occupied',
+                    data: [0, 0, 0, 0], // <--- Forcing it to start flat
+                    backgroundColor: '#4A7856',
+                    borderRadius: 4
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { 
+                        beginAtZero: true,
+                        suggestedMax: 20 // Gives the initial animation a fixed roof so the grid doesn't jump
+                    } 
+                },
+                animation: {
+                    duration: 1200, // 1.2 seconds for the upward growth
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+        // 2. A split second after loading, inject the real 'Today' data. 
+        // This absolutely forces the bars to animate upwards.
+        setTimeout(() => {
+            occupancyChart.data.datasets[0].data = chartData.today.data;
+            occupancyChart.update();
+        }, 100);
+
+        // Filter Click Logic
+        document.querySelectorAll('.chart-filter').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const filter = this.getAttribute('data-filter');
+                
+                chartLoader.style.display = 'block';
+                ctx.style.opacity = '0.3';
+
+                setTimeout(() => {
+                    const newData = chartData[filter];
+                    if(newData) {
+                        occupancyChart.data.labels = newData.labels;
+                        occupancyChart.data.datasets[0].data = newData.data;
+                        
+                        // Adjust the roof dynamically based on the new data
+                        const maxVal = Math.max(...newData.data);
+                        occupancyChart.options.scales.y.suggestedMax = maxVal + (maxVal * 0.2); 
+
+                        occupancyChart.update();
+                    }
+
+                    chartLoader.style.display = 'none';
+                    ctx.style.opacity = '1';
+                }, 800); 
+            });
+        });
+    });
+    </script>
+
+    <!-- Sidebar Underline Animation -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Select all sidebar links
+        const sidebarLinks = document.querySelectorAll('.sidebar-link');
+
+        sidebarLinks.forEach(link => {
+            const textSpan = link.querySelector('span');
+            if (!textSpan) return;
+
+            // Set the text span to position relative so the underline stays directly under the word
+            textSpan.style.position = 'relative';
+            textSpan.style.display = 'inline-block';
+            textSpan.style.paddingBottom = '4px'; // Space between text and underline
+
+            // Dynamically create the underline element using JavaScript
+            const underline = document.createElement('div');
+            underline.style.position = 'absolute';
+            underline.style.bottom = '0';
+            underline.style.left = '0'; // Start exactly at the left edge of the word
+            underline.style.height = '2px';
+            underline.style.backgroundColor = '#C5A059'; // Golden Light Brown
+            underline.style.width = '0%'; // Start invisible (0 width)
+            underline.style.transition = 'width 0.3s ease-out'; // The slide animation speed
+
+            // Add the underline to the text span
+            textSpan.appendChild(underline);
+
+            // If this link is the currently active page, keep the underline fully extended
+            if (link.classList.contains('active')) {
+                underline.style.width = '100%';
+            }
+
+            // JS Event: Slide in from left on hover
+            link.addEventListener('mouseenter', () => {
+                underline.style.width = '100%';
+            });
+
+            // JS Event: Slide back out on mouse leave (unless it's the active page)
+            link.addEventListener('mouseleave', () => {
+                if (!link.classList.contains('active')) {
+                    underline.style.width = '0%';
+                }
+            });
+        });
+    });
+    </script>
+
+    <!-- Chart Filter Button  -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select all chart filter links and the new chart filter button
+            const chartFilters = document.querySelectorAll('.chart-filter');
+            const chartFilterBtn = document.getElementById('chartFilterBtn');
+
+            chartFilters.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevent page jump
+
+                    // Get the text of the selected filter (e.g., "Today" or "Weekly")
+                    const filterText = this.textContent;
+
+                    // Update the button label
+                    chartFilterBtn.textContent = filterText;
+
+                    // Note for later: Can also grab the data-filter value here 
+                    // to trigger the local Chart.js updates
+                    // const filterValue = this.getAttribute('data-filter');
+                    // updateChartFunction(filterValue); 
+                });
+            });
+        });
+    </script>
+
+    <!-- Room Status Filter Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select the dropdown options, the button, and all room cards
+            const roomFilters = document.querySelectorAll('.room-filter');
+            const filterDropdownBtn = document.getElementById('filterDropdownBtn');
+            const roomCards = document.querySelectorAll('.room-card'); 
+
+            roomFilters.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevent page from jumping to top
+
+                    // 1. Update the button label to match what was clicked
+                    const filterText = this.textContent;
+                    filterDropdownBtn.textContent = filterText;
+
+                    // 2. Filter the room cards (if you have the data-status attributes set up)
+                    const selectedStatus = this.getAttribute('data-filter');
+                    
+                    roomCards.forEach(card => {
+                        const cardStatus = card.getAttribute('data-status');
+                        
+                        // Show if 'All Rooms' is selected, or if the status matches
+                        if (selectedStatus === 'all' || cardStatus === selectedStatus) {
+                            card.style.display = 'block'; 
+                        } else {
+                            card.style.display = 'none'; 
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+
 
     @stack('scripts')
     <!--End of Scripts  -->

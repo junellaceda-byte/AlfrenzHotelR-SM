@@ -3,7 +3,7 @@
     <!-- Head -->
     @include('partials.head')
     <!-- End of Head -->
-    <body class="bg-light">
+    <body style="background-color: #eeeddf;">
         <div class="container-fluid p-0">
             <div class="row g-0 flex-nowrap">
                 <!-- Sidebar -->
