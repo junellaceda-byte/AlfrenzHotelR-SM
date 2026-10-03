@@ -5,11 +5,15 @@
 @section('receptionist-content')
 <div class="container-fluid p-0" style="min-height: 100vh;">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <!-- Search Bar -->
-        <div class="input-group w-50">
-            <span class="input-group-text bg-white border-end-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/></svg></span>
-            <input type="text" class="form-control border-start-0" placeholder="Search reservations...">
-        </div>
+        <!-- Search Bar and Filters -->
+        <form action="{{ route('reservation.index') }}" method="GET" class="d-flex w-75 gap-2">
+            <div class="input-group w-50">
+                <span class="input-group-text bg-white border-end-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/></svg></span>
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0" placeholder="Search guest name...">
+            </div>
+            <button type="submit" class="btn text-white" style="background-color: #76380e;">Search</button>
+            <a href="{{ route('reservation.index') }}" class="btn btn-secondary">Clear</a>
+        </form>
         <!-- Date and Time -->
         <div class="d-flex gap-2">
             <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary">
@@ -71,16 +75,12 @@
                                             Edit
                                         </a>
                                     </li>
-                                    {{-- Delete button: submits a hidden form after confirmation --}}
+                                    {{-- Delete button: triggers modal --}}
                                     <li>
                                         <a class="dropdown-item text-danger" href="#"
-                                           onclick="confirmDelete('delete-res-{{ $reservation->id }}')">Delete</a>
-                                        <form id="delete-res-{{ $reservation->id }}"
-                                              action="{{ route('reservation.destroy', $reservation->id) }}"
-                                              method="POST" class="d-none">
-                                            @csrf
-                                            @method('DELETE')
-                                        </form>
+                                           data-bs-toggle="modal"
+                                           data-bs-target="#delete-confirm-modal"
+                                           onclick="setDeleteFormAction('{{ route('reservation.destroy', $reservation->id) }}')">Delete</a>
                                     </li>
                                 </ul>
                             </div>
@@ -95,33 +95,26 @@
             </table>
         </div>
         
-        <!-- Footer with Visual-Only Pagination -->
+        <!-- Footer with Pagination -->
         <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
-            <span class="text-muted small">Showing {{ $reservations->count() }} result(s)</span>
+            <span class="text-muted small">Showing {{ $reservations->firstItem() ?? 0 }} to {{ $reservations->lastItem() ?? 0 }} of {{ $reservations->total() }} result(s)</span>
             
-            <!-- Static HTML Pagination (Grayed out/Disabled) -->
             <nav aria-label="Table pagination">
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item disabled">
-                        <span class="page-link text-muted">Previous</span>
-                    </li>
-                    <li class="page-item active" aria-current="page">
-                        <span class="page-link" style="background-color: #76380e; border-color: #76380e;">1</span>
-                    </li>
-                    <li class="page-item disabled">
-                        <span class="page-link text-muted">Next</span>
-                    </li>
-                </ul>
+                {{ $reservations->links('pagination::bootstrap-5') }}
             </nav>
         </div>
     </div>
 </div>
 
-{{-- Include the shared modals (New Reservation, Check-In, Edit Reservation, Edit Booking) --}}
+ <!-- Include the shared modals (New Reservation, Check-In, Edit Reservation, Edit Booking) -->
 @include('modals.quickresmodal')
 
 @push('scripts')
 <script>
+    function setDeleteFormAction(actionUrl) {
+        document.getElementById('delete-confirm-form').action = actionUrl;
+    }
+
     // Pre-fill the Edit Reservation modal with the clicked row's data
     document.querySelectorAll('[data-bs-target="#edit-res-modal"]').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -133,12 +126,7 @@
         });
     });
 
-    // Show browser confirm dialog before deleting
-    function confirmDelete(formId) {
-        if (confirm('Are you sure you want to delete this reservation? This action cannot be undone.')) {
-            document.getElementById(formId).submit();
-        }
-    }
+
 </script>
 @endpush
 @endsection

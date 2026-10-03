@@ -4,7 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class payment_logs extends Model
+// Invoice Model relationship
+use App\Models\Invoice;
+
+class PaymentLog extends Model
 {
     //
     protected $fillable = [
@@ -12,7 +15,7 @@ class payment_logs extends Model
         'amount_paid',
         'payment_method',
         'status',
-        'created_at'
+        'created_at',
     ];
 
     public function invoice()

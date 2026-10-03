@@ -13,9 +13,22 @@ class ReservationController
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $reservations = Reservation::with('guest')->latest()->get();
+        $query = Reservation::with('guest')->latest();
+        
+        if ($request->filled('search')) {
+            $query->where('guest_name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->where(function($q) use ($request) {
+                $q->whereDate('reservation_start_date', '>=', $request->start_date)
+                  ->whereDate('reservation_start_date', '<=', $request->end_date);
+            });
+        }
+
+        $reservations = $query->paginate(30);
 
         return view('content.reservation', compact('reservations'));
     }

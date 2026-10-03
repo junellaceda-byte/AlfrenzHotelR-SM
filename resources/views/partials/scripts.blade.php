@@ -82,8 +82,8 @@
 
         const chartLoader = document.getElementById('chartLoader');
         
-        // Dummy Data
-        const chartData = {
+        // Use Dynamic Data from Laravel if available, else fallback to Dummy Data
+        const chartData = window.dynamicChartData ? window.dynamicChartData : {
             today: { labels: ['Morning', 'Afternoon', 'Evening', 'Night'], data: [5, 12, 18, 15] },
             weekly: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], data: [45, 50, 48, 60, 85, 90, 75] },
             monthly: { labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'], data: [200, 250, 220, 310] }

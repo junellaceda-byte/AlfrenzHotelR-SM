@@ -17,11 +17,15 @@ class AvailableAmenitySeeder extends Seeder
             ['item_name' => 'Extra Pillows / Blankets', 'price' => 200.00, 'is_available' => true],
             ['item_name' => 'Late Check-out Fee', 'price' => 300.00, 'is_available' => true],
             ['item_name' => 'Bottled Water', 'price' => 50.00, 'is_available' => true],
-            ['item_name' => 'Laundry', 'price' => 150.00, 'is_available' => false], // Out of stock example
+            ['item_name' => 'Laundry', 'price' => 150.00, 'is_available' => true], // Out of stock example
         ];
 
         foreach ($amenities as $amenity) {
-            AvailableAmenity::create($amenity);
+            // Use firstOrCreate to prevent duplicate catalog entries on re-seed
+            AvailableAmenity::firstOrCreate(
+                ['item_name' => $amenity['item_name']],
+                ['price' => $amenity['price'], 'is_available' => $amenity['is_available']]
+            );
         }
     }
 }

@@ -35,12 +35,13 @@
                                 @if(isset($dueGuests) && $dueGuests->count() > 0)
                                     @foreach($dueGuests as $guest)
                                         <li>
-                                            <a class="dropdown-item py-2 border-bottom" href="#">
-                                                <div class="d-flex justify-content-between">
+                                            <a class="dropdown-item py-2 border-bottom text-wrap" href="#">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
                                                     <span class="fw-semibold text-secondary">{{ $guest->name }}</span>
                                                     <span class="badge bg-warning text-dark">Room {{ $guest->room_number }}</span>
                                                 </div>
-                                                <small class="text-danger d-block mt-1">Checkout time reached</small>
+                                                <small class="text-danger d-block fw-bold">The Guest {{ $guest->name }} is due for pay today, {{ $guest->checkout_time }}</small>
+                                                <small class="text-secondary d-block mt-1 fw-bold">Total Due Amount: ₱ {{ number_format($guest->amount, 2) }}</small>
                                             </a>
                                         </li>
                                     @endforeach

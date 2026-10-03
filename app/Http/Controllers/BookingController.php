@@ -10,9 +10,25 @@ use Illuminate\Http\Request;
 
 class BookingController
 {
-    public function index()
+    public function index(Request $request)
     {
-        $bookings = Booking::with('guest')->latest()->paginate(10);
+        $query = Booking::with('guest')->latest();
+
+        if ($request->filled('search')) {
+            $query->whereHas('guest', function ($q) use ($request) {
+                $q->where('fname', 'like', '%' . $request->search . '%')
+                  ->orWhere('lname', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->where(function ($q) use ($request) {
+                $q->whereDate('check_in_datetime', '>=', $request->start_date)
+                  ->whereDate('check_in_datetime', '<=', $request->end_date);
+            });
+        }
+
+        $bookings = $query->paginate(30);
 
         return view('content.booking', compact('bookings'));
     }

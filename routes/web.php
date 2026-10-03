@@ -38,6 +38,7 @@ Route::get('/guest', function () {
 // Billing Records
 Route::get('/billing', [BillingController::class, 'index'])->name('content.billing');
 Route::post('/billing/{invoice_id}/add-amenity', [BillingController::class, 'addAmenity'])->name('billing.addAmenity');
+Route::post('/billing/{invoice_id}/remove-amenity', [BillingController::class, 'removeAmenity'])->name('billing.removeAmenity');
 Route::post('/billing/{invoice_id}/process-payment', [BillingController::class, 'processPayment'])->name('billing.processPayment');
 
 // Posts

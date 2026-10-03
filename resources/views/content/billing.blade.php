@@ -259,30 +259,36 @@
                                         <!-- This is the sum of room charges and extra charges -->
                                         <span>₱ {{ number_format($selectedInvoice->room_charges + $selectedInvoice->extra_charges_total, 2) }}</span>
                                     </div>
-
-                                    <!-- Quick Add Incidentals -->
-                                    <div class="fw-bold small mb-2 px-2">Quick Add Incidentals</div>
-                                    <ul class="list-group list-group-flush mb-3">
-                                        @foreach($availableAmenities as $item)
-                                            <li class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 bg-transparent">
-                                                @if($item->is_available)
-                                                    <span class="small">{{ $item->item_name }}</span>
-                                                    <div class="d-flex align-items-center">
-                                                        <span class="text-muted small me-3">₱ {{ number_format($item->price, 2) }}</span>
-                                                        <form action="{{ route('billing.addAmenity', $selectedInvoice->id) }}" method="POST" class="m-0">
-                                                            @csrf
-                                                            <input type="hidden" name="item_name" value="{{ $item->item_name }}">
-                                                            <input type="hidden" name="price" value="{{ $item->price }}">
-                                                            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" style="border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">+</button>
-                                                        </form>
-                                                    </div>
-                                                @else
-                                                    <span class="text-decoration-line-through text-muted small">{{ $item->item_name }}</span>
-                                                    <span class="text-muted small fst-italic">Out of Stock</span>
-                                                @endif
-                                            </li>
-                                        @endforeach
-                                    </ul>
+                                    <!-- Quick Add Amenities -->
+                                    <div class="fw-bold small mb-2 px-2">Quick Add Amenities</div>
+                                        <ul class="list-group list-group-flush mb-3">
+                                            @foreach($availableAmenities as $item)
+                                                <li class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 bg-transparent">
+                                                    @if($item->is_available)
+                                                        <span class="small">{{ $item->item_name }}</span>
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="text-muted small me-3">₱ {{ number_format($item->price, 2) }}</span>
+                                                            <div class="d-flex gap-1">
+                                                                <form action="{{ route('billing.removeAmenity', $selectedInvoice->id) }}" method="POST" class="m-0">
+                                                                    @csrf
+                                                                    <input type="hidden" name="item_name" value="{{ $item->item_name }}">
+                                                                    <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" style="border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" title="Remove 1">-</button>
+                                                                </form>
+                                                                <form action="{{ route('billing.addAmenity', $selectedInvoice->id) }}" method="POST" class="m-0">
+                                                                    @csrf
+                                                                    <input type="hidden" name="item_name" value="{{ $item->item_name }}">
+                                                                    <input type="hidden" name="price" value="{{ $item->price }}">
+                                                                    <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" style="border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" title="Add 1">+</button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    @else
+                                                        <span class="text-decoration-line-through text-muted small">{{ $item->item_name }}</span>
+                                                        <span class="text-muted small fst-italic">Out of Stock</span>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
                                 </div>
                             </div>
                         </div>
@@ -318,9 +324,6 @@
                                             <div class="btn-group w-100" role="group">
                                                 <input type="radio" class="btn-check" name="payment_method" id="pay_cash" value="cash" checked>
                                                 <label class="btn btn-outline-secondary" for="pay_cash">Cash</label>
-
-                                                <input type="radio" class="btn-check" name="payment_method" id="pay_card" value="credit_card">
-                                                <label class="btn btn-outline-secondary" for="pay_card">Card</label>
 
                                                 <input type="radio" class="btn-check" name="payment_method" id="pay_ewallet" value="gcash">
                                                 <label class="btn btn-outline-secondary" for="pay_ewallet">E-Wallet</label>

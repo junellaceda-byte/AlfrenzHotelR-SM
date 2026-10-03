@@ -4,38 +4,38 @@ namespace App\Http\Controllers;
 
 use App\Models\AvailableAmenity;
 use App\Models\Invoice;
-use App\Models\PaymentLogs;
+use App\Models\PaymentLog;
 use Illuminate\Http\Request;
 
 class BillingController
 {
     //
     public function index(Request $request)
-    {   
-        //This is the logic for pending payments
+    {
+        // This is the logic for pending payments
         $pendingPayments = Invoice::where('status', 'unpaid')
             ->with(['booking.guest'])
             ->get();
 
-        //This is the logic for confirmed payments
+        // This is the logic for confirmed payments
         $confirmedPayments = Invoice::where('status', 'paid')
             ->with(['booking.guest', 'paymentLogs'])
             ->get();
 
-        //This is the logic for selected invoice
+        // This is the logic for selected invoice
         $selectedInvoice = null;
         if ($request->has('edit_id')) {
             $selectedInvoice = Invoice::with(['booking.guest', 'availableAmenities'])
                 ->find($request->edit_id);
         }
 
-        //This is the logic for available amenities
+        // This is the logic for available amenities
         $availableAmenities = AvailableAmenity::all();
 
         return view('content.billing', compact('pendingPayments', 'confirmedPayments', 'selectedInvoice', 'availableAmenities'));
     }
 
-    //This is the logic for adding amenities
+    // This is the logic for adding amenities
     public function addAmenity(Request $request, $invoice_id)
     {
         $invoice = Invoice::findOrFail($invoice_id);
@@ -55,7 +55,27 @@ class BillingController
             ->with('success', 'Amenity added successfully.');
     }
 
-    //This is the logic for processing payment
+    public function removeAmenity(Request $request, $invoice_id)
+    {
+        $invoice = Invoice::findOrFail($invoice_id);
+
+        $amenity = AvailableAmenity::where('invoice_id', $invoice->id)
+            ->where('item_name', $request->item_name)
+            ->latest()
+            ->first();
+
+        if ($amenity) {
+            $price = $amenity->unit_price;
+            $amenity->delete();
+            $invoice->decrement('extra_charges_total', $price);
+            $invoice->decrement('grand_total', $price);
+        }
+
+        return redirect()->route('content.billing', ['edit_id' => $invoice->id])
+            ->with('success', 'Amenity removed successfully.');
+    }
+
+    // This is the logic for processing payment
     public function processPayment(Request $request, $invoice_id)
     {
         $invoice = Invoice::findOrFail($invoice_id);

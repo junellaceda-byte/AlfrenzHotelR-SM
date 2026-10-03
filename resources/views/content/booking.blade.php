@@ -5,11 +5,15 @@
 @section('receptionist-content')
 <div class="container-fluid p-0">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <!-- Search Bar -->
-        <div class="input-group w-50">
-            <span class="input-group-text bg-white border-end-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/></svg></span>
-            <input type="text" class="form-control border-start-0" placeholder="Search bookings...">
-        </div>
+        <!-- Search Bar and Filters -->
+        <form action="{{ route('booking.index') }}" method="GET" class="d-flex w-75 gap-2">
+            <div class="input-group w-50">
+                <span class="input-group-text bg-white border-end-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/></svg></span>
+                <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0" placeholder="Search guest name...">
+            </div>
+            <button type="submit" class="btn text-white" style="background-color: #76380e;">Search</button>
+            <a href="{{ route('booking.index') }}" class="btn btn-secondary">Clear</a>
+        </form>
         <!-- Date and Time -->
         <div class="d-flex gap-2">
             <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary">
@@ -56,36 +60,27 @@
                             <!-- Displays the booked room(s) — already a PHP array from the Booking model, just join them -->
                             <td class="px-4">{{ implode(', ', $booking->booked_rooms ?? []) }}</td>
                             <td class="px-4 text-center">
-                                <div class="dropdown">
-                                    <button class="btn btn-link text-secondary p-0 text-decoration-none fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.2rem;">&#8942;</button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                        {{-- Edit: opens modal pre-filled with guest data --}}
-                                        <li>
-                                            <a class="dropdown-item"
-                                               href="#"
-                                               data-bs-toggle="modal"
-                                               data-bs-target="#edit-booking-modal"
-                                               data-id="{{ $booking->id }}"
-                                               data-fname="{{ $booking->guest->fname ?? '' }}"
-                                               data-lname="{{ $booking->guest->lname ?? '' }}"
-                                               data-phone="{{ $booking->guest->phone ?? '' }}">
-                                                Edit
-                                            </a>
-                                        </li>
-                                        {{-- Delete: submits form after confirmation --}}
-                                        <li>
-                                            <a class="dropdown-item text-danger" href="#"
-                                               onclick="confirmBookingDelete('delete-booking-{{ $booking->id }}')">Delete</a>
-                                            <form id="delete-booking-{{ $booking->id }}"
-                                                  action="{{ route('booking.destroy', $booking->id) }}"
-                                                  method="POST" class="d-none">
-                                                @csrf
-                                                @method('DELETE')
-                                            </form>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </td>
+                            <div class="dropdown">
+                                <button class="btn btn-link text-secondary p-0 text-decoration-none fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.2rem;">
+                                    &#8942;
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <!---- Edit button: opens modal pre-filled with guest data -->
+                                    <li>
+                                        <a class="dropdown-item"
+                                           href="#"
+                                           data-bs-toggle="modal"
+                                           data-bs-target="#edit-res-modal"
+                                           data-id="{{ $booking->id }}"
+                                           data-fname="{{ $booking->guest->fname ?? '' }}"
+                                           data-lname="{{ $booking->guest->lname ?? '' }}"
+                                           data-phone="{{ $booking->guest->phone ?? '' }}">
+                                            Edit
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
                         </tr>
                     @empty
                         <tr>
@@ -107,19 +102,9 @@
                 @endif
             </span>
             
-            <!-- Static HTML Pagination (Grayed out/Disabled) replacing $bookings->links() -->
+            <!-- Dynamic Pagination -->
             <nav aria-label="Table pagination">
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item disabled">
-                        <span class="page-link text-muted">Previous</span>
-                    </li>
-                    <li class="page-item active" aria-current="page">
-                        <span class="page-link" style="background-color: #76380e; border-color: #76380e;">1</span>
-                    </li>
-                    <li class="page-item disabled">
-                        <span class="page-link text-muted">Next</span>
-                    </li>
-                </ul>
+                {{ $bookings->links('pagination::bootstrap-5') }}
             </nav>
         </div>
     </div>
