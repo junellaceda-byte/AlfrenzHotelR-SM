@@ -31,9 +31,9 @@ Route::post('/bookings', [BookingController::class, 'store'])->name('booking.sto
 Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus'])->name('booking.updateStatus');
 
 // Guest Records
-Route::get('/guest', function () {
-    return view('content.guestlist');
-})->name('guest.index');
+// Route::get('/guest', function () {
+//     return view('content.guestlist');
+// })->name('guest.index');
 
 // Billing Records
 Route::get('/billing', [BillingController::class, 'index'])->name('content.billing');
