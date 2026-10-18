@@ -21,6 +21,9 @@ class Reservation extends Model
         'selected_rooms',
         'adults_count',
         'children_count',
+        'status',
+        'stay_type',
+        'deposit'
     ];
 
     /**
