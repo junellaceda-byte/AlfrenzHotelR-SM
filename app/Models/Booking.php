@@ -13,6 +13,12 @@ class Booking extends Model
         'check_in_datetime',
         'check_out_datetime',
         'booked_rooms',
+        'stay_type',
+        'status',
+        'deposit',
+        'nights',
+        'actual_check_in',
+        'actual_check_out',
     ];
 
     protected $casts = [

@@ -24,3 +24,26 @@
 - [] Receipt
 - [] Paid list
 - [] Discount and refund requests
+
+
+## Rule: never edit or delete old migrations, add new ones.
+
+## Questions for the client
+- How many hours is the 600 short stay?
+- What happens when a short stay runs over (hourly fee, or becomes overnight)?
+- Is 12% tax added, or are rates already tax-inclusive?
+- Check-in and check-out times for overnight?
+- Is a deposit required for reservations?
+- Cancellation rule (free window, fee)?
+- Do discounts and refunds exist?
+- Payment methods (cash, GCash, card)?
+- Can a short stay be reserved in advance, or walk-in only?
+- Extra charges besides amenities (extra person, late check-out)?
+
+
+## Found on Oct 16
+- Greeting shows "Name" placeholder
+- Phone shows "None"
+- Future-dated booking should be a reservation
+- Room 8 may stay occupied after checkout
+- Date format inconsistent
