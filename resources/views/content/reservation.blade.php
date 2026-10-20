@@ -62,7 +62,7 @@
                                     &#8942;
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                    {{-- Edit button: opens modal pre-filled with guest data --}}
+                                    <!--- Edit button: opens modal pre-filled with guest data --->
                                     <li>
                                         <a class="dropdown-item"
                                            href="#"

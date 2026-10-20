@@ -16,4 +16,10 @@ class Charge extends Model
         'amount',
         'is_paid'
     ];
+
+    // Creates a one-to-one relationship with Booking
+    public function booking()
+    {
+        return $this->belongsTo(Booking::class);
+    }
 }

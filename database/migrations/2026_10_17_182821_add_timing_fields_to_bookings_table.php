@@ -26,6 +26,7 @@ return new class extends Migration
     {
         Schema::table('bookings', function (Blueprint $table) {
             //
+            $table->dropColumn(['nights', 'actual_check_in', 'actual_check_out']);
         });
     }
 };

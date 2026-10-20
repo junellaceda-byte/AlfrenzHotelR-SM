@@ -81,6 +81,7 @@
             <div class="card h-100 bg-white border shadow-sm">
                 <div class="card-body p-4">
                     <h6 class="text-uppercase text-secondary fw-bold mb-3">QUICK ACTIONS</h6>
+                    <p class="small text-muted mb-3">Short stay ₱{{ number_format($shortRate) }} · Overnight ₱{{ number_format($overnightRate) }} per night</p>
                     <div class="row g-2">
                         <div class="col-6">
                             <button class="btn btn-outline-secondary w-100 py-2 text-start fw-semibold" data-bs-toggle="modal" data-bs-target="#res-modal">NEW RESERVATION</button>
@@ -137,15 +138,14 @@
         <!-- Secondary Data Panel Section -->
         <div class="col-md-6">
             <div class="card shadow-sm border" style="min-height: 250px;">
-                <div class="card-body d-flex align-items-center justify-content-center bg-white rounded">
-                    <p class="text-muted text-uppercase fw-bold m-0">Secondary Data Panel</p>
+                <div class="card-body bg-white rounded">
+                    <h6 class="text-uppercase text-secondary fw-bold mb-3">NOTIFICATIONS</h6>
+                    <p class="text-muted small m-0">No notifications yet. Approvals from the admin will show here.</p>
                 </div>
             </div>
         </div>
     </div>
-
-
-
+    
     <!-- Link the external roomgrid.css file -->
     <link href="{{ asset('css/room-grid.css') }}" rel="stylesheet">
     <!-- Link the overlay roomgrid.css file -->

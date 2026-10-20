@@ -13,38 +13,57 @@ class DashboardController
         $now = now()->setTimezone('Asia/Manila');
 
         // Retrieves all rooms with active time ranges
-        $rooms = Room::all()->map(function($room) use ($now) {
+        // and determines their status based on bookings and reservations
+        $rooms = Room::all()->map(function ($room) use ($now) {
             $timeRange = '00:00-23:59';
-            
-            $booking = Booking::whereJsonContains('booked_rooms', (string)$room->id)
-                ->orWhereJsonContains('booked_rooms', $room->id)
+
+            // A stay happening right now
+            $booking = Booking::where(function ($q) use ($room) {
+                    $q->whereJsonContains('booked_rooms', (string) $room->id)
+                      ->orWhereJsonContains('booked_rooms', $room->id);
+                })
+                ->whereNotIn('status', ['cancelled', 'checked_out'])
                 ->where('check_in_datetime', '<=', $now)
                 ->where('check_out_datetime', '>=', $now)
                 ->first();
-                
-            if ($booking) {
-                $timeRange = \Carbon\Carbon::parse($booking->check_in_datetime)->format('H:i') . '-' . \Carbon\Carbon::parse($booking->check_out_datetime)->format('H:i');
-            } else {
-                $reservation = \App\Models\Reservation::whereJsonContains('selected_rooms', (string)$room->id)
-                    ->orWhereJsonContains('selected_rooms', $room->id)
-                    ->where('reservation_start_date', '<=', $now)
+
+            // A reservation happening right now
+            $reservation = null;
+            if (!$booking) {
+                $reservation = \App\Models\Reservation::where(function ($q) use ($room) {
+                        $q->whereJsonContains('selected_rooms', (string) $room->id)
+                          ->orWhereJsonContains('selected_rooms', $room->id);
+                    })
+                    ->where('status', '!=', 'cancelled')
+                    ->where('reservation_start_date', '<=', $now->copy()->endOfDay())
                     ->where('reservation_end_date', '>=', $now)
                     ->first();
-                    
-                if ($reservation) {
+            }
+
+            // Determine the room's status based on the booking or reservation
+            if ($room->status !== 'under_maintenance') {
+                if ($booking) {
+                    $room->status = 'occupied';
+                    $timeRange = \Carbon\Carbon::parse($booking->check_in_datetime)->format('H:i') . '-' . \Carbon\Carbon::parse($booking->check_out_datetime)->format('H:i');
+                } elseif ($reservation) {
+                    $room->status = 'reserved';
                     $timeRange = \Carbon\Carbon::parse($reservation->reservation_start_date)->format('H:i') . '-' . \Carbon\Carbon::parse($reservation->reservation_end_date)->format('H:i');
+                } else {
+                    $room->status = 'available';
                 }
             }
-            
+
             $room->timeRange = $timeRange;
             return $room;
         });
-
-        $availableRooms = Room::where('status', 'available')->count();
-        $occupiedRooms = Room::where('status', 'occupied')->count();
+        // Count the number of rooms in each status category
+        $availableRooms = $rooms->where('status', 'available')->count();
+        $occupiedRooms = $rooms->where('status', 'occupied')->count();
+        $reservedRooms = $rooms->where('status', 'reserved')->count();
+        $underMaintenanceRooms = $rooms->where('status', 'under_maintenance')->count();
         $activeBookings = Booking::count();
-        $underMaintenanceRooms = Room::where('status', 'under_maintenance')->count();
-        $reservedRooms = Room::where('status', 'reserved')->count();
+        $shortRate = Room::value('short_stay_rate');
+        $overnightRate = Room::value('overnight_rate');
 
         // Occupancy Trends
         $today = $now->copy()->startOfDay();
@@ -89,6 +108,7 @@ class DashboardController
             'weekly' => ['labels' => $weeklyLabels, 'data' => $weeklyData],
         ];
 
-        return view('content.receptionist', compact('rooms', 'availableRooms', 'occupiedRooms', 'activeBookings', 'underMaintenanceRooms', 'reservedRooms', 'chartData'));
+        return view('content.receptionist', compact('rooms', 'availableRooms', 'occupiedRooms', 'activeBookings', 'underMaintenanceRooms', 'reservedRooms', 'chartData', 'shortRate', 'overnightRate'));
+        // End of the index method
     }
 }

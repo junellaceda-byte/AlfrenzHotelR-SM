@@ -45,17 +45,18 @@ class ReservationController
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
             'room_ids' => 'required|array',
+            'guests' => 'required|integer|min:1|max:20', 
             'room_ids.*' => 'integer|exists:rooms,id',
         ]);
 
         // Minimum 24-hour stay check using PHP native dates (no Carbon)
-        $checkIn = new \DateTime($request->check_in);
-        $checkOut = new \DateTime($request->check_out);
-        $diffHours = (int) $checkIn->diff($checkOut)->h + ((int) $checkIn->diff($checkOut)->days * 24);
+        // $checkIn = new \DateTime($request->check_in);
+        // $checkOut = new \DateTime($request->check_out);
+        // $diffHours = (int) $checkIn->diff($checkOut)->h + ((int) $checkIn->diff($checkOut)->days * 24);
 
-        if ($diffHours < 24) {
-            return back()->withErrors(['check_out' => 'Minimum 24 hours stay is required for an overnight stay.']);
-        }
+        // if ($diffHours < 24) {
+        //     return back()->withErrors(['check_out' => 'Minimum 24 hours stay is required for an overnight stay.']);
+        // }
 
         $fname = trim($request->fname) ?: 'Anonymous';
         $lname = trim($request->lname) ?: 'Guest';
@@ -76,6 +77,7 @@ class ReservationController
             'number_of_rooms' => count($request->room_ids),
             // Laravel's $casts converts this array to JSON automatically
             'selected_rooms' => $request->room_ids,
+            'guests' => $request->guests,
         ]);
 
         return redirect()->back()->with('success', 'Reservation created successfully.');

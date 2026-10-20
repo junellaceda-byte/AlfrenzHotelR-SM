@@ -262,7 +262,51 @@
             });
         });
     </script>
+    <!-- Room Mode Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            [['res_room_mode', 'res_room_ids'], ['checkin_room_mode', 'checkin_room_ids']].forEach(function (pair) {
+                var mode = document.getElementById(pair[0]);
+                var rooms = document.getElementById(pair[1]);
+                if (!mode || !rooms) return;
+                function apply() {
+                    rooms.multiple = (mode.value === 'multiple');
+                    Array.from(rooms.options).forEach(function (o) { o.selected = false; });
+                }
+                mode.addEventListener('change', apply);
+                apply();
+            });
+        });
+    </script>
+    <!-- Check-in/Check-out Time Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var inTime = "{{ config('hotel.check_in_time') }}";
+            var outTime = "{{ config('hotel.check_out_time') }}";
+            var date = document.getElementById('res_date');
+            var nights = document.getElementById('res_nights');
+            var inInput = document.getElementById('res_checkin');
+            var outInput = document.getElementById('res_checkout');
+            var summary = document.getElementById('res_summary');
+            if (!date || !nights || !inInput || !outInput) return;
 
+            function pad(n) { return String(n).padStart(2, '0'); }
+            function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
 
+            function update() {
+                var n = Math.max(1, Math.min(30, parseInt(nights.value, 10) || 1));
+                if (!date.value) { inInput.value = ''; outInput.value = ''; summary.textContent = ''; return; }
+                var end = new Date(date.value + 'T00:00:00');
+                end.setDate(end.getDate() + n);
+                inInput.value = date.value + 'T' + inTime;
+                outInput.value = ymd(end) + 'T' + outTime;
+                summary.textContent = 'Check-in ' + date.value + ' ' + inTime + '  →  Check-out ' + ymd(end) + ' ' + outTime;
+                outInput.dispatchEvent(new Event('change'));
+            }
+            date.addEventListener('change', update);
+            nights.addEventListener('input', update);
+            update();
+        });
+    </script>
     @stack('scripts')
-    <!--End of Scripts  -->
+<!--End of Scripts  -->

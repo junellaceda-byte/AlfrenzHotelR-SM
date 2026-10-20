@@ -9,6 +9,7 @@ class Booking extends Model
     // Protects the fillable attributes
     protected $fillable = [
         'guest_id',
+        'guests',
         'phone',
         'check_in_datetime',
         'check_out_datetime',
@@ -42,6 +43,11 @@ class Booking extends Model
     // Creates a one-to-many relationship with Amenities
     public function amenities()
     {
-        return $this->hasMany(Amenities::class);
+        return $this->hasMany(AvailableAmenity::class);
+    }
+    // Creates a one-to-many relationship with Charges
+    public function charges()
+    {
+        return $this->hasMany(Charge::class);
     }
 }

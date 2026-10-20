@@ -47,18 +47,48 @@
                         </div>
 
                         <!-- Check-in (Calendar) -->
-                        <div class="mb-3">
+                        <!-- <div class="mb-3">
                             <label for="res_checkin" class="form-label">Check-in Date</label>
                             <input type="datetime-local" class="form-control" id="res_checkin" name="check_in" required>
-                        </div>
+                        </div> -->
                         
                         <!-- Check-out (Calendar) -->
-                        <div class="mb-3">
+                        <!-- <div class="mb-3">
                             <label for="res_checkout" class="form-label">Check-out Date</label>
                             <input type="datetime-local" class="form-control" id="res_checkout" name="check_out" required>
+                        </div> -->
+                         <!-- Hidden inputs for check-in and check-out dates, which will be set by JavaScript based on the arrival date and number of nights selected by the user. -->
+                        <input type="hidden" id="res_checkin" name="check_in">
+                        <input type="hidden" id="res_checkout" name="check_out">
+
+                        <!-- Arrival date + nights -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="res_date" class="form-label">Arrival Date</label>
+                                <input type="date" class="form-control" id="res_date" value="{{ date('Y-m-d') }}" min="{{ date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="res_nights" class="form-label">Nights</label>
+                                <input type="number" class="form-control" id="res_nights" value="1" min="1" max="30" required>
+                            </div>
+                            <div class="col-12">
+                                <small class="text-muted" id="res_summary"></small>
+                            </div>
                         </div>
-                        
-                         <!-- Room Selection (Available Rooms Only) -->
+
+                        <!-- Number of Guests -->
+                        <div class="mb-3">
+                            <label for="guests" class="form-label">Number of Guests</label>
+                            <input type="number" class="form-control" id="guests" name="guests" value="1" min="1" max="20" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="res_room_mode" class="form-label">How many rooms?</label>
+                            <select class="form-select" id="res_room_mode">
+                                <option value="one">One room</option>
+                                <option value="multiple">Multiple rooms</option>
+                            </select>
+                        </div>
+                        <!-- Room Selection (Available Rooms Only) -->
                         <div class="mb-3">
                             <label for="res_room_ids" class="form-label">Select Room(s)</label>
                             <select class="form-select" id="res_room_ids" name="room_ids[]" multiple required>
@@ -145,6 +175,17 @@
                             <input type="datetime-local" class="form-control" id="check_out_date" name="check_out" required>
                         </div>
                         
+                        <!-- Number of Guests -->
+                        <label for="checkin_guests" class="form-label">Number of Guests</label>
+                        <input type="number" class="form-control" id="checkin_guests" name="guests" value="1" min="1" max="20" required>
+                        
+                        <div class="mb-3">
+                            <label for="checkin_room_mode" class="form-label">How many rooms?</label>
+                            <select class="form-select" id="checkin_room_mode">
+                                <option value="one">One room</option>
+                                <option value="multiple">Multiple rooms</option>
+                            </select>
+                        </div>
                         <!-- Room Selection (Available Rooms Only) -->
                         <div class="col-12">
                             <label for="checkin_room_ids" class="form-label">Select Room(s)</label>

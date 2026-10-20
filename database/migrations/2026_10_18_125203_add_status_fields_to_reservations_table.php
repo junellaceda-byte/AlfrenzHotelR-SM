@@ -26,6 +26,7 @@ return new class extends Migration
     {
         Schema::table('reservations', function (Blueprint $table) {
             //
+            $table->dropColumn(['status', 'stay_type', 'deposit']);
         });
     }
 };

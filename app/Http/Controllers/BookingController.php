@@ -45,6 +45,7 @@ class BookingController
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
             'action_type' => 'required|in:reserved,check_in',
+            'guests' => 'nullable|integer|min:1|max:20',
         ]);
 
         $fname = trim($request->fname) ?: 'Walk-in';
@@ -62,7 +63,10 @@ class BookingController
             'check_in_datetime' => $request->check_in,
             'check_out_datetime' => $request->check_out,
             'booked_rooms' => $request->room_ids,
-        ]);
+            'guests' => $request->guests ?? 1,
+            'stay_type' => $request->stay_type,
+            'status' => $request->action_type === 'check_in' ? 'checked_in' : 'booked',
+        ]); 
 
         if ($request->action_type === 'check_in') {
             Room::whereIn('id', $request->room_ids)->update(['status' => 'occupied']);
