@@ -1,51 +1,71 @@
 <link href="{{ asset('css/sidebar.css') }}" rel="stylesheet">
 
 <!-- Sidebar -->
-<div class="col-auto col-md-3 col-xl-2 px-sm-3 px-0 border-end vh-100 d-flex flex-column py-4" style="background-color: #A18276;">
+<aside class="app-sidebar d-flex flex-column h-100 py-3 px-2 flex-shrink-0" style="width: clamp(12rem, 14vw, 16rem); background-color: #6A4435;">
     
     <!-- Logo and Name -->
-    <div class="mt-2 text-center mb-4">
-        <!-- Logo Container (Edit width and height here to resize) -->
-        <div class="mx-auto" style="width: 210px; height: 210px;">
-            <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-100 h-100 object-fit-contain">
+    <div class="text-center pt-2 pb-3 px-2">
+        <!-- Logo Container with White Outline Stroke -->
+        <div class="sidebar-logo-circle mx-auto d-flex align-items-center justify-content-center mb-2">
+            <img src="{{ asset('images/logo.png') }}" alt="Alfrenzo's Hotel Logo" class="sidebar-logo-img">
         </div>
         
         <!-- Hotel Name -->
-        <div class="text-black fw-semibold text-uppercase" style="margin-top: -30px; font-size: 26px; font-family: 'Trebuchet MS', sans-serif;">
+        <div class="sidebar-hotel-name text-uppercase fw-bold">
             ALFRENZO'S HOTEL
         </div>
     </div>
 
-    <!-- Navigation Items Sidebar -->
-    <ul class="nav flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start w-100 gap-2">
+    <!-- Navigation Items -->
+    <ul class="nav flex-column align-items-stretch w-100 gap-2 px-1 my-2">
         <li class="nav-item w-100">
-            <a href="{{ route('dashboard.index') }}" class="nav-link align-middle px-3 py-2 fw-semibold text-uppercase sidebar-link {{ request()->routeIs('dashboard.index') ? 'active' : '' }}">
-                <span class="ms-1 d-none d-sm-inline">DASHBOARD</span>
+            <a href="{{ route('dashboard.index') }}" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request()->routeIs('dashboard.*') || request()->is('dashboard') ? 'active' : '' }}">
+                OVERVIEW
             </a>
         </li>
 
         <li class="nav-item w-100">
-            <a href="/reservation" class="nav-link align-middle px-3 py-2 fw-semibold text-uppercase sidebar-link {{ request()->is('reservation') ? 'active' : '' }}">
-                <span class="ms-1 d-none d-sm-inline">RESERVATION</span>
+            <a href="{{ route('reservation.index') }}" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request()->routeIs('reservation.*') || request()->is('reservation') ? 'active' : '' }}">
+                RESERVATION
             </a>
         </li>
 
         <li class="nav-item w-100">
-            <a href="{{ route('booking.index') }}" class="nav-link align-middle px-3 py-2 fw-semibold text-uppercase sidebar-link {{ request()->routeIs('booking.index') ? 'active' : '' }}">
-                <span class="ms-1 d-none d-sm-inline">BOOKING</span>
+            <a href="{{ route('booking.index') }}" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request()->routeIs('booking.*') || request()->is('bookings*') ? 'active' : '' }}">
+                BOOKING HISTORY
             </a>
         </li>
 
         <li class="nav-item w-100">
-            <a href="{{ route('content.billing') }}" class="nav-link align-middle px-3 py-2 fw-semibold text-uppercase sidebar-link {{ request()->routeIs('content.billing') ? 'active' : '' }}">
-                <span class="ms-1 d-none d-sm-inline">BILLING</span>
-            </a>
-        </li>
-
-        <li class="nav-item w-100">
-            <a href="#" class="nav-link align-middle px-3 py-2 fw-semibold text-uppercase sidebar-link">
-                <span class="ms-1 d-none d-sm-inline">SETTINGS</span>
+            <a href="{{ route('content.billing') }}" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request()->routeIs('content.billing') || request()->is('billing*') ? 'active' : '' }}">
+                BILLING
             </a>
         </li>
     </ul>
+
+    <!-- Bottom Logout Element -->
+    <div class="mt-auto pt-3 pb-2 px-2 text-center">
+        <button type="button" class="btn btn-sidebar-logout w-100 text-uppercase fw-bold py-2" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+            LOGOUT
+        </button>
+    </div>
+</aside>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold text-dark" id="logoutConfirmModalLabel">Confirm Logout</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-3">
+                <p class="mb-0 text-secondary fw-semibold">Are you sure you want to logout?</p>
+            </div>
+            <div class="modal-footer border-0 pt-0 justify-content-center gap-2">
+                <button type="button" class="btn btn-sm btn-secondary px-3 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                <a href="{{ url('/login') }}" class="btn btn-sm btn-danger px-3 fw-semibold">Logout</a>
+            </div>
+        </div>
+    </div>
 </div>

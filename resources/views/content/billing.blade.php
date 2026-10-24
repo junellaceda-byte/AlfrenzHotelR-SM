@@ -4,13 +4,12 @@
 
 @section('billing-content')
 
-<!-- Added background color and min-height so the color fills the screen -->
-<div class="container-fluid p-0" style="background-color: #EFDCAB; min-height: 100vh;">
+<div class="container-fluid p-0">
     <!-- Top Row: Pending and Confirmed Payments Tables -->
     <div class="row g-4 mb-4">
         <!-- Card 1: Pending Payments -->
         <div class="col-md-6">
-            <div class="card h-100 border-0 bg-body-tertiary rounded-0 shadow-sm">
+            <div class="card h-100 bg-white border rounded shadow-sm">
                 <div class="card-body p-4 p-lg-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
@@ -72,7 +71,7 @@
                                     <span class="page-link text-muted" aria-hidden="true">&laquo;</span>
                                 </li>
                                 <li class="page-item active" aria-current="page">
-                                    <span class="page-link" style="background-color: #76380e; border-color: #76380e;">1</span>
+                                    <span class="page-link text-white" style="background-color: #6A4435; border-color: #6A4435;">1</span>
                                 </li>
                                 <li class="page-item disabled">
                                     <span class="page-link text-muted" aria-hidden="true">&raquo;</span>
@@ -87,7 +86,7 @@
                             
         <!-- Card 2: Confirmed Payments -->
         <div class="col-md-6">
-            <div class="card h-100 border-0 bg-body-tertiary rounded-0 shadow-sm">
+            <div class="card h-100 bg-white border rounded shadow-sm">
                 <div class="card-body p-4 p-lg-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
@@ -149,7 +148,7 @@
                                     <span class="page-link text-muted" aria-hidden="true">&laquo;</span>
                                 </li>
                                 <li class="page-item active" aria-current="page">
-                                    <span class="page-link" style="background-color: #76380e; border-color: #76380e;">1</span>
+                                    <span class="page-link text-white" style="background-color: #6A4435; border-color: #6A4435;">1</span>
                                 </li>
                                 <li class="page-item disabled">
                                     <span class="page-link text-muted" aria-hidden="true">&raquo;</span>
@@ -165,7 +164,7 @@
     <!-- Bottom Row: Billing Process -->
     <div class="row g-4">
         <div class="col-12">
-            <div class="card border-0 bg-body-tertiary rounded-0 shadow-sm">
+            <div class="card bg-white border rounded shadow-sm">
                 <div class="card-body p-4 p-lg-4">
                     <h5 class="card-title text-dark mb-1 fs-5">Billing Process</h5>
                     <small class="text-muted mb-4 d-block">Create a new bill, add charges, and process payment.</small>
@@ -175,7 +174,7 @@
                     <div class="row g-4">
                         <!-- 1. Guest & Room Information -->
                         <div class="col-md-4">
-                            <div class="card h-100 border-0 shadow-sm">
+                            <div class="card h-100 bg-white border rounded shadow-sm">
                                 <div class="card-body">
                                     <h6 class="card-subtitle text-dark fw-bold mb-1"><span class="badge bg-secondary rounded-circle me-2">1</span>Guest & Room Information</h6>
                                     <small class="text-muted d-block mb-4 ms-4">Selected room and guest details.</small>
@@ -230,7 +229,7 @@
 
                         <!-- 2. Charges & Add-ons -->
                         <div class="col-md-4">
-                            <div class="card h-100 border-0 shadow-sm">
+                            <div class="card h-100 bg-white border rounded shadow-sm">
                                 <div class="card-body">
                                     <h6 class="card-subtitle text-dark fw-bold mb-1"><span class="badge bg-secondary rounded-circle me-2">2</span>Charges & Add-ons</h6>
                                     <small class="text-muted d-block mb-4 ms-4">View daily rate and add incidentals.</small>
@@ -295,7 +294,7 @@
 
                         <!-- 3. Payment & Summary -->
                         <div class="col-md-4">
-                            <div class="card h-100 border-0 shadow-sm">
+                            <div class="card h-100 bg-white border rounded shadow-sm">
                                 <div class="card-body d-flex flex-column">
                                     <h6 class="card-subtitle text-dark fw-bold mb-1"><span class="badge bg-secondary rounded-circle me-2">3</span>Payment & Summary</h6>
                                     <small class="text-muted d-block mb-4 ms-4">Select payment method and finalize.</small>
@@ -330,7 +329,7 @@
                                             </div>
                                         </div>
                                         
-                                        <button type="submit" class="btn btn-dark w-100 py-2 rounded-1">Process Payment</button>
+                                        <button type="submit" class="btn text-white w-100 py-2 fw-semibold" style="background-color: #6A4435; border-color: #6A4435;">Process Payment</button>
                                     </form>
                                 </div>
                             </div>

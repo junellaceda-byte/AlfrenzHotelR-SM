@@ -10,6 +10,10 @@ class Booking extends Model
     protected $fillable = [
         'guest_id',
         'guests',
+        'short_stay_hours', 
+        'with_breakfast', 
+        'extra_beds', 
+        'discount_type',
         'phone',
         'check_in_datetime',
         'check_out_datetime',

@@ -45,7 +45,7 @@ class ReservationController
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
             'room_ids' => 'required|array',
-            'guests' => 'required|integer|min:1|max:20', 
+            'guests' => 'nullable|integer|min:1|max:20', 
             'room_ids.*' => 'integer|exists:rooms,id',
         ]);
 
@@ -77,7 +77,7 @@ class ReservationController
             'number_of_rooms' => count($request->room_ids),
             // Laravel's $casts converts this array to JSON automatically
             'selected_rooms' => $request->room_ids,
-            'guests' => $request->guests,
+            'guests' => $request->guests ?? 1,
         ]);
 
         return redirect()->back()->with('success', 'Reservation created successfully.');

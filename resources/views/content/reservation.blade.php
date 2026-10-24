@@ -40,9 +40,9 @@
                     <tr>
                         <th class="py-3 px-4">Date Created</th>
                         <th class="py-3 px-4">Guest Name</th>
-                        <th class="py-3 px-4">Date to Reserve (Start)</th>
-                        <th class="py-3 px-4">Date Overstaying (End)</th>
-                        <th class="py-3 px-4">Available Room Selected</th>
+                        <th class="py-3 px-4">Arrival </th>
+                        <th class="py-3 px-4">Stay Type</th>
+                        <th class="py-3 px-4">Reserve Room Selected</th>
                         <th class="py-3 px-4 text-center">Actions</th>
                     </tr>
                 </thead>
@@ -76,12 +76,12 @@
                                         </a>
                                     </li>
                                     {{-- Delete button: triggers modal --}}
-                                    <li>
+                                    <!-- <li>
                                         <a class="dropdown-item text-danger" href="#"
                                            data-bs-toggle="modal"
                                            data-bs-target="#delete-confirm-modal"
                                            onclick="setDeleteFormAction('{{ route('reservation.destroy', $reservation->id) }}')">Delete</a>
-                                    </li>
+                                    </li> -->
                                 </ul>
                             </div>
                         </td>
