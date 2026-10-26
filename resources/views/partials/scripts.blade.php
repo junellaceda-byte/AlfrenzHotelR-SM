@@ -47,8 +47,12 @@
             startInput.addEventListener('change', updateRooms);
             endInput.addEventListener('change', updateRooms);
         }
+            // Expose globally so the Book Now modal script can call it
+            window.fetchRooms = fetchRooms;
+
             fetchRooms('res_checkin', 'res_checkout', 'res_room_ids');
             fetchRooms('check_in_date', 'check_out_date', 'checkin_room_ids');
+            fetchRooms('bn_check_in', 'bn_check_out', 'bn_room_ids');
         });
     </script>
     <!-- Scripts for bookings -->
@@ -98,38 +102,7 @@
                 });
             });
 
-            // 2. Book Choice Modal Transitions
-            const btnBookNow = document.getElementById('btnChoiceBookNow');
-            const btnReserve = document.getElementById('btnChoiceReserve');
-            const bookChoiceModalEl = document.getElementById('bookChoiceModal');
-            const availModalEl = document.getElementById('avail-modal');
-            const resModalEl = document.getElementById('res-modal');
-
-            if (btnBookNow && bookChoiceModalEl && availModalEl) {
-                btnBookNow.addEventListener('click', function() {
-                    const choiceModal = bootstrap.Modal.getInstance(bookChoiceModalEl) || new bootstrap.Modal(bookChoiceModalEl);
-                    choiceModal.hide();
-
-                    bookChoiceModalEl.addEventListener('hidden.bs.modal', function handler() {
-                        bookChoiceModalEl.removeEventListener('hidden.bs.modal', handler);
-                        const availModal = bootstrap.Modal.getInstance(availModalEl) || new bootstrap.Modal(availModalEl);
-                        availModal.show();
-                    });
-                });
-            }
-
-            if (btnReserve && bookChoiceModalEl && resModalEl) {
-                btnReserve.addEventListener('click', function() {
-                    const choiceModal = bootstrap.Modal.getInstance(bookChoiceModalEl) || new bootstrap.Modal(bookChoiceModalEl);
-                    choiceModal.hide();
-
-                    bookChoiceModalEl.addEventListener('hidden.bs.modal', function handler() {
-                        bookChoiceModalEl.removeEventListener('hidden.bs.modal', handler);
-                        const resModal = bootstrap.Modal.getInstance(resModalEl) || new bootstrap.Modal(resModalEl);
-                        resModal.show();
-                    });
-                });
-            }
+            // 2. (Old Book Choice Modal transitions removed – replaced by #bookNowModal controller below)
 
             // 3. Add Amenities Preselection & Dynamic Details
             const amenityButtons = document.querySelectorAll('.btn-trigger-amenity');
@@ -242,6 +215,351 @@
             nights.addEventListener('input', update);
             update();
         });
+    </script>
+    <!-- Book Now Modal: Reactive Controller -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        /* ─── Config from Blade ─── */
+        const PRICES    = @json(config('hotel.prices'));
+        const DISCOUNTS = @json(config('hotel.discounts'));
+        const ROUTE_BOOKING     = @json(route('booking.store'));
+        const ROUTE_RESERVATION = @json(route('reservation.store'));
+
+        /* ─── DOM refs ─── */
+        const form          = document.getElementById('bookNowForm');
+        const modalEl       = document.getElementById('bookNowModal');
+        if (!form || !modalEl) return;
+
+        const actionType    = document.getElementById('bn_action_type');
+        const modeNow       = document.getElementById('bn_mode_now');
+        const modeReserve   = document.getElementById('bn_mode_reserve');
+        const stayShort     = document.getElementById('bn_stay_short');
+        const stayOvernight = document.getElementById('bn_stay_overnight');
+        const shortWrap     = document.getElementById('bn_short_hours_wrap');
+        const overnightWrap = document.getElementById('bn_overnight_wrap');
+        const checkIn       = document.getElementById('bn_check_in');
+        const checkOut      = document.getElementById('bn_check_out');
+        const roomSelect    = document.getElementById('bn_room_ids');
+        const roomButtons   = document.getElementById('bn_room_buttons');
+        const roomMode      = document.getElementById('bn_room_mode');
+        const discountWrap  = document.getElementById('bn_discount_wrap');
+        const depositWrap   = document.getElementById('bn_deposit_wrap');
+        const depositInput  = document.getElementById('bn_deposit');
+        const bedPriceBadge = document.getElementById('bn_bed_price_badge');
+        const extraBedsInput= document.getElementById('bn_extra_beds');
+        const submitBtn     = document.getElementById('bn_submit_btn');
+
+        // Price preview elements
+        const pvSubtotal  = document.getElementById('bn_preview_subtotal');
+        const pvDiscount  = document.getElementById('bn_preview_discount');
+        const pvDeposit   = document.getElementById('bn_preview_deposit');
+        const pvBalance   = document.getElementById('bn_preview_balance');
+        const pvTotal     = document.getElementById('bn_preview_total');
+        const rowDiscount = document.getElementById('bn_row_discount');
+        const rowDeposit  = document.getElementById('bn_row_deposit');
+        const rowBalance  = document.getElementById('bn_row_balance');
+
+        /* ─── State ─── */
+        let selectedRoomIds = new Set();
+
+        /* ─── Helpers ─── */
+        function pad(n) { return String(n).padStart(2, '0'); }
+        function dtLocal(d) {
+            return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        }
+        function peso(n) { return '₱' + Number(n).toFixed(2); }
+        function getMode() { return modeReserve.checked ? 'reserve' : 'now'; }
+        function getStayType() { return stayOvernight.checked ? 'overnight' : 'short_stay'; }
+        function getShortHours() {
+            var el = document.querySelector('input[name="short_hours"]:checked');
+            return el ? parseInt(el.value, 10) : 3;
+        }
+        function getBreakfast() {
+            var el = document.querySelector('input[name="with_breakfast"]:checked');
+            return el ? parseInt(el.value, 10) : 0;
+        }
+        function getDiscountType() {
+            var el = document.querySelector('input[name="discount_type"]:checked');
+            return el ? el.value : '';
+        }
+
+        /* ─── Compute check-out from check-in + duration ─── */
+        function computeCheckOut() {
+            if (!checkIn.value) return;
+            var d = new Date(checkIn.value);
+            if (isNaN(d.getTime())) return;
+            var hours = getStayType() === 'short_stay' ? getShortHours() : 24;
+            d.setHours(d.getHours() + hours);
+            checkOut.value = dtLocal(d);
+            checkOut.dispatchEvent(new Event('change'));
+        }
+
+        /* ─── Render room buttons from hidden select options ─── */
+        function renderRoomButtons() {
+            roomButtons.innerHTML = '';
+            var options = roomSelect.options;
+            if (options.length === 0) {
+                roomButtons.innerHTML = '<span class="text-muted small fst-italic">No rooms available for the selected dates.</span>';
+                return;
+            }
+            // Check for disabled-only options (loading / error messages)
+            var hasReal = false;
+            for (var i = 0; i < options.length; i++) {
+                if (!options[i].disabled) { hasReal = true; break; }
+            }
+            if (!hasReal) {
+                roomButtons.innerHTML = '<span class="text-muted small fst-italic">' + (options[0] ? options[0].textContent : 'Loading rooms…') + '</span>';
+                return;
+            }
+            for (var i = 0; i < options.length; i++) {
+                if (options[i].disabled) continue;
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'bn-room-btn' + (selectedRoomIds.has(options[i].value) ? ' active' : '');
+                btn.setAttribute('data-room-id', options[i].value);
+                // Format label as "Room 01"
+                var numMatch = options[i].textContent.match(/\d+/);
+                var num = numMatch ? String(numMatch[0]).padStart(2, '0') : options[i].value;
+                btn.textContent = 'Room ' + num;
+                roomButtons.appendChild(btn);
+            }
+            syncSelectFromSet();
+        }
+
+        /* ─── Sync hidden <select> selected state from our Set ─── */
+        function syncSelectFromSet() {
+            for (var i = 0; i < roomSelect.options.length; i++) {
+                roomSelect.options[i].selected = selectedRoomIds.has(roomSelect.options[i].value);
+            }
+        }
+
+        /* ─── Price preview ─── */
+        function updatePrice() {
+            var mode = getMode();
+            var stayType = getStayType();
+            var count = selectedRoomIds.size;
+            var roomPrice = 0;
+            var extraBedsCost = 0;
+
+            if (stayType === 'short_stay') {
+                var hours = getShortHours();
+                roomPrice = PRICES.short_stay[hours] || 0;
+            } else {
+                var bk = getBreakfast();
+                roomPrice = bk ? PRICES.overnight.with_breakfast : PRICES.overnight.no_breakfast;
+                var beds = parseInt(extraBedsInput.value, 10) || 0;
+                var bedRate = bk ? PRICES.extra_bed.with_breakfast : PRICES.extra_bed.no_breakfast;
+                extraBedsCost = beds * bedRate;
+            }
+
+            var subtotal = (roomPrice * count) + extraBedsCost;
+            var discountAmt = 0;
+            var total = subtotal;
+
+            if (mode === 'now') {
+                var dt = getDiscountType();
+                var pct = (dt && DISCOUNTS[dt]) ? DISCOUNTS[dt] : 0;
+                discountAmt = Math.round(subtotal * pct * 100) / 100;
+                total = Math.round((subtotal - discountAmt) * 100) / 100;
+                // Show discount row, hide deposit/balance rows
+                rowDiscount.style.display = '';
+                rowDeposit.style.display = 'none';
+                rowBalance.style.display = 'none';
+                pvDiscount.textContent = '- ' + peso(discountAmt);
+            } else {
+                // Reserve mode: no discount, but show deposit/balance if deposit entered
+                rowDiscount.style.display = 'none';
+                var dep = parseFloat(depositInput.value) || 0;
+                if (dep > 0) {
+                    var balance = Math.max(0, Math.round((total - dep) * 100) / 100);
+                    rowDeposit.style.display = '';
+                    rowBalance.style.display = '';
+                    pvDeposit.textContent = peso(dep);
+                    pvBalance.textContent = peso(balance);
+                } else {
+                    rowDeposit.style.display = 'none';
+                    rowBalance.style.display = 'none';
+                }
+            }
+
+            pvSubtotal.textContent = peso(subtotal);
+            pvTotal.textContent = peso(total);
+        }
+
+        /* ─── Mode toggle ─── */
+        function onModeChange() {
+            var mode = getMode();
+            if (mode === 'now') {
+                form.action = ROUTE_BOOKING;
+                actionType.value = 'check_in';
+                discountWrap.style.display = '';
+                depositWrap.style.display = 'none';
+                depositInput.value = '';
+                checkIn.removeAttribute('min');
+                submitBtn.textContent = 'Confirm Booking';
+            } else {
+                form.action = ROUTE_RESERVATION;
+                actionType.value = 'reserved';
+                discountWrap.style.display = 'none';
+                document.getElementById('bn_disc_none').checked = true;
+                depositWrap.style.display = '';
+                checkIn.setAttribute('min', dtLocal(new Date()));
+                submitBtn.textContent = 'Confirm Reservation';
+            }
+            updatePrice();
+        }
+        modeNow.addEventListener('change', onModeChange);
+        modeReserve.addEventListener('change', onModeChange);
+
+        /* ─── Stay type toggle ─── */
+        function onStayTypeChange() {
+            if (getStayType() === 'short_stay') {
+                shortWrap.style.display = '';
+                overnightWrap.style.display = 'none';
+            } else {
+                shortWrap.style.display = 'none';
+                overnightWrap.style.display = '';
+            }
+            computeCheckOut();
+            updatePrice();
+        }
+        stayShort.addEventListener('change', onStayTypeChange);
+        stayOvernight.addEventListener('change', onStayTypeChange);
+
+        /* ─── Short hours change ─── */
+        document.querySelectorAll('input[name="short_hours"]').forEach(function (r) {
+            r.addEventListener('change', function () {
+                computeCheckOut();
+                updatePrice();
+            });
+        });
+
+        /* ─── Breakfast change ─── */
+        document.querySelectorAll('input[name="with_breakfast"]').forEach(function (r) {
+            r.addEventListener('change', function () {
+                var bk = getBreakfast();
+                var bedRate = bk ? PRICES.extra_bed.with_breakfast : PRICES.extra_bed.no_breakfast;
+                bedPriceBadge.textContent = peso(bedRate) + ' / bed';
+                updatePrice();
+            });
+        });
+
+        /* ─── Extra beds change ─── */
+        extraBedsInput.addEventListener('input', updatePrice);
+
+        /* ─── Check-in change ─── */
+        checkIn.addEventListener('change', function () {
+            computeCheckOut();
+        });
+
+        /* ─── Discount radios ─── */
+        document.querySelectorAll('input[name="discount_type"]').forEach(function (r) {
+            r.addEventListener('change', updatePrice);
+        });
+
+        /* ─── Deposit input ─── */
+        depositInput.addEventListener('input', updatePrice);
+
+        /* ─── Room button clicks ─── */
+        roomButtons.addEventListener('click', function (e) {
+            var btn = e.target.closest('.bn-room-btn');
+            if (!btn) return;
+            var id = btn.getAttribute('data-room-id');
+            if (roomMode.value === 'one') {
+                selectedRoomIds.clear();
+                selectedRoomIds.add(id);
+            } else {
+                if (selectedRoomIds.has(id)) {
+                    selectedRoomIds.delete(id);
+                } else {
+                    selectedRoomIds.add(id);
+                }
+            }
+            // Update button visuals
+            roomButtons.querySelectorAll('.bn-room-btn').forEach(function (b) {
+                b.classList.toggle('active', selectedRoomIds.has(b.getAttribute('data-room-id')));
+            });
+            syncSelectFromSet();
+            updatePrice();
+        });
+
+        /* ─── Room mode dropdown ─── */
+        roomMode.addEventListener('change', function () {
+            if (roomMode.value === 'one' && selectedRoomIds.size > 1) {
+                var first = selectedRoomIds.values().next().value;
+                selectedRoomIds.clear();
+                selectedRoomIds.add(first);
+                roomButtons.querySelectorAll('.bn-room-btn').forEach(function (b) {
+                    b.classList.toggle('active', selectedRoomIds.has(b.getAttribute('data-room-id')));
+                });
+                syncSelectFromSet();
+                updatePrice();
+            }
+        });
+
+        /* ─── Observe hidden <select> for option changes (fetchRooms populates it) ─── */
+        var observer = new MutationObserver(function () {
+            // Prune any selected IDs that no longer exist in the new options
+            var availIds = new Set();
+            for (var i = 0; i < roomSelect.options.length; i++) {
+                if (!roomSelect.options[i].disabled) availIds.add(roomSelect.options[i].value);
+            }
+            selectedRoomIds.forEach(function (id) {
+                if (!availIds.has(id)) selectedRoomIds.delete(id);
+            });
+            // Enforce "one room" constraint
+            if (roomMode.value === 'one' && selectedRoomIds.size > 1) {
+                var first = selectedRoomIds.values().next().value;
+                selectedRoomIds.clear();
+                selectedRoomIds.add(first);
+            }
+            renderRoomButtons();
+            updatePrice();
+        });
+        observer.observe(roomSelect, { childList: true, subtree: true });
+
+        /* ─── Modal shown: initialise check-in to now ─── */
+        modalEl.addEventListener('shown.bs.modal', function () {
+            if (!checkIn.value) {
+                checkIn.value = dtLocal(new Date());
+            }
+            onModeChange();
+            onStayTypeChange();
+            computeCheckOut();
+        });
+
+        /* ─── Modal hidden: reset form ─── */
+        modalEl.addEventListener('hidden.bs.modal', function () {
+            form.reset();
+            selectedRoomIds.clear();
+            roomButtons.innerHTML = '<span class="text-muted small fst-italic">Set check-in time to load available rooms…</span>';
+            roomSelect.innerHTML = '';
+            checkIn.value = '';
+            checkOut.value = '';
+            depositInput.value = '';
+            // Reset visibility to defaults
+            shortWrap.style.display = '';
+            overnightWrap.style.display = 'none';
+            discountWrap.style.display = '';
+            depositWrap.style.display = 'none';
+            rowDiscount.style.display = '';
+            rowDeposit.style.display = 'none';
+            rowBalance.style.display = 'none';
+            pvSubtotal.textContent = '₱0.00';
+            pvDiscount.textContent = '- ₱0.00';
+            pvTotal.textContent = '₱0.00';
+            submitBtn.textContent = 'Confirm Booking';
+            bedPriceBadge.textContent = '₱500 / bed';
+        });
+
+        /* ─── Submit validation ─── */
+        form.addEventListener('submit', function (e) {
+            if (selectedRoomIds.size === 0) {
+                e.preventDefault();
+                alert('Please select at least one available room.');
+            }
+        });
+    });
     </script>
     @stack('scripts')
 <!--End of Scripts  -->
