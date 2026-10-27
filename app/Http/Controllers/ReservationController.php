@@ -34,53 +34,60 @@ class ReservationController
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created reservation in storage.
      */
     public function store(Request $request)
     {
+        // Validate the incoming request data
         $request->validate([
-            'fname' => 'nullable|string|min:2|max:30',
-            'lname' => 'nullable|string|min:2|max:30',
-            'phone' => 'nullable|string|max:15',
+            'fname' => 'required|string|max:30',
+            'lname' => 'nullable|string|max:30',
+            'phone' => 'required|string|regex:/^[0-9+\-\s()]+$/|max:15',
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
-            'room_ids' => 'required|array',
-            'guests' => 'nullable|integer|min:1|max:20', 
+            'room_ids' => 'required|array|min:1',
             'room_ids.*' => 'integer|exists:rooms,id',
+            'stay_type' => 'required|in:short_stay,overnight',
+            'short_hours' => 'required_if:stay_type,short_stay|nullable|in:3,6,12',
+            'with_breakfast' => 'nullable|boolean',
+            'extra_beds' => 'nullable|integer|min:0|max:5',
+            'deposit' => 'nullable|numeric|min:0',
+            'guests' => 'nullable|integer|min:1|max:20',
         ]);
+        // Determine if the stay type is short stay or overnight
+        $isShort = $request->stay_type === 'short_stay';
+        $fname = trim($request->fname);
+        $lname = trim($request->lname ?? '');
 
-        // Minimum 24-hour stay check using PHP native dates (no Carbon)
-        // $checkIn = new \DateTime($request->check_in);
-        // $checkOut = new \DateTime($request->check_out);
-        // $diffHours = (int) $checkIn->diff($checkOut)->h + ((int) $checkIn->diff($checkOut)->days * 24);
-
-        // if ($diffHours < 24) {
-        //     return back()->withErrors(['check_out' => 'Minimum 24 hours stay is required for an overnight stay.']);
-        // }
-
-        $fname = trim($request->fname) ?: 'Anonymous';
-        $lname = trim($request->lname) ?: 'Guest';
-
-        // Create a Guest record from the form data.
+        // Check-out is always worked out here: arrival + chosen hours (or 24 hours)
+        $checkIn = \Carbon\Carbon::parse($request->check_in);
+        $checkOut = $checkIn->copy()->addHours($isShort ? (int) $request->short_hours : 24);
+        // Create a new guest record
         $guest = Guest::create([
             'fname' => $fname,
             'lname' => $lname,
             'phone' => $request->phone,
         ]);
-
+        // Create a new reservation record
         Reservation::create([
-            'guest_name' => $fname.' '.$lname,
+            'guest_name' => trim($fname . ' ' . $lname),
             'guest_id' => $guest->id,
-            'phone_number' => $request->phone ?: 'None',
-            'reservation_start_date' => $request->check_in,
-            'reservation_end_date' => $request->check_out,
+            'phone_number' => $request->phone,
+            'reservation_start_date' => $checkIn,
+            'reservation_end_date' => $checkOut,
             'number_of_rooms' => count($request->room_ids),
-            // Laravel's $casts converts this array to JSON automatically
             'selected_rooms' => $request->room_ids,
             'guests' => $request->guests ?? 1,
+            'status' => 'reserved',
+            'stay_type' => $request->stay_type,
+            'short_stay_hours' => $isShort ? (int) $request->short_hours : null,
+            'with_breakfast' => $request->boolean('with_breakfast'),
+            'extra_beds' => $isShort ? 0 : (int) $request->input('extra_beds', 0),
+            'deposit' => $request->deposit ?? 0,
         ]);
-
+        // Redirect back with a success message
         return redirect()->back()->with('success', 'Reservation created successfully.');
+        //End of store method
     }
 
     /**

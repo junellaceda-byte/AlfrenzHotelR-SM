@@ -40,8 +40,20 @@ class AppServiceProvider extends ServiceProvider
                     'checkout_time' => \Carbon\Carbon::parse($invoice->booking->check_out_datetime)->format('M d, Y h:i A')
                 ];
             });
+            // Rooms with a stay happening right now, for the Add Amenities modal (works on every page)
+            $now = now()->setTimezone('Asia/Manila');
+            $occupiedRoomsList = \App\Models\Room::all()->filter(function ($room) use ($now) {
+                return \App\Models\Booking::where(function ($q) use ($room) {
+                        $q->whereJsonContains('booked_rooms', (string) $room->id)
+                          ->orWhereJsonContains('booked_rooms', $room->id);
+                    })
+                    ->whereNotIn('status', ['cancelled', 'checked_out'])
+                    ->where('check_in_datetime', '<=', $now)
+                    ->where('check_out_datetime', '>=', $now)
+                    ->exists();
+            })->values();
 
-            $view->with('dueGuests', $dueGuests);
-        });
-    }
-}
+            $view->with('dueGuests', $dueGuests)->with('occupiedRoomsList', $occupiedRoomsList);
+        });                                    
+    }                                           
+}                                               

@@ -22,6 +22,22 @@
 
                     <!-- Page Content -->
                     <main class="p-3 p-xl-4 flex-grow-1 overflow-y-auto overflow-x-hidden" style="background-color: #f8f9fa;">
+                        <!-- Success Message -->
+                        @if(session('success'))
+                            <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
+                                {{ session('success') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        @endif
+                        @if($errors->any())
+                            <div class="alert alert-danger m-3">
+                                <ul class="mb-0">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         @yield('receptionist-content')
                     </main>
                     <!-- End of Page Content -->

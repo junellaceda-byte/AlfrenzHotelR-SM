@@ -23,14 +23,15 @@
     transition: transform 0.25s ease;
 }
 
-.sidebar-logo-circle:hover {
+/* Needed for hover effect and also if needed to return to dashboard overview */
+/* .sidebar-logo-circle:hover {
     transform: scale(1.03);
-}
+} */
 
 .sidebar-logo-img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
 }
 
 /* Hotel Name Header */
@@ -53,7 +54,7 @@
     display: block;
     transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
 }
-
+/* Navigation Link Hover Effect */
 .sidebar-nav-link:hover {
     background-color: rgba(255, 255, 255, 0.15);
     color: #ffffff !important;
@@ -75,16 +76,35 @@
     letter-spacing: 0.08em;
     -webkit-text-stroke: 1.1px #ffffff;
     text-shadow:
+        1px 1px 0 #ffffff,
         -1px -1px 0 #ffffff,
-         1px -1px 0 #ffffff,
-        -1px  1px 0 #ffffff,
-         1px  1px 0 #ffffff,
-         0 0 2px #ffffff;
+        1px -1px 0 #ffffff,
+        -1px 1px 0 #ffffff;
     cursor: pointer;
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
-
+/* Logout Button */
 .btn-sidebar-logout:hover {
     transform: scale(1.05);
     opacity: 0.95;
+}
+
+/* Room Button */
+.bn-room-btn { 
+    border: 1px solid #6A4435; 
+    background: #fff; 
+    color: #6A4435; 
+    border-radius: .375rem; 
+    padding: .35rem .75rem; 
+    font-weight: 600; 
+    font-size: .85rem; 
+}
+
+.bn-room-btn:hover { 
+    background: #f3e9e4; 
+}
+
+.bn-room-btn.active { 
+    background: #6A4435; 
+    color: #fff; 
 }

@@ -18,37 +18,39 @@
 
     <!-- Navigation Items -->
     <ul class="nav flex-column align-items-stretch w-100 gap-2 px-1 my-2">
+        <!-- Dashboard -->
         <li class="nav-item w-100">
             <a href="{{ route('dashboard.index') }}" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request()->routeIs('dashboard.*') || request()->is('dashboard') ? 'active' : '' }}">
                 OVERVIEW
             </a>
         </li>
-
+        <!-- Reservation -->
         <li class="nav-item w-100">
             <a href="{{ route('reservation.index') }}" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request()->routeIs('reservation.*') || request()->is('reservation') ? 'active' : '' }}">
                 RESERVATION
             </a>
         </li>
-
+        <!-- Booking History -->
         <li class="nav-item w-100">
             <a href="{{ route('booking.index') }}" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request()->routeIs('booking.*') || request()->is('bookings*') ? 'active' : '' }}">
                 BOOKING HISTORY
             </a>
         </li>
-
+        <!-- Billing -->
         <li class="nav-item w-100">
             <a href="{{ route('content.billing') }}" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request()->routeIs('content.billing') || request()->is('billing*') ? 'active' : '' }}">
                 BILLING
             </a>
         </li>
+        <!-- Logout Option -->
+        <li class="nav-item w-100">
+            <button type="button" class="nav-link sidebar-nav-link text-uppercase fw-bold" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+                LOGOUT
+            </button>
+        </li>
     </ul>
 
-    <!-- Bottom Logout Element -->
-    <div class="mt-auto pt-3 pb-2 px-2 text-center">
-        <button type="button" class="btn btn-sidebar-logout w-100 text-uppercase fw-bold py-2" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
-            LOGOUT
-        </button>
-    </div>
+    
 </aside>
 
 <!-- Logout Confirmation Modal -->
