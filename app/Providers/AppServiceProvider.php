@@ -23,25 +23,39 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
-        \Illuminate\Support\Facades\View::composer('partials.topbar', function ($view) {
-            // Find unpaid invoices for guests whose checkout is due today or past due
+        // Due alerts: unpaid, checked-in guests whose check-out is within 30 minutes or already past.
+        // Used by the top bar bell and the Dashboard notification panel.
+        \Illuminate\Support\Facades\View::composer(['partials.topbar', 'content.receptionist'], function ($view) {
+            $now = now()->setTimezone('Asia/Manila');
+
             $dueInvoices = \App\Models\Invoice::with('booking.guest')
                 ->where('status', 'unpaid')
-                ->whereHas('booking', function ($query) {
-                    $query->whereDate('check_out_datetime', '<=', now()->setTimezone('Asia/Manila')->toDateString());
-                })->get();
-            
-            // Map to dueGuests format expected by topbar
-            $dueGuests = $dueInvoices->map(function ($invoice) {
+                ->whereHas('booking', function ($query) use ($now) {
+                    $query->where('status', 'checked_in')
+                          ->where('check_out_datetime', '<=', $now->copy()->addMinutes(30));
+                })->get()
+                ->sortBy(fn ($invoice) => $invoice->booking->check_out_datetime);
+
+            $dueGuests = $dueInvoices->map(function ($invoice) use ($now) {
+                $checkOut = \Carbon\Carbon::parse($invoice->booking->check_out_datetime);
+
                 return (object) [
-                    'name' => ($invoice->booking->guest->fname ?? 'Unknown') . ' ' . ($invoice->booking->guest->lname ?? ''),
-                    'room_number' => is_array($invoice->booking->booked_rooms) ? implode(', ', $invoice->booking->booked_rooms) : $invoice->booking->booked_rooms,
-                    'amount' => $invoice->grand_total,
-                    'checkout_time' => \Carbon\Carbon::parse($invoice->booking->check_out_datetime)->format('M d, Y h:i A')
+                    'name' => trim(($invoice->booking->guest->fname ?? 'Guest') . ' ' . ($invoice->booking->guest->lname ?? '')),
+                    'room_number' => collect($invoice->booking->booked_rooms)
+                        ->map(fn ($r) => str_pad($r, 2, '0', STR_PAD_LEFT))->implode(', '),
+                    'checkout_time' => $checkOut->format('h:i A'),
+                    'is_overdue' => $checkOut->lte($now),
+                    'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
                 ];
-            });
-            // Rooms with a stay happening right now, for the Add Amenities modal (works on every page)
+            })->values();
+
+            $view->with('dueGuests', $dueGuests);
+        });
+
+        // The Add Amenities modal lists the rooms with a stay happening right now, on every page
+        \Illuminate\Support\Facades\View::composer('partials.topbar', function ($view) {
             $now = now()->setTimezone('Asia/Manila');
+
             $occupiedRoomsList = \App\Models\Room::all()->filter(function ($room) use ($now) {
                 return \App\Models\Booking::where(function ($q) use ($room) {
                         $q->whereJsonContains('booked_rooms', (string) $room->id)
@@ -53,7 +67,7 @@ class AppServiceProvider extends ServiceProvider
                     ->exists();
             })->values();
 
-            $view->with('dueGuests', $dueGuests)->with('occupiedRoomsList', $occupiedRoomsList);
-        });                                    
-    }                                           
-}                                               
+            $view->with('occupiedRoomsList', $occupiedRoomsList);
+        });
+    }
+}

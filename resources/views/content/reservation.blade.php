@@ -4,92 +4,84 @@
 
 @section('receptionist-content')
 <div class="container-fluid p-0" style="min-height: 100vh;">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <!-- Search Bar and Filters -->
-        <form action="{{ route('reservation.index') }}" method="GET" class="d-flex w-75 gap-2">
-            <div class="input-group w-50">
-                <span class="input-group-text bg-white border-end-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/></svg></span>
-                <input type="text" name="search" value="{{ request('search') }}" class="form-control border-start-0" placeholder="Search guest name...">
-            </div>
-            <button type="submit" class="btn text-white" style="background-color: #76380e;">Search</button>
-            <a href="{{ route('reservation.index') }}" class="btn btn-secondary">Clear</a>
-        </form>
-        <!-- Date and Time -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <!-- Status filters -->
         <div class="d-flex gap-2">
-            <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary">
-                <span id="current-date">{{ date('M d, Y') }}</span>
-            </div>
-            <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary">
-                <span id="current-time">{{ date('h:i A') }}</span>
-            </div>
+            @foreach(['today' => 'Arriving today', 'cancelled' => 'Cancelled', 'all' => 'All'] as $key => $label)
+                <a href="{{ route('reservation.index', ['filter' => $key]) }}"
+                class="btn {{ $filter === $key ? 'btn-brown' : 'btn-outline-secondary' }}">{{ $label }}</a>
+            @endforeach
         </div>
     </div>
-
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
+    
     <!-- Main Content -->
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <table class="table table-hover mb-0" id="dataTable" width="100%">
                 <thead class="table-light">
                     <tr>
-                        <th class="py-3 px-4">Date Created</th>
-                        <th class="py-3 px-4">Guest Name</th>
-                        <th class="py-3 px-4">Arrival </th>
-                        <th class="py-3 px-4">Stay Type</th>
-                        <th class="py-3 px-4">Reserve Room Selected</th>
-                        <th class="py-3 px-4 text-center">Actions</th>
+                        <th class="py-3 px-4">Guest</th>
+                        <th class="py-3 px-4">Arrival</th>
+                        <th class="py-3 px-4">Stay</th>
+                        <th class="py-3 px-4">Rooms</th>
+                        <th class="py-3 px-4">Deposit</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4"></th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($reservations as $reservation)
-                    <tr>
-                        <td class="px-4">{{ $reservation->created_at->format('Y-m-d') }}</td>
-                        <td class="px-4">{{ $reservation->guest_name }}</td>
-                        <td class="px-4">{{ $reservation->reservation_start_date }}</td>
-                        <td class="px-4">{{ $reservation->reservation_end_date }}</td>
-                        <td class="px-4">
-                            {{ is_array($reservation->selected_rooms) ? implode(', ', $reservation->selected_rooms) : $reservation->selected_rooms }}
-                        </td>
-                        <td class="px-4 text-center">
-                            <div class="dropdown">
-                                <button class="btn btn-link text-secondary p-0 text-decoration-none fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.2rem;">
-                                    &#8942;
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                    <!--- Edit button: opens modal pre-filled with guest data --->
-                                    <li>
-                                        <a class="dropdown-item"
-                                           href="#"
-                                           data-bs-toggle="modal"
-                                           data-bs-target="#edit-res-modal"
-                                           data-id="{{ $reservation->id }}"
-                                           data-fname="{{ $reservation->guest->fname ?? '' }}"
-                                           data-lname="{{ $reservation->guest->lname ?? '' }}"
-                                           data-phone="{{ $reservation->guest->phone ?? '' }}">
-                                            Edit
-                                        </a>
-                                    </li>
-                                    {{-- Delete button: triggers modal --}}
-                                    <!-- <li>
-                                        <a class="dropdown-item text-danger" href="#"
-                                           data-bs-toggle="modal"
-                                           data-bs-target="#delete-confirm-modal"
-                                           onclick="setDeleteFormAction('{{ route('reservation.destroy', $reservation->id) }}')">Delete</a>
-                                    </li> -->
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
+                        @php
+                            $arrival = $reservation->reservation_start_date;
+                            $arrivesToday = $arrival->toDateString() === now()->setTimezone('Asia/Manila')->toDateString();
+                            $rooms = collect($reservation->selected_rooms)->map(fn($r) => str_pad($r, 2, '0', STR_PAD_LEFT))->implode(', ');
+                            $stay = $reservation->stay_type === 'short_stay'
+                                ? $reservation->short_stay_hours . '-hour short stay'
+                                : '24 hours, ' . ($reservation->with_breakfast ? 'with' : 'without') . ' breakfast';
+                        @endphp
+                        <tr>
+                            <td class="px-4">
+                                <div class="fw-semibold">{{ $reservation->guest_name }}</div>
+                                <div class="small text-muted">{{ $reservation->phone_number }}</div>
+                            </td>
+                            <td class="px-4">{{ $arrival->format('M d, Y h:i A') }}</td>
+                            <td class="px-4">{{ $stay }}</td>
+                            <td class="px-4">{{ $rooms }}</td>
+                            <td class="px-4">{{ $reservation->deposit > 0 ? '₱' . number_format($reservation->deposit, 2) : 'None' }}</td>
+                            <td class="px-4">
+                                @if($reservation->status === 'cancelled')
+                                    <span class="badge border border-danger text-danger bg-white">Cancelled</span>
+                                @elseif($reservation->status === 'checked_in')
+                                    <span class="badge border border-success text-success bg-white">Checked in</span>
+                                @elseif($arrivesToday)
+                                    <span class="badge border border-dark text-dark bg-white">Arriving today</span>
+                                @else
+                                    <span class="badge border border-secondary text-secondary bg-white">Reserved</span>
+                                @endif
+                            </td>
+                            <td class="px-4 text-end">
+                                @if($reservation->status === 'reserved')
+                                    <button type="button" class="btn btn-sm text-white btn-checkin-reservation" style="background-color: #6A4435;"
+                                            data-bs-toggle="modal" data-bs-target="#checkinReservationModal"
+                                            data-action="{{ route('reservation.checkIn', $reservation->id) }}"
+                                            data-name="{{ $reservation->guest_name }}"
+                                            data-rooms="{{ $rooms }}"
+                                            data-stay="{{ $stay }}"
+                                            data-deposit="{{ $reservation->deposit > 0 ? '₱' . number_format($reservation->deposit, 2) : 'None' }}">
+                                        Check in
+                                    </button>
+                                    <form action="{{ route('reservation.cancel', $reservation->id) }}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Cancel this reservation?');">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">Cancel</button>
+                                    </form>
+                                @endif
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">No reservations found</td>
-                    </tr>
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No reservations found</td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
@@ -106,27 +98,52 @@
     </div>
 </div>
 
- <!-- Include the shared modals (New Reservation, Check-In, Edit Reservation, Edit Booking) -->
-@include('modals.quickresmodal')
+<!-- Check-in confirmation (the guest has arrived) -->
+<div class="modal fade" id="checkinReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Check in guest</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="checkinReservationForm" method="POST" action="">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-1"><strong>Guest:</strong> <span id="ci_name"></span></div>
+                    <div class="mb-1"><strong>Rooms:</strong> <span id="ci_rooms"></span></div>
+                    <div class="mb-1"><strong>Stay:</strong> <span id="ci_stay"></span></div>
+                    <div class="mb-3"><strong>Deposit:</strong> <span id="ci_deposit"></span></div>
 
-@push('scripts')
-<script>
-    function setDeleteFormAction(actionUrl) {
-        document.getElementById('delete-confirm-form').action = actionUrl;
-    }
+                    <label class="form-label fw-semibold">Discount</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check"><input class="form-check-input" type="radio" name="discount_type" id="ci_disc_none" value="" checked><label class="form-check-label" for="ci_disc_none">None</label></div>
+                        <div class="form-check"><input class="form-check-input" type="radio" name="discount_type" id="ci_disc_senior" value="senior"><label class="form-check-label" for="ci_disc_senior">Senior Citizen (20%)</label></div>
+                        <div class="form-check"><input class="form-check-input" type="radio" name="discount_type" id="ci_disc_pwd" value="pwd"><label class="form-check-label" for="ci_disc_pwd">PWD (20%)</label></div>
+                    </div>
+                    <div class="small text-muted mt-3">The stay is counted from the time you confirm.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn text-white" style="background-color: #6A4435;">Confirm check-in</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-    // Pre-fill the Edit Reservation modal with the clicked row's data
-    document.querySelectorAll('[data-bs-target="#edit-res-modal"]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var id = this.dataset.id;
-            document.getElementById('edit-res-form').action = '/reservation/' + id;
-            document.getElementById('edit_res_fname').value = this.dataset.fname;
-            document.getElementById('edit_res_lname').value = this.dataset.lname;
-            document.getElementById('edit_res_phone').value = this.dataset.phone;
-        });
-    });
-
-
-</script>
-@endpush
+    @push('scripts')
+        <script>
+            // Fill the check-in window with the clicked reservation
+            document.querySelectorAll('.btn-checkin-reservation').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    document.getElementById('checkinReservationForm').action = this.dataset.action;
+                    document.getElementById('ci_name').textContent = this.dataset.name;
+                    document.getElementById('ci_rooms').textContent = this.dataset.rooms;
+                    document.getElementById('ci_stay').textContent = this.dataset.stay;
+                    document.getElementById('ci_deposit').textContent = this.dataset.deposit;
+                    document.getElementById('ci_disc_none').checked = true;
+                });
+            });
+        </script>
+    @endpush
 @endsection

@@ -41,9 +41,13 @@ Route::post('/billing/{invoice_id}/add-amenity', [BillingController::class, 'add
 Route::post('/billing/{invoice_id}/remove-amenity', [BillingController::class, 'removeAmenity'])->name('billing.removeAmenity');
 Route::post('/billing/{invoice_id}/process-payment', [BillingController::class, 'processPayment'])->name('billing.processPayment');
 
-// Posts
+// Reservation Routes
+//Post Route for ReservationController
 Route::post('/reservation', [ReservationController::class, 'store'])->name('reservation.store');
+Route::post('/reservation/{id}/check-in', [ReservationController::class, 'checkIn'])->name('reservation.checkIn');
+Route::post('/reservation/{id}/cancel', [ReservationController::class, 'cancel'])->name('reservation.cancel');
 
+// Get Routes for ReservationController
 Route::get('/reservation', [ReservationController::class, 'index'])->name('reservation.index');
 Route::get('/api/available-rooms', [ReservationController::class, 'getAvailableRooms'])->name('api.available-rooms');
 
@@ -54,3 +58,4 @@ Route::delete('/reservation/{id}', [ReservationController::class, 'destroy'])->n
 // Booking edit & delete
 Route::put('/bookings/{id}', [BookingController::class, 'update'])->name('booking.update');
 Route::delete('/bookings/{id}', [BookingController::class, 'destroy'])->name('booking.destroy');
+

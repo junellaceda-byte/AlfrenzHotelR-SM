@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Charge;
 use App\Services\PricingService;
+use App\Services\BookingService;
 use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\Invoice;
@@ -37,8 +38,8 @@ class BookingController
         return view('content.booking', compact('bookings'));
     }
 
-    public function store(Request $request, PricingService $pricing)
-    {   
+        public function store(Request $request, BookingService $bookings)
+    {
         // Validate the incoming request data
         $request->validate([
             'fname' => 'required|string|max:30',
@@ -51,96 +52,34 @@ class BookingController
             'with_breakfast' => 'nullable|boolean',
             'extra_beds' => 'nullable|integer|min:0|max:5',
             'discount_type' => 'nullable|in:senior,pwd',
-            'check_in' => 'required|date|after_or_equal:today',
+            'check_in' => 'required|date|after_or_equal:today|before:tomorrow',
             'check_out' => 'required|date|after:check_in',
             'action_type' => 'required|in:reserved,check_in',
             'guests' => 'nullable|integer|min:1|max:20',
         ]);
-        // Determine if it's a short stay or overnight stay
-        $isShort = $request->stay_type === 'short_stay';
-        $withBreakfast = $request->boolean('with_breakfast');
-        $extraBeds = $isShort ? 0 : (int) $request->input('extra_beds', 0);
-
-        // Check-out is always worked out here: check-in + chosen hours (or 24 hours)
-        $checkIn = \Carbon\Carbon::parse($request->check_in);
-        $checkOut = $checkIn->copy()->addHours($isShort ? (int) $request->short_hours : 24);
-
-        // Create the guest record
+        // Create a new guest record in the database using the validated request data
         $guest = Guest::create([
             'fname' => trim($request->fname),
             'lname' => trim($request->lname ?? ''),
             'phone' => $request->phone,
         ]);
-        // Calculate the price based on the provided details
-        $price = $pricing->calculate([
-            'stay_type' => $request->stay_type,
-            'short_hours' => $request->short_hours,
-            'with_breakfast' => $withBreakfast,
-            'extra_beds' => $extraBeds,
-            'discount_type' => $request->discount_type,
-        ], count($request->room_ids));
-        // Create the booking record
-        $booking = Booking::create([
+        // Create a new booking record in the database using the validated request data and the newly created guest's ID
+        [$booking, $price] = $bookings->create([
             'guest_id' => $guest->id,
             'phone' => $request->phone,
-            'check_in_datetime' => $checkIn,
-            'check_out_datetime' => $checkOut,
-            'booked_rooms' => $request->room_ids,
-            'guests' => $request->guests ?? 1,
+            'check_in' => \Carbon\Carbon::parse($request->check_in),
             'stay_type' => $request->stay_type,
-            'short_stay_hours' => $isShort ? (int) $request->short_hours : null,
-            'with_breakfast' => $withBreakfast,
-            'extra_beds' => $extraBeds,
-            'discount_type' => $request->discount_type ?: null,
-            'nights' => $isShort ? null : 1,
+            'short_hours' => $request->short_hours,
+            'with_breakfast' => $request->boolean('with_breakfast'),
+            'extra_beds' => $request->input('extra_beds', 0),
+            'discount_type' => $request->discount_type,
+            'room_ids' => $request->room_ids,
+            'guests' => $request->guests ?? 1,
             'status' => $request->action_type === 'check_in' ? 'checked_in' : 'booked',
         ]);
-        // Update the status of the rooms to 'occupied' if the action type is 'check_in'
-        if ($request->action_type === 'check_in') {
-            Room::whereIn('id', $request->room_ids)->update(['status' => 'occupied']);
-        }
-
-        // One charge line per room, plus one line for extra beds
-        $stayLabel = $isShort
-            ? $request->short_hours . '-hour short stay'
-            : '24-hour stay' . ($withBreakfast ? ' with breakfast' : '');
-        // Create charge records for each room booked
-        foreach (Room::whereIn('id', $request->room_ids)->get() as $room) {
-            Charge::create([
-                'booking_id' => $booking->id,
-                'type' => 'room',
-                'description' => 'Room ' . str_pad($room->id, 2, '0', STR_PAD_LEFT) . ' - ' . $stayLabel,
-                'quantity' => 1,
-                'unit_price' => $price['room_price'],
-                'amount' => $price['room_price'],
-            ]);
-        }
-        // Create a charge record for extra beds if any
-        if ($extraBeds > 0) {
-            Charge::create([
-                'booking_id' => $booking->id,
-                'type' => 'extra_bed',
-                'description' => 'Extra bed',
-                'quantity' => $extraBeds,
-                'unit_price' => $price['bed_price'],
-                'amount' => $price['beds'],
-            ]);
-        }
-
-        // Unpaid invoice: shows in Billing > Pending Payments (payment is taken at check-out)
-        Invoice::create([
-            'booking_id' => $booking->id,
-            'invoice_number' => 'INV-' . strtoupper(uniqid()),
-            'room_charges' => $price['rooms'],
-            'extra_charges_total' => $price['beds'],
-            'discount_amount' => $price['discount'],
-            'tax_amount' => 0,
-            'grand_total' => $price['total'],
-            'status' => 'unpaid',
-            'due_date' => $checkOut->toDateString(),
-        ]);
-
+        // Generate an invoice for the booking
         return redirect()->back()->with('success', 'Booking saved. Total: ₱' . number_format($price['total'], 2));
+        //End of recent edits
     }
 
     /**

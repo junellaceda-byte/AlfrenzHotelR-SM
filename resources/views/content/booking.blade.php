@@ -14,17 +14,8 @@
             <button type="submit" class="btn text-white" style="background-color: #76380e;">Search</button>
             <a href="{{ route('booking.index') }}" class="btn btn-secondary">Clear</a>
         </form>
-        <!-- Date and Time -->
-        <div class="d-flex gap-2">
-            <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary">
-                <span id="current-date">{{ date('M d, Y') }}</span>
-            </div>
-            <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary">
-                <span id="current-time">{{ date('h:i A') }}</span>
-            </div>
-        </div>
     </div>
-
+    <!-- Success Message -->
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}

@@ -7,6 +7,7 @@ use App\Models\Guest;
 use App\Models\Reservation;
 use App\Models\Room;
 use Illuminate\Http\Request;
+use App\Services\BookingService;
 
 class ReservationController
 {
@@ -15,22 +16,24 @@ class ReservationController
      */
     public function index(Request $request)
     {
-        $query = Reservation::with('guest')->latest();
-        
-        if ($request->filled('search')) {
-            $query->where('guest_name', 'like', '%' . $request->search . '%');
+        // Status filter: arriving today, cancelled, or all
+        $filter = $request->query('filter', 'today');
+        $today = now()->setTimezone('Asia/Manila')->toDateString();
+
+        // The list is sorted A to Z by the guest's first name
+        $query = Reservation::with('guest')
+            ->orderBy('guest_name')
+            ->orderBy('reservation_start_date');
+
+        if ($filter === 'today') {
+            $query->where('status', 'reserved')->whereDate('reservation_start_date', $today);
+        } elseif ($filter === 'cancelled') {
+            $query->where('status', 'cancelled');
         }
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->where(function($q) use ($request) {
-                $q->whereDate('reservation_start_date', '>=', $request->start_date)
-                  ->whereDate('reservation_start_date', '<=', $request->end_date);
-            });
-        }
+        $reservations = $query->paginate(30)->withQueryString();
 
-        $reservations = $query->paginate(30);
-
-        return view('content.reservation', compact('reservations'));
+        return view('content.reservation', compact('reservations', 'filter'));
     }
 
     /**
@@ -59,8 +62,14 @@ class ReservationController
         $fname = trim($request->fname);
         $lname = trim($request->lname ?? '');
 
-        // Check-out is always worked out here: arrival + chosen hours (or 24 hours)
+        // Parse the check-in date and time from the request
         $checkIn = \Carbon\Carbon::parse($request->check_in);
+        // Check if the check-in time is in the past (more than 5 minutes ago) and return an error if so
+        if ($checkIn->lt(now()->subMinutes(5))) {
+            return back()->withErrors(['check_in' => 'The arrival date and time cannot be in the past.'])->withInput();
+
+        }
+        // Calculate the check-out time based on the check-in time and the stay type (short stay or overnight)
         $checkOut = $checkIn->copy()->addHours($isShort ? (int) $request->short_hours : 24);
         // Create a new guest record
         $guest = Guest::create([
@@ -130,6 +139,7 @@ class ReservationController
         return redirect()->route('reservation.index')->with('success', 'Reservation deleted successfully.');
     }
 
+    // This function retrieves available rooms based on the specified date range in the request. It checks for overlapping reservations and bookings, excluding those that are cancelled or checked in/out, and returns a list of available rooms.
     public function getAvailableRooms(Request $request)
     {
         $start = $request->query('start_date');
@@ -138,8 +148,8 @@ class ReservationController
         if (! $start || ! $end) {
             return response()->json([]);
         }
-
-        $overlappingReservations = Reservation::where(function ($query) use ($start, $end) {
+        // Query for reservations and bookings that overlap with the specified date range, excluding those that are cancelled or checked in/out
+        $overlappingReservations = Reservation::whereNotIn('status', ['cancelled', 'checked_in'])->where(function ($query) use ($start, $end) {
             $query->whereBetween('reservation_start_date', [$start, $end])
                 ->orWhereBetween('reservation_end_date', [$start, $end])
                 ->orWhere(function ($q) use ($start, $end) {
@@ -147,8 +157,8 @@ class ReservationController
                         ->where('reservation_end_date', '>=', $end);
                 });
         })->get();
-
-        $overlappingBookings = Booking::where(function ($query) use ($start, $end) {
+        // Query for bookings that overlap with the specified date range, excluding those that are cancelled or checked out
+        $overlappingBookings = Booking::whereNotIn('status', ['cancelled', 'checked_out'])->where(function ($query) use ($start, $end) {
             $query->whereBetween('check_in_datetime', [$start, $end])
                 ->orWhereBetween('check_out_datetime', [$start, $end])
                 ->orWhere(function ($q) use ($start, $end) {
@@ -156,7 +166,7 @@ class ReservationController
                         ->where('check_out_datetime', '>=', $end);
                 });
         })->get();
-
+        // Collect the IDs of rooms that are booked in overlapping reservations and bookings
         $bookedRoomIds = [];
         foreach ($overlappingReservations as $res) {
             $bookedRoomIds = array_merge($bookedRoomIds, $res->selected_rooms ?? []);
@@ -164,10 +174,55 @@ class ReservationController
         foreach ($overlappingBookings as $booking) {
             $bookedRoomIds = array_merge($bookedRoomIds, $booking->booked_rooms ?? []);
         }
-
+        // Remove duplicate room IDs and retrieve the available rooms that are not in the list of booked room IDs
         $bookedRoomIds = array_unique($bookedRoomIds);
         $availableRooms = Room::whereNotIn('id', $bookedRoomIds)->get();
 
         return response()->json($availableRooms);
+    }
+    // Added functions
+    public function checkIn(Request $request, int $id, BookingService $bookings)
+    {
+        // Validate the discount type if provided
+        $request->validate(['discount_type' => 'nullable|in:senior,pwd']);
+
+        $reservation = Reservation::findOrFail($id);
+
+        if ($reservation->status !== 'reserved') {
+            return back()->withErrors(['reservation' => 'Only a reserved reservation can be checked in.']);
+        }
+        // Create a booking using the BookingService and update the reservation status to 'checked_in'
+        [$booking, $price] = $bookings->create([
+            'guest_id' => $reservation->guest_id,
+            'phone' => $reservation->phone_number,
+            'check_in' => now()->setTimezone('Asia/Manila'),
+            'stay_type' => $reservation->stay_type,
+            'short_hours' => $reservation->short_stay_hours,
+            'with_breakfast' => $reservation->with_breakfast,
+            'extra_beds' => 0,
+            'discount_type' => $request->discount_type,
+            'room_ids' => $reservation->selected_rooms,
+            'guests' => $reservation->guests ?? 1,
+            'status' => 'checked_in',
+            'deposit' => $reservation->deposit ?? 0,
+        ]);
+
+        $reservation->update(['status' => 'checked_in']);
+
+        return redirect()->route('reservation.index')
+            ->with('success', 'Guest checked in. Total: ₱' . number_format($price['total'], 2));
+    }
+
+    /** Keeps the row (status Cancelled) and frees the rooms */
+    public function cancel(int $id)
+    {
+        $reservation = Reservation::findOrFail($id);
+
+        if ($reservation->status === 'reserved') {
+            $reservation->update(['status' => 'cancelled']);
+        }
+
+        return redirect()->route('reservation.index', ['filter' => 'cancelled'])
+            ->with('success', 'Reservation cancelled.');
     }
 }

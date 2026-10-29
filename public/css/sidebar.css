@@ -108,3 +108,23 @@
     background: #6A4435; 
     color: #fff; 
 }
+
+/* Book Now modal: the form sits between .modal-content and .modal-body, so let it share the height */
+#bookNowModal .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+/* Brown Button */
+.btn-brown { 
+    background-color: #6A4435; 
+    border-color: #6A4435; 
+    color: #fff; 
+}
+/* Brown Button Hover Effect */
+.btn-brown:hover { 
+    background-color: #553529; 
+    border-color: #553529; 
+    color: #fff; 
+}

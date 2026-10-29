@@ -71,13 +71,29 @@
         <div class="col-12 col-xl-5 col-xxl-4">
             <div class="notifications-panel p-3 h-100 shadow-sm justify-content-between">
                 <div>
+                    <!-- Notification Header -->
                     <div class="d-flex justify-content-between align-items-baseline mb-2">
                         <h6 class="text-uppercase fw-bold text-dark m-0" style="font-size: 0.9rem; letter-spacing: 0.04em;">NOTIFICATIONS</h6>
-                        <small class="text-muted" style="font-size: 0.72rem;">(1 hour alert due of guests check-out time)</small>
+                        <small class="text-muted" style="font-size: 0.72rem;">(30 minute alert due of guests check-out time)</small>
                     </div>
-                    
+                    <!-- Notification List -->
                     <div class="py-2" id="notificationList">
-                        <p class="text-muted small mb-0 py-2">No rooms due within the next hour.</p>
+                        @forelse($dueGuests->take(2) as $guest)
+                            <div class="d-flex align-items-start gap-2 py-2 border-bottom small">
+                                <span class="fw-bold">&rarr;</span>
+                                <div>
+                                    <span class="fw-semibold">RM {{ $guest->room_number }}</span> - {{ $guest->name }} -
+                                    @if($guest->is_overdue)
+                                        <span class="text-danger fw-semibold">was due at {{ $guest->checkout_time }} (overdue)</span>
+                                    @else
+                                        {{ $guest->checkout_time }} is their due time to check out ({{ $guest->minutes }} min left)
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <!-- No due rooms -->
+                            <p class="text-muted small mb-0 py-2">No rooms due within the next 30 minutes.</p>
+                        @endforelse
                     </div>
                 </div>
 
@@ -175,12 +191,27 @@
                 <h5 class="modal-title fw-bold text-dark" id="allDueRoomsModalLabel">Upcoming & Due Checkouts</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4 text-center">
-                <div class="py-4 text-secondary">
-                    <img src="{{ asset('icons/bell.svg') }}" width="36" height="36" class="mb-3 opacity-50" alt="Bell">
-                    <p class="mb-0 fw-semibold">No rooms due within the next hour.</p>
-                    <small class="text-muted d-block mt-1">Guests nearing their scheduled check-out time will appear here automatically.</small>
-                </div>
+            <!-- Notification List -->
+            <div class="modal-body p-4">
+                @forelse($dueGuests as $guest)
+                    <div class="d-flex align-items-start gap-2 py-2 border-bottom small">
+                        <span class="fw-bold">&rarr;</span>
+                        <div>
+                            <span class="fw-semibold">RM {{ $guest->room_number }}</span> - {{ $guest->name }} -
+                            @if($guest->is_overdue)
+                                <span class="text-danger fw-semibold">was due at {{ $guest->checkout_time }} (overdue)</span>
+                            @else
+                                {{ $guest->checkout_time }} is their due time to check out ({{ $guest->minutes }} min left)
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <!-- No due rooms -->
+                    <div class="text-center py-4 text-secondary">
+                        <p class="mb-0 fw-semibold">No rooms due within the next 30 minutes.</p>
+                        <small class="text-muted d-block mt-1">Guests nearing their check-out time appear here automatically.</small>
+                    </div>
+                @endforelse
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Close</button>

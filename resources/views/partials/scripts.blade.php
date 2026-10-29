@@ -52,7 +52,7 @@
 
             fetchRooms('res_checkin', 'res_checkout', 'res_room_ids');
             fetchRooms('check_in_date', 'check_out_date', 'checkin_room_ids');
-            fetchRooms('bn_check_in', 'bn_check_out', 'bn_room_ids');
+
         });
     </script>
     <!-- Scripts for bookings -->
@@ -218,12 +218,13 @@
     </script>
     <!-- Book Now Modal: Reactive Controller -->
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        /* ─── Config from Blade ─── */
-        const PRICES    = @json(config('hotel.prices'));
-        const DISCOUNTS = @json(config('hotel.discounts'));
-        const ROUTE_BOOKING     = @json(route('booking.store'));
-        const ROUTE_RESERVATION = @json(route('reservation.store'));
+        document.addEventListener('DOMContentLoaded', function () {
+        /* ─── Config from data attributes on the form (set in topbar.blade.php) ─── */
+        const PRICES            = JSON.parse(form.dataset.prices);
+        const DISCOUNTS         = JSON.parse(form.dataset.discounts);
+        const ROUTE_BOOKING     = form.dataset.routeBooking;
+        const ROUTE_RESERVATION = form.dataset.routeReservation;
+        const ROUTE_AVAILABLE   = form.dataset.routeAvailable;
 
         /* ─── DOM refs ─── */
         const form          = document.getElementById('bookNowForm');
@@ -248,6 +249,9 @@
         const bedPriceBadge = document.getElementById('bn_bed_price_badge');
         const extraBedsInput= document.getElementById('bn_extra_beds');
         const submitBtn     = document.getElementById('bn_submit_btn');
+        const checkInLabel  = document.getElementById('bn_checkin_label');
+        const checkInHint   = document.getElementById('bn_checkin_hint');
+        const checkOutWrap  = document.getElementById('bn_checkout_wrap');
 
         // Price preview elements
         const pvSubtotal  = document.getElementById('bn_preview_subtotal');
@@ -283,15 +287,52 @@
             return el ? el.value : '';
         }
 
-        /* ─── Compute check-out from check-in + duration ─── */
+        /* ─── Compute check-out from check-in + duration, then load the free rooms ─── */
         function computeCheckOut() {
-            if (!checkIn.value) return;
+            if (!checkIn.value) { checkOut.value = ''; loadRooms(); return; }
             var d = new Date(checkIn.value);
             if (isNaN(d.getTime())) return;
             var hours = getStayType() === 'short_stay' ? getShortHours() : 24;
             d.setHours(d.getHours() + hours);
             checkOut.value = dtLocal(d);
-            checkOut.dispatchEvent(new Event('change'));
+            if (getMode() === 'reserve') {
+                checkInHint.textContent = 'Today or a future date. The stay ends ' +
+                    d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + '.';
+            }
+            loadRooms();
+        }
+
+        /* ─── Ask the server which rooms are free for this stay ─── */
+        var loadTimer = null;
+        function loadRooms() {
+            clearTimeout(loadTimer);
+            loadTimer = setTimeout(function () {
+                if (!checkIn.value || !checkOut.value) {
+                    roomSelect.innerHTML = '';
+                    roomButtons.innerHTML = '<span class="text-muted small fst-italic">Set the time to load available rooms…</span>';
+                    return;
+                }
+                roomButtons.innerHTML = '<span class="text-muted small fst-italic">Loading rooms…</span>';
+                fetch(ROUTE_AVAILABLE + '?start_date=' + encodeURIComponent(checkIn.value) + '&end_date=' + encodeURIComponent(checkOut.value))
+                    .then(function (res) { if (!res.ok) throw new Error('bad response'); return res.json(); })
+                    .then(function (rooms) {
+                        roomSelect.innerHTML = '';
+                        rooms.forEach(function (room) {
+                            var o = document.createElement('option');
+                            o.value = room.id;
+                            o.textContent = 'Room ' + (room.room_number || room.id);
+                            roomSelect.appendChild(o);
+                        });
+                        // Drop selections that are no longer free, then redraw the buttons
+                        var free = new Set(rooms.map(function (r) { return String(r.id); }));
+                        selectedRoomIds.forEach(function (id) { if (!free.has(id)) selectedRoomIds.delete(id); });
+                        renderRoomButtons();
+                        updatePrice();
+                    })
+                    .catch(function () {
+                        roomButtons.innerHTML = '<span class="text-danger small">Could not load the rooms. Please try again.</span>';
+                    });
+            }, 80);
         }
 
         /* ─── Render room buttons from hidden select options ─── */
@@ -386,16 +427,23 @@
             pvTotal.textContent = peso(total);
         }
 
-        /* ─── Mode toggle ─── */
+        // Mode toggle: Book Now vs Reserve
         function onModeChange() {
             var mode = getMode();
+            var now = new Date();
             if (mode === 'now') {
                 form.action = ROUTE_BOOKING;
                 actionType.value = 'check_in';
                 discountWrap.style.display = '';
                 depositWrap.style.display = 'none';
                 depositInput.value = '';
-                checkIn.removeAttribute('min');
+                checkInLabel.textContent = 'Check-in Date';
+                checkInHint.textContent = 'Today only. You can change the time.';
+                checkOutWrap.style.display = '';
+                // Book Now is for today only: from now until the end of today
+                checkIn.min = dtLocal(now);
+                checkIn.max = dtLocal(now).slice(0, 10) + 'T23:59';
+                if (!checkIn.value || checkIn.value < checkIn.min || checkIn.value > checkIn.max) checkIn.value = dtLocal(now);
                 submitBtn.textContent = 'Confirm Booking';
             } else {
                 form.action = ROUTE_RESERVATION;
@@ -403,9 +451,15 @@
                 discountWrap.style.display = 'none';
                 document.getElementById('bn_disc_none').checked = true;
                 depositWrap.style.display = '';
-                checkIn.setAttribute('min', dtLocal(new Date()));
+                checkInLabel.textContent = 'Arrival Date & Time';
+                checkOutWrap.style.display = 'none';
+                // Reserve: today or a future date, never in the past
+                checkIn.min = dtLocal(now);
+                checkIn.removeAttribute('max');
+                if (!checkIn.value || checkIn.value < checkIn.min) checkIn.value = dtLocal(now);
                 submitBtn.textContent = 'Confirm Reservation';
             }
+            computeCheckOut();
             updatePrice();
         }
         modeNow.addEventListener('change', onModeChange);
@@ -523,9 +577,8 @@
             if (!checkIn.value) {
                 checkIn.value = dtLocal(new Date());
             }
-            onModeChange();
             onStayTypeChange();
-            computeCheckOut();
+            onModeChange();
         });
 
         /* ─── Modal hidden: reset form ─── */
@@ -561,5 +614,24 @@
         });
     });
     </script>
+    <!-- Live Clock -->
+    <script>
+        // Live clock in the top bar (Manila time)
+        document.addEventListener('DOMContentLoaded', function () {
+            var dateEl = document.getElementById('current-date');
+            var timeEl = document.getElementById('current-time');
+            if (!dateEl || !timeEl) return;
+
+            function tick() {
+                var now = new Date();
+                dateEl.textContent = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric', timeZone: 'Asia/Manila' });
+                timeEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' });
+            }
+            tick();
+            setInterval(tick, 1000);
+        });
+    </script>
+
+
     @stack('scripts')
 <!--End of Scripts  -->

@@ -10,6 +10,40 @@
     
     <!-- Header Action Buttons -->
     <div class="d-flex align-items-center gap-2 gap-sm-3">
+        <!-- Date and Time (live, Manila time) -->
+        <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary small">
+            <span id="current-date">{{ now()->setTimezone('Asia/Manila')->format('M d, Y') }}</span>
+        </div>
+        <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary small">
+            <span id="current-time">{{ now()->setTimezone('Asia/Manila')->format('h:i A') }}</span>
+        </div>
+        
+        <!-- Notifications bell -->
+        <!--Optional if our System Adviser prefers -->
+        <div class="dropdown">
+            <button type="button" class="btn btn-light border position-relative" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+                <img src="{{ asset('icons/bell.svg') }}" width="20" height="20" alt="Notifications">
+                @if($dueGuests->count() > 0)
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ $dueGuests->count() }}</span>
+                @endif
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 22rem;">
+                <li class="dropdown-header">Due within 30 minutes</li>
+                @forelse($dueGuests as $guest)
+                    <li class="dropdown-item-text small border-bottom py-2">
+                        <span class="fw-semibold">RM {{ $guest->room_number }}</span> - {{ $guest->name }}<br>
+                        @if($guest->is_overdue)
+                            <span class="text-danger">Overdue since {{ $guest->checkout_time }}</span>
+                        @else
+                            Due at {{ $guest->checkout_time }} ({{ $guest->minutes }} min left)
+                        @endif
+                    </li>
+                @empty
+                    <li class="dropdown-item-text small text-muted">No rooms due right now.</li>
+                @endforelse
+            </ul>
+        </div>
+
         <!-- Book Button: Opens Book Now Modal -->
         <button type="button" class="btn btn-outline-secondary fw-semibold px-3 py-2 text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.03em;" data-bs-toggle="modal" data-bs-target="#bookNowModal">
             BOOK NOW
@@ -66,17 +100,14 @@
                             <div class="mb-3">
                                 <label for="amenityItemSelect" class="form-label fw-bold small text-secondary">CHOOSE AMENITY</label>
                                 <select class="form-select" id="amenityItemSelect" required>
-                                    <option value="" disabled selected>Select amenity item...</option>
-                                    <option value="extra_bed">Extra Bed / Mattress (₱500.00)</option>
-                                    <option value="extra_pillow_towel">Towel & Pillow Set (₱150.00)</option>
-                                    <option value="toiletries_kit">Premium Toiletries Kit (₱120.00)</option>
-                                    <option value="mineral_water">Bottled Water Pack (₱60.00)</option>
-                                    <option value="breakfast">Breakfast Buffet Voucher (₱350.00)</option>
+                                    <option value="extra_bed_no_breakfast" data-price="{{ config('hotel.prices.extra_bed.no_breakfast') }}">Extra Bed, without breakfast (₱{{ number_format(config('hotel.prices.extra_bed.no_breakfast'), 2) }} each)</option>
+                                    <option value="extra_bed_with_breakfast" data-price="{{ config('hotel.prices.extra_bed.with_breakfast') }}">Extra Bed, with breakfast (₱{{ number_format(config('hotel.prices.extra_bed.with_breakfast'), 2) }} each)</option>
+                                    <option value="extra_hour" data-price="{{ config('hotel.prices.extra_hour') }}">Extra Hour (₱{{ number_format(config('hotel.prices.extra_hour'), 2) }} per hour)</option>
                                 </select>
                             </div>
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
-                                    <label for="amenityQuantity" class="form-label fw-bold small text-secondary">QUANTITY</label>
+                                    <label for="amenityQuantity" class="form-label fw-bold small text-secondary">QUANTITY (beds or hours)</label>
                                     <input type="number" class="form-control" id="amenityQuantity" min="1" max="10" value="1" required>
                                 </div>
                                 <div class="col-6">
@@ -103,7 +134,12 @@
                 <h5 class="modal-title" id="bookNowModalLabel">New Booking</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="bookNowForm" method="POST" action="{{ route('booking.store') }}">
+            <form id="bookNowForm" method="POST" action="{{ route('booking.store') }}"
+                data-prices='@json(config('hotel.prices'))'
+                data-discounts='@json(config('hotel.discounts'))'
+                data-route-booking="{{ route('booking.store') }}"
+                data-route-reservation="{{ route('reservation.store') }}"
+                data-route-available="{{ route('api.available-rooms') }}">
                 @csrf
                 <input type="hidden" name="action_type" id="bn_action_type" value="check_in">
                 <input type="hidden" name="guests" id="bn_guests" value="1">
@@ -183,13 +219,14 @@
                         </div>
                     </div>
 
-                    <!-- Check-in / Check-out -->
+                    <!-- Check-in (Book Now) or Arrival (Reserve) -->
                     <div class="row g-2 mb-3">
-                        <div class="col-sm-6">
-                            <label for="bn_check_in" class="form-label">Check-in Date</label>
+                        <div class="col-sm-6" id="bn_checkin_col">
+                            <label for="bn_check_in" class="form-label" id="bn_checkin_label">Check-in Date</label>
                             <input type="datetime-local" class="form-control" id="bn_check_in" name="check_in" required>
+                            <div class="form-text" id="bn_checkin_hint">Today only. You can change the time.</div>
                         </div>
-                        <div class="col-sm-6">
+                        <div class="col-sm-6" id="bn_checkout_wrap">
                             <label for="bn_check_out" class="form-label">Check-out Date</label>
                             <input type="datetime-local" class="form-control bg-light" id="bn_check_out" name="check_out" readonly required>
                         </div>
