@@ -216,20 +216,21 @@
             update();
         });
     </script>
+    
     <!-- Book Now Modal: Reactive Controller -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+        /* ─── DOM refs ─── */
+        const form          = document.getElementById('bookNowForm');
+        const modalEl       = document.getElementById('bookNowModal');
+        if (!form || !modalEl) return;
+
         /* ─── Config from data attributes on the form (set in topbar.blade.php) ─── */
         const PRICES            = JSON.parse(form.dataset.prices);
         const DISCOUNTS         = JSON.parse(form.dataset.discounts);
         const ROUTE_BOOKING     = form.dataset.routeBooking;
         const ROUTE_RESERVATION = form.dataset.routeReservation;
         const ROUTE_AVAILABLE   = form.dataset.routeAvailable;
-
-        /* ─── DOM refs ─── */
-        const form          = document.getElementById('bookNowForm');
-        const modalEl       = document.getElementById('bookNowModal');
-        if (!form || !modalEl) return;
 
         const actionType    = document.getElementById('bn_action_type');
         const modeNow       = document.getElementById('bn_mode_now');

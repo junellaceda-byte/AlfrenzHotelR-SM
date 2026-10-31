@@ -26,6 +26,7 @@ Route::get('/bookings', [BookingController::class, 'index'])->name('booking.inde
 
 // Post Route for BookingController
 Route::post('/bookings', [BookingController::class, 'store'])->name('booking.store');
+Route::post('/bookings/{id}/amenities', [BookingController::class, 'addAmenities'])->name('booking.addAmenities');
 
 // Update Booking Status Route
 Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus'])->name('booking.updateStatus');

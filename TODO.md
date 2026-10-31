@@ -1,49 +1,36 @@
 # Receptionist Dashboard TODO
 
-## Dashboard
-- [] Count of available, occupied, reserved, maintenance rooms
-- [] Both rates shown (600 short stay, 2,200 overnight)
-- [] Buttons: New Reservation, Check-In, Check-Out, Add Amenities
-- [] Room grid with status filter
-- [] Occupancy chart
+Rule: never edit or delete old migrations, add new ones.
 
-## Reservations
-- [] List with filters (arriving today, upcoming, cancelled, all)
-- [] Create reservation
-- [] Cancel with cancellation rule
+## Done (Oct 31)
+- [x] Overview: status cards from live data, room grid with filters, notifications (30 minutes before check-out)
+- [x] Top bar: live date and time, notification bell, BOOK NOW and ADD AMENITIES
+- [x] Book Now modal: Book Now / Today and Reserve, short stay (3/6/12 hours) and 24-hour stay with or without breakfast, Senior and PWD 20% discount, room buttons
+- [x] Reservation: filters (Arriving today, Cancelled, All), A to Z by first name, Check in and Cancel
+- [x] Booking History: full details, filters (All, In house, Completed, Cancelled), View and Add amenities
+- [x] Pricing in config/hotel.php, non-VAT (no tax)
+- [x] Payment is taken at check-out (Billing page)
 
-## Bookings
-- [] List of all stays
-- [] Search
-- [] Filters (in-house, upcoming, completed, cancelled)
+## In progress
+- [ ] Block Room & Date (receptionist sets rooms under maintenance)
 
-## Billing
-- [] Unpaid charges per room
-- [] Pay by cash, card, or e-wallet
-- [] Tax and change due
-- [] Receipt
-- [] Paid list
-- [] Discount and refund requests
+## Next phase
+- [ ] Red overdue stopwatch on the room card (PHP 150 per extra hour, stops when paid)
+- [ ] Top bar ADD AMENITIES saves to the guest's bill (Booking History already does)
+- [ ] Amenities list from the admin side (replace the temporary list in config/hotel.php)
+- [ ] Billing page lists the amenity lines
+- [ ] Login, receptionist account and 15-minute timeout
+- [ ] Discount and refund requests
+- [ ] Settings and Extra pages
+- [ ] Remove the old unused popups (res-modal, avail-modal) and their scripts
 
+## Known issues
+- Notifications refresh on page load only
+- booking.updateStatus route has no method (nothing calls it)
+- Billing still shows rooms without the leading zero (Room::formatList not added)
 
-## Rule: never edit or delete old migrations, add new ones.
-
-## Questions for the client
-- How many hours is the 600 short stay?
-- What happens when a short stay runs over (hourly fee, or becomes overnight)?
-- Is 12% tax added, or are rates already tax-inclusive?
-- Check-in and check-out times for overnight?
-- Is a deposit required for reservations?
-- Cancellation rule (free window, fee)?
-- Do discounts and refunds exist?
-- Payment methods (cash, GCash, card)?
-- Can a short stay be reserved in advance, or walk-in only?
-- Extra charges besides amenities (extra person, late check-out)?
-
-
-## Found on Oct 16
-- Greeting shows "Name" placeholder
-- Phone shows "None"
-- Future-dated booking should be a reservation
-- Room 8 may stay occupied after checkout
-- Date format inconsistent
+## Open questions for the client
+- No-show: how long is a reservation held?
+- Cancellation: is the deposit refunded?
+- Payment methods at check-out?
+- Can a short stay be upgraded to 24 hours?

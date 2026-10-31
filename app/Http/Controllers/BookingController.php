@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Charge;
 use App\Services\PricingService;
 use App\Services\BookingService;
+use App\Services\InvoiceService;
 use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\Invoice;
@@ -13,32 +14,32 @@ use Illuminate\Http\Request;
 
 class BookingController
 {
+    // Display a listing of bookings with optional filtering.
     public function index(Request $request)
     {
-        /* Start building the query for bookings, eager loading the guest
-        relationship and ordering by latest*/
-        $query = Booking::with('guest')->latest();
+        $filter = $request->query('filter', 'all');
 
-        if ($request->filled('search')) {
-            $query->whereHas('guest', function ($q) use ($request) {
-                $q->where('fname', 'like', '%' . $request->search . '%')
-                  ->orWhere('lname', 'like', '%' . $request->search . '%');
-            });
+        $query = Booking::with(['guest', 'invoice.paymentLogs', 'charges'])->orderByDesc('check_in_datetime');
+
+        if ($filter === 'in_house') {
+            $query->where('status', 'checked_in')
+                  ->whereHas('invoice', fn ($q) => $q->where('status', 'unpaid'));
+        } elseif ($filter === 'completed') {
+            $query->where('status', '!=', 'cancelled')
+                  ->where(function ($q) {
+                      $q->where('status', 'checked_out')
+                        ->orWhereHas('invoice', fn ($i) => $i->where('status', 'paid'));
+                  });
+        } elseif ($filter === 'cancelled') {
+            $query->where('status', 'cancelled');
         }
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->where(function ($q) use ($request) {
-                $q->whereDate('check_in_datetime', '>=', $request->start_date)
-                  ->whereDate('check_in_datetime', '<=', $request->end_date);
-            });
-        }
-        // Paginate the results to show 30 bookings per page
-        $bookings = $query->paginate(30);
+        $bookings = $query->paginate(30)->withQueryString();
 
-        return view('content.booking', compact('bookings'));
+        return view('content.booking', compact('bookings', 'filter'));
     }
-
-        public function store(Request $request, BookingService $bookings)
+    // Store a new booking in the database.
+    public function store(Request $request, BookingService $bookings)
     {
         // Validate the incoming request data
         $request->validate([
@@ -80,6 +81,52 @@ class BookingController
         // Generate an invoice for the booking
         return redirect()->back()->with('success', 'Booking saved. Total: ₱' . number_format($price['total'], 2));
         //End of recent edits
+    }
+    // Update the status of a booking and its associated invoice.
+    /** Adds amenities to an unpaid booking's bill and recalculates the total and the discount */
+    public function addAmenities(Request $request, int $id, InvoiceService $invoices)
+    {
+        $request->validate([
+            'qty' => 'required|array',
+            'qty.*' => 'nullable|integer|min:0|max:20',
+        ]);
+
+        $booking = Booking::with('invoice')->findOrFail($id);
+
+        if ($booking->status === 'cancelled' || optional($booking->invoice)->status === 'paid') {
+            return back()->withErrors(['amenities' => 'Amenities can only be added to an active, unpaid booking.']);
+        }
+
+        $catalog = config('hotel.amenities');
+        $added = 0;
+
+        foreach ($request->qty as $key => $qty) {
+            $qty = (int) $qty;
+
+            if ($qty < 1 || !isset($catalog[$key])) {
+                continue;
+            }
+
+            Charge::create([
+                'booking_id' => $booking->id,
+                'type' => 'amenity',
+                'description' => $catalog[$key]['label'],
+                'quantity' => $qty,
+                'unit_price' => $catalog[$key]['price'],
+                'amount' => $qty * $catalog[$key]['price'],
+            ]);
+            $added++;
+        }
+
+        if ($added === 0) {
+            return back()->withErrors(['amenities' => 'Choose at least one amenity (quantity 1 or more).']);
+        }
+
+        $invoices->recalculate($booking);
+
+        $total = Invoice::where('booking_id', $booking->id)->value('grand_total');
+
+        return back()->with('success', 'Amenities added. New total: ₱' . number_format($total, 2));
     }
 
     /**
