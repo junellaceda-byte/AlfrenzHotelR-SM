@@ -632,7 +632,147 @@
             setInterval(tick, 1000);
         });
     </script>
+    
+    <!-- Block Room Form Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = document.getElementById('blockRoomModal');
+            var form = document.getElementById('blockRoomForm');
+            var start = document.getElementById('bl_start');
+            var end = document.getElementById('bl_end');
+            var reason = document.getElementById('bl_reason');
+            var buttons = document.getElementById('bl_room_buttons');
+            var inputs = document.getElementById('bl_room_inputs');
+            var hint = document.getElementById('bl_room_hint');
+            var message = document.getElementById('bl_message');
+            var submitBtn = document.getElementById('bl_submit');
+            if (!modalEl || !form || !start || !end || !buttons || !inputs || !submitBtn) return;
 
+            var url = form.dataset.url;
+            var selected = new Set();   // ids of the rooms the receptionist clicked
+            var freeRooms = [];         // rooms free for the chosen dates
+            var defaultHint = 'Choose the dates first.';
+
+            function pad(n) { return String(n).padStart(2, '0'); }
+
+            // Shows or hides the red message above the Current blocks list
+            function showMessage(text) {
+                message.textContent = text;
+                message.classList.toggle('d-none', !text);
+            }
+
+            // Tells the receptionist what is selected
+            function updateHint() {
+                if (!freeRooms.length) { return; }
+                hint.textContent = selected.size
+                    ? selected.size + ' selected: ' + Array.from(selected).sort(function (a, b) { return a - b; }).map(pad).join(', ')
+                    : freeRooms.length + ' room(s) free. Click to select.';
+            }
+
+            // Keeps the hidden form fields in step with the clicked rooms
+            function syncInputs() {
+                inputs.innerHTML = '';
+                selected.forEach(function (id) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'room_ids[]';
+                    input.value = id;
+                    inputs.appendChild(input);
+                });
+            }
+
+            // One button per free room: click to select, click again to deselect
+            function render() {
+                buttons.innerHTML = '';
+                freeRooms.forEach(function (room) {
+                    var id = String(room.id);
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'bn-room-btn' + (selected.has(id) ? ' active' : '');
+                    btn.textContent = 'Room ' + pad(room.room_number || room.id);
+                    btn.addEventListener('click', function () {
+                        if (selected.has(id)) { selected.delete(id); } else { selected.add(id); }
+                        syncInputs();
+                        showMessage('');
+                        updateHint();
+                        render();
+                    });
+                    buttons.appendChild(btn);
+                });
+            }
+
+            // Asks the server which rooms are free from the start to the end
+            function loadRooms() {
+                selected.clear();
+                syncInputs();
+                freeRooms = [];
+                buttons.innerHTML = '';
+                showMessage('');
+                if (!start.value || !end.value || end.value <= start.value) {
+                    hint.textContent = start.value && end.value ? 'The end must be later than the start.' : defaultHint;
+                    return;
+                }
+                hint.textContent = 'Loading rooms...';
+                fetch(url + '?start_date=' + encodeURIComponent(start.value) + '&end_date=' + encodeURIComponent(end.value))
+                    .then(function (res) { if (!res.ok) throw new Error('bad response'); return res.json(); })
+                    .then(function (rooms) {
+                        freeRooms = rooms;
+                        render();
+                        if (rooms.length) { updateHint(); } else { hint.textContent = 'No rooms are free for these dates.'; }
+                    })
+                    .catch(function () { hint.textContent = 'Could not load the rooms. Please try again.'; });
+            }
+            start.addEventListener('change', loadRooms);
+            end.addEventListener('change', loadRooms);
+
+            // Block room: check everything first and say what is missing, then send the form
+            submitBtn.addEventListener('click', function () {
+                if (!start.value || !end.value) { showMessage('Choose the From and Until date and time.'); return; }
+                if (end.value <= start.value) { showMessage('The end must be later than the start.'); return; }
+                if (selected.size === 0) { showMessage('Click at least one room to block.'); return; }
+                if (!reason.value.trim()) { showMessage('Type the reason (for example: Aircon repair).'); return; }
+                showMessage('');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+                form.submit();
+            });
+
+            // Remove: sends its own small form, so it never mixes with the Block room fields
+            form.querySelectorAll('.btn-remove-block').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    if (!window.confirm('Remove this block? The room will be available again.')) { return; }
+                    var remove = document.createElement('form');
+                    remove.method = 'POST';
+                    remove.action = btn.dataset.action;
+                    var token = document.createElement('input');
+                    token.type = 'hidden';
+                    token.name = '_token';
+                    token.value = form.querySelector('input[name="_token"]').value;
+                    remove.appendChild(token);
+                    document.body.appendChild(remove);
+                    remove.submit();
+                });
+            });
+
+            // Pressing Enter inside the window must not send anything by accident
+            form.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); }
+            });
+
+            // Start fresh every time the window is closed
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                form.reset();
+                selected.clear();
+                syncInputs();
+                freeRooms = [];
+                buttons.innerHTML = '';
+                hint.textContent = defaultHint;
+                showMessage('');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Block room';
+            });
+        });
+    </script>
 
     @stack('scripts')
 <!--End of Scripts  -->

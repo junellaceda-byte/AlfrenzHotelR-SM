@@ -17,7 +17,7 @@
     height: clamp(4.25rem, 5.5vw, 6.25rem);
     border-radius: 50%;
     border: 3px solid #ffffff !important;
-    padding: 0.35rem;
+    
     background: rgba(255, 255, 255, 0.06);
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
     transition: transform 0.25s ease;
@@ -117,14 +117,18 @@
     min-height: 0;
 }
 /* Brown Button */
-.btn-brown { 
-    background-color: #6A4435; 
-    border-color: #6A4435; 
-    color: #fff; 
-}
-/* Brown Button Hover Effect */
-.btn-brown:hover { 
-    background-color: #553529; 
-    border-color: #553529; 
-    color: #fff; 
+.btn-brown {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #6A4435;
+    --bs-btn-border-color: #6A4435;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #553529;
+    --bs-btn-hover-border-color: #4a2e24;
+    --bs-btn-focus-shadow-rgb: 106, 68, 53;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #4a2e24;
+    --bs-btn-active-border-color: #3f271e;
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: #6A4435;
+    --bs-btn-disabled-border-color: #6A4435;
 }

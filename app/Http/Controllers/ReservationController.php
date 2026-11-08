@@ -175,6 +175,14 @@ class ReservationController
             $bookedRoomIds = array_merge($bookedRoomIds, $booking->booked_rooms ?? []);
         }
         // Remove duplicate room IDs and retrieve the available rooms that are not in the list of booked room IDs
+        // Rooms blocked for maintenance during this period are not available either
+        $blockedRoomIds = \App\Models\RoomBlock::where('is_active', true)
+            ->where('start_date', '<=', $end)
+            ->where('end_date', '>=', $start)
+            ->pluck('room_id')
+            ->all();
+        $bookedRoomIds = array_merge($bookedRoomIds, $blockedRoomIds);
+        // Remove duplicate room IDs and retrieve the available rooms that are not in the list of booked room IDs
         $bookedRoomIds = array_unique($bookedRoomIds);
         $availableRooms = Room::whereNotIn('id', $bookedRoomIds)->get();
 

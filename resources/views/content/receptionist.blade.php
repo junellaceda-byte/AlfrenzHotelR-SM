@@ -106,12 +106,18 @@
         </div>
     </div>
 
-    <!-- Filter Buttons Bar (ALL, AVAILABLE, OCCUPIED, UNDER MAINTENANCE - Strict Rule: NO Reserved) -->
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-3 filter-btn-group">
-        <button type="button" class="btn btn-filter active" data-filter="all">ALL</button>
-        <button type="button" class="btn btn-filter" data-filter="available">AVAILABLE</button>
-        <button type="button" class="btn btn-filter" data-filter="occupied">OCCUPIED</button>
-        <button type="button" class="btn btn-filter" data-filter="under_maintenance">UNDER MAINTENANCE</button>
+        <!-- Filter Buttons Bar (ALL, AVAILABLE, OCCUPIED, UNDER MAINTENANCE) & BLOCK ROOM -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-2 filter-btn-group">
+            <button type="button" class="btn btn-filter active" data-filter="all">ALL</button>
+            <button type="button" class="btn btn-filter" data-filter="available">AVAILABLE</button>
+            <button type="button" class="btn btn-filter" data-filter="occupied">OCCUPIED</button>
+            <button type="button" class="btn btn-filter" data-filter="under_maintenance">UNDER MAINTENANCE</button>
+        </div>
+        <!-- Block Room Button -->
+        <button type="button" class="btn btn-brown text-uppercase" data-bs-toggle="modal" data-bs-target="#blockRoomModal">
+            BLOCK ROOM
+        </button>
     </div>
 
     <!-- Room Status Grid -->
@@ -222,5 +228,6 @@
 
 <!-- Quick Modal -->
 @include('modals.quickresmodal')
+@include('partials.scripts')
 
 @endsection

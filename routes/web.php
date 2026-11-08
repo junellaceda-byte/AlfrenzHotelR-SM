@@ -5,6 +5,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReservationController;
+use App\Http\Controllers\RoomBlockController;
 use Illuminate\Support\Facades\Route;
 
 // Gets
@@ -47,6 +48,10 @@ Route::post('/billing/{invoice_id}/process-payment', [BillingController::class, 
 Route::post('/reservation', [ReservationController::class, 'store'])->name('reservation.store');
 Route::post('/reservation/{id}/check-in', [ReservationController::class, 'checkIn'])->name('reservation.checkIn');
 Route::post('/reservation/{id}/cancel', [ReservationController::class, 'cancel'])->name('reservation.cancel');
+
+// Room Block Routes
+Route::post('/room-blocks', [RoomBlockController::class, 'store'])->name('room-block.store');
+Route::post('/room-blocks/{id}/remove', [RoomBlockController::class, 'destroy'])->name('room-block.destroy');
 
 // Get Routes for ReservationController
 Route::get('/reservation', [ReservationController::class, 'index'])->name('reservation.index');

@@ -21,12 +21,6 @@
         <!-- Notifications bell -->
         <!--Optional if our System Adviser prefers -->
         <div class="dropdown">
-            <button type="button" class="btn btn-light border position-relative" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
-                <img src="{{ asset('icons/bell.svg') }}" width="20" height="20" alt="Notifications">
-                @if($dueGuests->count() > 0)
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ $dueGuests->count() }}</span>
-                @endif
-            </button>
             <ul class="dropdown-menu dropdown-menu-end p-2" style="min-width: 22rem;">
                 <li class="dropdown-header">Due within 30 minutes</li>
                 @forelse($dueGuests as $guest)

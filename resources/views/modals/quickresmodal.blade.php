@@ -296,5 +296,70 @@
   </div>
 </div>
 
+<!-- Block Room (maintenance) -->
+<div class="modal fade" id="blockRoomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Block Room</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="blockRoomForm" method="POST" action="{{ route('room-block.store') }}"
+                  data-url="{{ route('api.available-rooms') }}" novalidate>
+                @csrf
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Choose the day, date and time the room is under maintenance. The free rooms for that time will show below.</p>
 
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6">
+                            <label for="bl_start" class="form-label">From (date and time)</label>
+                            <input type="datetime-local" class="form-control" id="bl_start" name="start_date"
+                                   min="{{ now()->setTimezone('Asia/Manila')->format('Y-m-d\TH:i') }}">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="bl_end" class="form-label">Until (date and time)</label>
+                            <input type="datetime-local" class="form-control" id="bl_end" name="end_date">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label mb-0">Room(s) to block</label>
+                            <small class="text-muted" id="bl_room_hint">Choose the dates first.</small>
+                        </div>
+                        <div id="bl_room_buttons" class="d-flex flex-wrap gap-2"></div>
+                        <div id="bl_room_inputs"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="bl_reason" class="form-label">Reason</label>
+                        <input type="text" class="form-control" id="bl_reason" name="reason" maxlength="120" placeholder="e.g. Aircon repair">
+                    </div>
+
+                    <div id="bl_message" class="alert alert-danger py-2 small d-none" role="alert"></div>
+
+                    <h6 class="fw-bold mt-4">Current blocks</h6>
+                    <div style="max-height: 12rem; overflow-y: auto;">
+                        @forelse($activeBlocks as $block)
+                            <div class="d-flex justify-content-between align-items-center border-bottom py-2 small">
+                                <div>
+                                    <span class="fw-semibold">Room {{ str_pad($block->room_id, 2, '0', STR_PAD_LEFT) }}</span> - {{ $block->reason }}<br>
+                                    <span class="text-muted">{{ $block->start_date->format('M d, h:i A') }} &rarr; {{ $block->end_date->format('M d, h:i A') }}</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-remove-block"
+                                        data-action="{{ route('room-block.destroy', $block->id) }}">Remove</button>
+                            </div>
+                        @empty
+                            <div class="text-muted small py-2">No rooms are blocked.</div>
+                        @endforelse
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-brown" id="bl_submit">Block room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>  
 

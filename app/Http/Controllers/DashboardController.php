@@ -40,8 +40,17 @@ class DashboardController
                     ->first();
             }
 
-            // Determine the room's status based on the booking or reservation
-            if ($room->status !== 'under_maintenance') {
+            // A maintenance block that covers right now wins over everything else
+            $block = \App\Models\RoomBlock::where('room_id', $room->id)
+                ->where('is_active', true)
+                ->where('start_date', '<=', $now)
+                ->where('end_date', '>=', $now)
+                ->first();
+
+            if ($block) {
+                $room->status = 'under_maintenance';
+                $timeRange = $block->start_date->format('H:i') . '-' . $block->end_date->format('H:i');
+            } elseif ($room->status !== 'under_maintenance') {
                 if ($booking) {
                     $room->status = 'occupied';
                     $timeRange = \Carbon\Carbon::parse($booking->check_in_datetime)->format('H:i') . '-' . \Carbon\Carbon::parse($booking->check_out_datetime)->format('H:i');
@@ -52,7 +61,7 @@ class DashboardController
                     $room->status = 'available';
                 }
             }
-
+            // Add the time range to the room object for display purposes
             $room->timeRange = $timeRange;
             return $room;
         });
@@ -61,6 +70,14 @@ class DashboardController
         $occupiedRooms = $rooms->where('status', 'occupied')->count();
         $reservedRooms = $rooms->where('status', 'reserved')->count();
         $underMaintenanceRooms = $rooms->where('status', 'under_maintenance')->count();
+
+        // Current and future maintenance blocks, for the Block Room window
+        $activeBlocks = \App\Models\RoomBlock::with('room')
+            ->where('is_active', true)
+            ->where('end_date', '>=', $now)
+            ->orderBy('start_date')
+            ->get();   
+        // Count the number of active bookings
         $activeBookings = Booking::count();
         $shortRate = Room::value('short_stay_rate');
         $overnightRate = Room::value('overnight_rate');
@@ -108,7 +125,7 @@ class DashboardController
             'weekly' => ['labels' => $weeklyLabels, 'data' => $weeklyData],
         ];
 
-        return view('content.receptionist', compact('rooms', 'availableRooms', 'occupiedRooms', 'activeBookings', 'underMaintenanceRooms', 'reservedRooms', 'chartData', 'shortRate', 'overnightRate'));
+        return view('content.receptionist', compact('rooms', 'availableRooms', 'occupiedRooms', 'activeBookings', 'underMaintenanceRooms', 'reservedRooms', 'chartData', 'shortRate', 'overnightRate', 'activeBlocks'));
         // End of the index method
     }
 }
