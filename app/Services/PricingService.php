@@ -5,33 +5,33 @@ namespace App\Services;
 class PricingService
 {
     /* This service calculates the price of a booking based on the stay type,
-    number of rooms, extra beds, and any applicable discounts. 
+    number of rooms, extra beds, and any applicable discounts.
     It retrieves pricing information from the configuration file.*/
-    
+
     /** Price of one room for the chosen stay */
     public function roomPrice(string $stayType, $shortHours, bool $withBreakfast): float
     {
         if ($stayType === 'short_stay') {
-            return (float) config('hotel.prices.short_stay.' . (int) $shortHours, 0);
+            return (float) config('hotel.prices.short_stay.'.(int) $shortHours, 0);
         }
 
-        return (float) config('hotel.prices.overnight.' . ($withBreakfast ? 'with_breakfast' : 'no_breakfast'), 0);
+        return (float) config('hotel.prices.overnight.'.($withBreakfast ? 'with_breakfast' : 'no_breakfast'), 0);
     }
 
     /** Price of one extra bed (24-hour stays only) */
     public function bedPrice(bool $withBreakfast): float
     {
-        return (float) config('hotel.prices.extra_bed.' . ($withBreakfast ? 'with_breakfast' : 'no_breakfast'), 0);
+        return (float) config('hotel.prices.extra_bed.'.($withBreakfast ? 'with_breakfast' : 'no_breakfast'), 0);
     }
 
     /** 0.20 for senior or pwd, otherwise 0 */
     public function discountRate(?string $discountType): float
     {
-        if (!$discountType) {
+        if (! $discountType) {
             return 0;
         }
 
-        return (float) config('hotel.discounts.' . $discountType, 0);
+        return (float) config('hotel.discounts.'.$discountType, 0);
     }
 
     /** Subtotal, discount and total for a booking */
@@ -50,12 +50,12 @@ class PricingService
 
         return [
             'room_price' => $roomPrice,
-            'bed_price'  => $bedPrice,
-            'rooms'      => $rooms,
-            'beds'       => $beds,
-            'subtotal'   => $subtotal,
-            'discount'   => $discount,
-            'total'      => round($subtotal - $discount, 2),
+            'bed_price' => $bedPrice,
+            'rooms' => $rooms,
+            'beds' => $beds,
+            'subtotal' => $subtotal,
+            'discount' => $discount,
+            'total' => round($subtotal - $discount, 2),
         ];
     }
 }

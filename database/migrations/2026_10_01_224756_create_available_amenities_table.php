@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('quantity')->default(1);
             $table->decimal('unit_price', 10, 2)->nullable();
             $table->decimal('total_amount', 10, 2)->nullable();
-            
+
             $table->string('item_name');
             $table->decimal('price', 10, 2)->nullable();
             $table->boolean('is_available')->default(true);

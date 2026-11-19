@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 // Invoice Model relationship
-use App\Models\Invoice;
 
 class PaymentLog extends Model
 {
@@ -15,7 +14,12 @@ class PaymentLog extends Model
         'amount_paid',
         'payment_method',
         'status',
+        'paid_at',
         'created_at',
+    ];
+
+    protected $casts = [
+        'paid_at' => 'datetime',
     ];
 
     public function invoice()

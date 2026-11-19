@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('invoice_id')->constrained()->onDelete('cascade');
             $table->string('reference_number')->nullable()->unique(); //  Ref No.
             $table->decimal('amount_paid', 10, 2);
-            $table->enum('payment_method', ['cash', 'gcash', 'credit_card', 'bank_transfer'])->default('cash');
+            $table->string('payment_method')->default('cash');
             $table->enum('status', ['successful', 'pending', 'failed', 'refunded'])->default('successful');
             $table->timestamp('paid_at')->useCurrent();
             $table->string('processed_by')->nullable(); // Name or ID of front desk receptionist

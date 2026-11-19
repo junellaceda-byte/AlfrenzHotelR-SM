@@ -10,9 +10,9 @@ class Booking extends Model
     protected $fillable = [
         'guest_id',
         'guests',
-        'short_stay_hours', 
-        'with_breakfast', 
-        'extra_beds', 
+        'short_stay_hours',
+        'with_breakfast',
+        'extra_beds',
         'discount_type',
         'phone',
         'check_in_datetime',
@@ -21,9 +21,14 @@ class Booking extends Model
         'stay_type',
         'status',
         'deposit',
+        'payment_method',
+        'ewallet_type',
+        'reference_number',
         'nights',
         'actual_check_in',
         'actual_check_out',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
@@ -49,6 +54,7 @@ class Booking extends Model
     {
         return $this->hasMany(AvailableAmenity::class);
     }
+
     // Creates a one-to-many relationship with Charges
     public function charges()
     {

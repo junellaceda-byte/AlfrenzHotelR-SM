@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Reservation;
+use App\Models\Room;
 use App\Models\RoomBlock;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -60,6 +61,7 @@ class RoomBlockController
 
             if ($hasBooking || $hasReservation || $hasBlock) {
                 $notFree[] = $label;
+
                 continue;
             }
 
@@ -78,10 +80,10 @@ class RoomBlockController
             return back()->withErrors(['room_ids' => 'None of the chosen rooms are free for these dates.'])->withInput();
         }
 
-        $message = 'Room ' . implode(', ', $blocked) . ' blocked from ' . $start->format('M d, h:i A') . ' to ' . $end->format('M d, h:i A') . '.';
+        $message = 'Room '.implode(', ', $blocked).' blocked from '.$start->format('M d, h:i A').' to '.$end->format('M d, h:i A').'.';
 
-        if (!empty($notFree)) {
-            $message .= ' Not blocked (not free): ' . implode(', ', $notFree) . '.';
+        if (! empty($notFree)) {
+            $message .= ' Not blocked (not free): '.implode(', ', $notFree).'.';
         }
 
         return back()->with('success', $message);
@@ -90,7 +92,17 @@ class RoomBlockController
     /** Removes a block: the room is available again */
     public function destroy(int $id)
     {
-        RoomBlock::findOrFail($id)->update(['is_active' => false]);
+        $block = RoomBlock::findOrFail($id);
+        $block->update(['is_active' => false]);
+
+        $hasOtherBlock = RoomBlock::where('room_id', $block->room_id)
+            ->where('is_active', true)
+            ->where('end_date', '>=', now()->setTimezone('Asia/Manila'))
+            ->exists();
+
+        if (! $hasOtherBlock) {
+            Room::where('id', $block->room_id)->update(['status' => 'available']);
+        }
 
         return back()->with('success', 'Block removed. The room is available again.');
     }

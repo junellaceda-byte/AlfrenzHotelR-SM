@@ -1,0 +1,100 @@
+<link href="{{ asset('css/sidebar.css') }}" rel="stylesheet">
+
+<!-- Sidebar -->
+<aside class="app-sidebar offcanvas-md offcanvas-start d-flex flex-column h-100 py-3 px-2 flex-shrink-0" id="sidebarMenu" tabindex="-1" aria-labelledby="sidebarMenuLabel" style="background-color: #6A4435;">
+    
+    <!-- Logo and Name (with mobile close button) -->
+    <div class="text-center pt-2 pb-3 px-2 flex-shrink-0 position-relative">
+        <!-- Close button for mobile offcanvas -->
+        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2 d-md-none" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" id="closeSidebar" aria-label="Close"></button>
+
+        <!-- Logo Container with White Outline Stroke -->
+        <div class="sidebar-logo-circle mx-auto d-flex align-items-center justify-content-center mb-2">
+            <img src="{{ asset('images/logo.png') }}" alt="Alfrenzo's Hotel Logo" class="sidebar-logo-img">
+        </div>
+        
+        <!-- Hotel Name -->
+        <div class="sidebar-hotel-name text-uppercase fw-bold" id="sidebarMenuLabel">
+            ALFRENZO'S HOTEL
+        </div>
+    </div>
+
+    <!-- Navigation Items -->
+    <div class="flex-grow-1 overflow-y-auto overflow-x-hidden w-100" style="scrollbar-width: thin;">
+        <ul class="nav flex-column align-items-stretch w-100 gap-2 px-1 my-2">
+            <!-- Overview -->
+            <li class="nav-item w-100">
+                <a href="?section=overview" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section', 'overview') == 'overview' ? 'active' : '' }}">
+                    OVERVIEW
+                </a>
+            </li>
+            <!-- Amenities -->
+            <li class="nav-item w-100">
+                <a href="?section=amenity" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'amenity' ? 'active' : '' }}">
+                    AMENITIES
+                </a>
+            </li>
+            <!-- Activities Logs -->
+            <li class="nav-item w-100">
+                <a href="?section=activities" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'activities' ? 'active' : '' }}">
+                    ACTIVITIES LOGS
+                </a>
+            </li>
+            <!-- Sales Reports -->
+            <li class="nav-item w-100">
+                <a href="?section=salerep" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'salerep' ? 'active' : '' }}">
+                    SALES REPORTS
+                </a>
+            </li>
+            <!-- Archive -->
+            <li class="nav-item w-100">
+                <a href="?section=archives" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'archives' ? 'active' : '' }}">
+                    ARCHIVE
+                </a>
+            </li>
+            <!-- Room Management -->
+            <li class="nav-item w-100">
+                <a href="?section=rooms" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'rooms' ? 'active' : '' }}">
+                    ROOM MANAGEMENT
+                </a>
+            </li>
+            <!-- Staff -->
+            <li class="nav-item w-100">
+                <a href="?section=staff" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'staff' ? 'active' : '' }}">
+                    STAFF
+                </a>
+            </li>
+            <!-- Settings -->
+            <li class="nav-item w-100">
+                <a href="?section=settings" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'settings' ? 'active' : '' }}">
+                    SETTINGS
+                </a>
+            </li>
+            <!-- Logout Option -->
+            <li class="nav-item w-100">
+                <button type="button" class="nav-link sidebar-nav-link text-uppercase fw-bold w-100 text-start" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
+                    LOGOUT
+                </button>
+            </li>
+        </ul>
+    </div>
+</aside>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold text-dark" id="logoutConfirmModalLabel">Confirm Logout</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-3">
+                <p class="mb-0 text-secondary fw-semibold">Are you sure you want to logout?</p>
+            </div>
+            <div class="modal-footer border-0 pt-0 justify-content-center gap-2">
+                <button type="button" class="btn btn-sm btn-secondary px-3 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                <a href="{{ url('/login') }}" class="btn btn-sm btn-danger px-3 fw-semibold">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>

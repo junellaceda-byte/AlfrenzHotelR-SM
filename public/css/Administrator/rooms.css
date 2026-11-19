@@ -1,0 +1,29 @@
+#selectRoomsBtn {
+    width: 105px;
+    height: 39px;
+    font-size: 0.875rem;
+    padding: 0.25rem 0.75rem;
+}
+
+#addRoomBtn,
+#removeRoomBtn {
+    width: 115px;
+    height: 45px;
+    font-size: 0.95rem;
+    padding: 0.375rem 1rem;
+}
+
+/* Disable hover highlight on room cards */
+#hotelRoomGrid .hotel-room-card,
+#hotelRoomGrid .hotel-room-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    border-color: #dee2e6 !important;
+    background-color: #ffffff !important;
+    cursor: default;
+    transition: none !important;
+}
+
+#hotelRoomGrid .hotel-room-card:hover img {
+    transform: none !important;
+}

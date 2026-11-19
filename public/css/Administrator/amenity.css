@@ -1,0 +1,134 @@
+.amenities-table {
+    width: 100%;
+    min-width: 540px;
+    font-size: 0.92rem;
+    table-layout: auto;
+}
+
+.amenities-table .col-amenity {
+    width: 32%;
+    min-width: 130px;
+}
+
+.amenities-table .col-price {
+    width: 18%;
+    min-width: 90px;
+}
+
+.amenities-table .col-charged {
+    width: 18%;
+    min-width: 95px;
+}
+
+.amenities-table .col-offered {
+    width: 14%;
+    min-width: 80px;
+}
+
+.amenities-table .col-actions {
+    width: 18%;
+    min-width: 135px;
+}
+
+.amenity-name {
+    word-break: break-word;
+    line-height: 1.35;
+}
+
+.amenities-table th {
+    font-weight: 600;
+    color: #495057;
+    background-color: #f8f9fa;
+    white-space: nowrap;
+}
+
+.amenity-row {
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Non-toggleable Offered status switch in table */
+.amenities-table .form-check-input:disabled,
+.amenities-table .form-check-input[disabled] {
+    opacity: 1;
+    cursor: default;
+    pointer-events: none;
+}
+
+.amenities-table .form-switch {
+    cursor: default;
+}
+
+/* Tablet & Mobile Responsive Tweaks */
+@media (max-width: 767.98px) {
+    .amenities-table {
+        min-width: 100%;
+        font-size: 0.875rem;
+    }
+
+    .amenities-table .col-actions {
+        display: none !important;
+        width: 0 !important;
+    }
+
+    .amenities-table .col-amenity {
+        width: 44%;
+        min-width: 130px;
+    }
+
+    .amenities-table .col-price {
+        width: 20%;
+        min-width: 75px;
+    }
+
+    .amenities-table .col-charged {
+        width: 20%;
+        min-width: 80px;
+    }
+
+    .amenities-table .col-offered {
+        width: 16%;
+        min-width: 65px;
+    }
+
+    .amenities-table .form-check-input {
+        width: 2rem;
+        height: 1.1rem;
+    }
+
+    .amenities-table .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    /* Mobile selection mode active visual feedback */
+    .amenities-table.mode-edit tbody tr {
+        cursor: pointer;
+    }
+
+    .amenities-table.mode-edit tbody tr:hover,
+    .amenities-table.mode-edit tbody tr:active {
+        background-color: #f7ede8 !important;
+        box-shadow: inset 4px 0 0 #6A4435;
+    }
+
+    .amenities-table.mode-delete tbody tr {
+        cursor: pointer;
+    }
+
+    .amenities-table.mode-delete tbody tr:hover,
+    .amenities-table.mode-delete tbody tr:active {
+        background-color: #fdf2f2 !important;
+        box-shadow: inset 4px 0 0 #dc3545;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .amenities-table {
+        font-size: 0.825rem;
+    }
+
+    .amenities-table .btn-sm {
+        padding: 0.2rem 0.45rem;
+        font-size: 0.75rem;
+    }
+}

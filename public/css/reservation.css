@@ -1,0 +1,16 @@
+/* Reservation Table - Fixed Layout & Wrapping Text */
+.reservation-table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    margin-bottom: 0;
+}
+.reservation-table thead th {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.reservation-table tbody td {
+    vertical-align: middle;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+}

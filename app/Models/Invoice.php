@@ -18,12 +18,22 @@ class Invoice extends Model
         'status',
         'due_date',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Invoice $invoice) {
+            if (empty($invoice->invoice_number)) {
+                $invoice->invoice_number = 'INV-'.strtoupper(uniqid());
+            }
+        });
+    }
+
     // Booking Model
     public function booking()
     {
         return $this->belongsTo(Booking::class);
     }
-    
+
     // Available Amenties Model
     public function availableAmenities()
     {

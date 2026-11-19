@@ -15,9 +15,9 @@ class Reservation extends Model
         'guest_name',
         'guest_id',
         'guests',
-        'short_stay_hours', 
-        'with_breakfast', 
-        'extra_beds', 
+        'short_stay_hours',
+        'with_breakfast',
+        'extra_beds',
         'discount_type',
         'phone_number',
         'reservation_start_date',
@@ -28,7 +28,10 @@ class Reservation extends Model
         'children_count',
         'status',
         'stay_type',
-        'deposit'
+        'deposit',
+        'payment_method',
+        'ewallet_type',
+        'reference_number',
     ];
 
     /**

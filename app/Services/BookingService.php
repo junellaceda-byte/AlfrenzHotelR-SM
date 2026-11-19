@@ -6,15 +6,14 @@ use App\Models\Booking;
 use App\Models\Charge;
 use App\Models\Invoice;
 use App\Models\Room;
+use App\Models\RoomBlock;
 
 class BookingService
-{   
-    // The BookingService class is 
-    //responsible for creating bookings, calculating prices, and generating invoices.
+{
+    // The BookingService class is
+    // responsible for creating bookings, calculating prices, and generating invoices.
     // It uses the PricingService to calculate the total cost based on the booking details provided.
-    public function __construct(private PricingService $pricing)
-    {
-    }
+    public function __construct(private PricingService $pricing) {}
 
     /** Creates the booking, its charge lines and its unpaid invoice. Returns [booking, price]. */
     public function create(array $d): array
@@ -49,23 +48,42 @@ class BookingService
             'discount_type' => $d['discount_type'] ?: null,
             'nights' => $isShort ? null : 1,
             'deposit' => $d['deposit'] ?? 0,
+            'payment_method' => $d['payment_method'] ?? 'cash',
+            'ewallet_type' => $d['ewallet_type'] ?? null,
+            'reference_number' => $d['reference_number'] ?? null,
             'status' => $status,
         ]);
 
         if ($status === 'checked_in') {
             Room::whereIn('id', $d['room_ids'])->update(['status' => 'occupied']);
+        } elseif ($status === 'reserved') {
+            foreach ($d['room_ids'] as $roomId) {
+                $isOccupied = Booking::where(function ($q) use ($roomId) {
+                    $q->whereJsonContains('booked_rooms', (string) $roomId)
+                        ->orWhereJsonContains('booked_rooms', (int) $roomId);
+                })->where('status', 'checked_in')->exists();
+
+                $isBlocked = RoomBlock::where('room_id', $roomId)
+                    ->where('is_active', true)
+                    ->where('end_date', '>=', now())
+                    ->exists();
+
+                if (! $isOccupied && ! $isBlocked) {
+                    Room::where('id', $roomId)->update(['status' => 'reserved']);
+                }
+            }
         }
 
         // One charge line per room, plus one line for extra beds
         $stayLabel = $isShort
-            ? $d['short_hours'] . '-hour short stay'
-            : '24-hour stay' . ($withBreakfast ? ' with breakfast' : '');
+            ? $d['short_hours'].'-hour short stay'
+            : '24-hour stay'.($withBreakfast ? ' with breakfast' : '');
 
         foreach (Room::whereIn('id', $d['room_ids'])->get() as $room) {
             Charge::create([
                 'booking_id' => $booking->id,
                 'type' => 'room',
-                'description' => 'Room ' . str_pad($room->id, 2, '0', STR_PAD_LEFT) . ' - ' . $stayLabel,
+                'description' => 'Room '.str_pad($room->id, 2, '0', STR_PAD_LEFT).' - '.$stayLabel,
                 'quantity' => 1,
                 'unit_price' => $price['room_price'],
                 'amount' => $price['room_price'],
@@ -86,7 +104,7 @@ class BookingService
         // Unpaid invoice: payment is taken at check-out
         Invoice::create([
             'booking_id' => $booking->id,
-            'invoice_number' => 'INV-' . strtoupper(uniqid()),
+            'invoice_number' => 'INV-'.strtoupper(uniqid()),
             'room_charges' => $price['rooms'],
             'extra_charges_total' => $price['beds'],
             'discount_amount' => $price['discount'],

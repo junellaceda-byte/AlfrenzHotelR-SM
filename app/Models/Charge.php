@@ -14,7 +14,7 @@ class Charge extends Model
         'quantity',
         'unit_price',
         'amount',
-        'is_paid'
+        'is_paid',
     ];
 
     // Creates a one-to-one relationship with Booking

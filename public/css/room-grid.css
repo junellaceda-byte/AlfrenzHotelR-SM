@@ -186,3 +186,63 @@
     color: #64748b;
     font-weight: 600;
 }
+
+.room-blocking-period {
+    font-size: clamp(0.68rem, 0.74vw, 0.78rem);
+    color: #64748b;
+    font-weight: 600;
+    line-height: 1.3;
+    max-width: 65%;
+}
+
+/* Overdue Time Counter */
+.room-overdue-counter {
+    font-size: clamp(0.68rem, 0.74vw, 0.8rem);
+    color: #dc3545;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+    display: block;
+}
+
+.room-overdue-counter.d-none {
+    display: none !important;
+}
+
+.room-overdue-counter .overdue-label {
+    text-transform: uppercase;
+    font-size: 0.88em;
+    margin-right: 2px;
+}
+
+.room-overdue-counter .overdue-timer {
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-weight: 800;
+}
+
+/* Notifications count badge */
+.notification-count-badge {
+    background-color: #dc3545;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    padding: 0.2em 0.5em;
+    border-radius: 999px;
+    line-height: 1.4;
+    vertical-align: middle;
+}
+
+/* Overdue image overlay */
+.overlay-overdue {
+    background: rgba(220, 53, 69, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(0.95rem, 1.1vw, 1.2rem);
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}

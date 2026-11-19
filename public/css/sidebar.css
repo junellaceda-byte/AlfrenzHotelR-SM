@@ -9,6 +9,22 @@
     background-color: var(--hotel-brown) !important;
     border-right: 1px solid rgba(0, 0, 0, 0.1);
     box-sizing: border-box;
+    --bs-offcanvas-bg: var(--hotel-brown);
+}
+
+/* Responsive Offcanvas Behavior */
+@media (min-width: 768px) {
+    .app-sidebar {
+        width: clamp(12rem, 14vw, 16rem);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .app-sidebar.offcanvas-md {
+        width: 270px !important;
+        max-width: 85vw !important;
+        box-shadow: 4px 0 16px rgba(0, 0, 0, 0.3);
+    }
 }
 
 /* Circular Logo with distinct white outline */
@@ -131,4 +147,52 @@
     --bs-btn-disabled-color: #fff;
     --bs-btn-disabled-bg: #6A4435;
     --bs-btn-disabled-border-color: #6A4435;
+}
+
+/* Book Now Button */
+.btn-book-now {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #7b78da;
+    --bs-btn-border-color: #7b78da;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #6865c8;
+    --bs-btn-hover-border-color: #5f5cb8;
+    --bs-btn-focus-shadow-rgb: 123, 120, 218;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #5956b6;
+    --bs-btn-active-border-color: #504da4;
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: #7b78da;
+    --bs-btn-disabled-border-color: #7b78da;
+    background-color: #7b78da;
+    border-color: #7b78da;
+    color: #fff;
+}
+.btn-book-now:hover,
+.btn-book-now:focus {
+    background-color: #6865c8;
+    border-color: #5f5cb8;
+    color: #fff;
+}
+
+/* Table Pagination */
+.table-pagination .small.text-muted {
+    display: none !important;
+}
+.table-pagination .pagination {
+    margin-bottom: 0;
+    --bs-pagination-padding-x: 0.5rem;
+    --bs-pagination-padding-y: 0.25rem;
+    --bs-pagination-font-size: 0.875rem;
+}
+.table-pagination .page-item.active .page-link {
+    background-color: #6A4435 !important;
+    border-color: #6A4435 !important;
+    color: #fff !important;
+}
+.table-pagination .page-link {
+    color: #6A4435;
+}
+.table-pagination .page-item.disabled .page-link {
+    color: #6c757d !important;
 }

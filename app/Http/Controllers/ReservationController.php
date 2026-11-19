@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Amenity;
 use App\Models\Booking;
 use App\Models\Guest;
+use App\Models\Invoice;
 use App\Models\Reservation;
 use App\Models\Room;
-use Illuminate\Http\Request;
+use App\Models\RoomBlock;
 use App\Services\BookingService;
+use App\Services\RoomAvailabilityService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class ReservationController
 {
@@ -16,14 +21,14 @@ class ReservationController
      */
     public function index(Request $request)
     {
-        // Status filter: arriving today, cancelled, or all
-        $filter = $request->query('filter', 'today');
+        // Status filter: all (default), arriving today, or cancelled
+        $filter = $request->query('filter', 'all');
         $today = now()->setTimezone('Asia/Manila')->toDateString();
 
-        // The list is sorted A to Z by the guest's first name
+        // Reserved records first, then all others newest-first
         $query = Reservation::with('guest')
-            ->orderBy('guest_name')
-            ->orderBy('reservation_start_date');
+            ->orderByRaw("CASE WHEN status = 'reserved' THEN 0 ELSE 1 END")
+            ->orderByDesc('created_at');
 
         if ($filter === 'today') {
             $query->where('status', 'reserved')->whereDate('reservation_start_date', $today);
@@ -31,15 +36,58 @@ class ReservationController
             $query->where('status', 'cancelled');
         }
 
-        $reservations = $query->paginate(30)->withQueryString();
+        $reservations = $query->paginate(8)->withQueryString();
 
-        return view('content.reservation', compact('reservations', 'filter'));
+        // Build $dueGuests and $occupiedRoomsList for the shared topbar partial
+        $now = now()->setTimezone('Asia/Manila');
+        $dueInvoices = Invoice::with('booking.guest')
+            ->where('status', 'unpaid')
+            ->whereHas('booking', function ($q) use ($now) {
+                $q->where('status', 'checked_in')
+                    ->where('check_out_datetime', '<=', $now->copy()->addMinutes(30));
+            })
+            ->get()
+            ->sortBy(fn ($invoice) => $invoice->booking->check_out_datetime);
+
+        $dueGuests = $dueInvoices->map(function ($invoice) use ($now) {
+            $checkOut = Carbon::parse($invoice->booking->check_out_datetime);
+
+            return (object) [
+                'name' => trim(($invoice->booking->guest->fname ?? 'Guest').' '.($invoice->booking->guest->lname ?? '')),
+                'room_number' => collect($invoice->booking->booked_rooms)
+                    ->map(fn ($r) => str_pad($r, 2, '0', STR_PAD_LEFT))
+                    ->implode(', '),
+                'checkout_time' => $checkOut->format('h:i A'),
+                'is_overdue' => $checkOut->lte($now),
+                'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
+            ];
+        })->values();
+
+        $occupiedRoomsList = Room::all()->filter(function ($room) {
+            $booking = Booking::with('guest')->where(function ($q) use ($room) {
+                $q->whereJsonContains('booked_rooms', (string) $room->id)
+                    ->orWhereJsonContains('booked_rooms', $room->id);
+            })->where('status', 'checked_in')->latest('check_in_datetime')->first();
+
+            if ($booking) {
+                $room->guest_name = $booking->guest ? trim(($booking->guest->fname ?? 'Guest').' '.($booking->guest->lname ?? '')) : 'Guest';
+                $room->booking_id = $booking->id;
+
+                return true;
+            }
+
+            return false;
+        })->values();
+
+        $availableAmenities = Amenity::where('offered', true)->get();
+
+        return view('Receptionist.content.reservation', compact('reservations', 'filter', 'dueGuests', 'occupiedRoomsList', 'availableAmenities'));
     }
 
     /**
      * Store a newly created reservation in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, RoomAvailabilityService $availability)
     {
         // Validate the incoming request data
         $request->validate([
@@ -56,6 +104,9 @@ class ReservationController
             'extra_beds' => 'nullable|integer|min:0|max:5',
             'deposit' => 'nullable|numeric|min:0',
             'guests' => 'nullable|integer|min:1|max:20',
+            'payment_method' => 'nullable|in:cash,ewallet',
+            'ewallet_type' => 'nullable|required_if:payment_method,ewallet|string|max:50',
+            'reference_number' => 'nullable|required_if:payment_method,ewallet|string|max:100',
         ]);
         // Determine if the stay type is short stay or overnight
         $isShort = $request->stay_type === 'short_stay';
@@ -63,7 +114,7 @@ class ReservationController
         $lname = trim($request->lname ?? '');
 
         // Parse the check-in date and time from the request
-        $checkIn = \Carbon\Carbon::parse($request->check_in);
+        $checkIn = Carbon::parse($request->check_in);
         // Check if the check-in time is in the past (more than 5 minutes ago) and return an error if so
         if ($checkIn->lt(now()->subMinutes(5))) {
             return back()->withErrors(['check_in' => 'The arrival date and time cannot be in the past.'])->withInput();
@@ -71,6 +122,16 @@ class ReservationController
         }
         // Calculate the check-out time based on the check-in time and the stay type (short stay or overnight)
         $checkOut = $checkIn->copy()->addHours($isShort ? (int) $request->short_hours : 24);
+
+        // Server-side availability check: ensure no selected room has a conflicting stay
+        $conflicting = $availability->conflictingRoomIds($checkIn, $checkOut, $request->room_ids);
+        if (! empty($conflicting)) {
+            $roomList = implode(', ', array_map(fn ($id) => 'Room '.str_pad($id, 2, '0', STR_PAD_LEFT), $conflicting));
+
+            return back()
+                ->withErrors(['room_ids' => "The following room(s) are no longer available for the selected period: {$roomList}. Please select different rooms."])
+                ->withInput();
+        }
         // Create a new guest record
         $guest = Guest::create([
             'fname' => $fname,
@@ -79,7 +140,7 @@ class ReservationController
         ]);
         // Create a new reservation record
         Reservation::create([
-            'guest_name' => trim($fname . ' ' . $lname),
+            'guest_name' => trim($fname.' '.$lname),
             'guest_id' => $guest->id,
             'phone_number' => $request->phone,
             'reservation_start_date' => $checkIn,
@@ -93,10 +154,30 @@ class ReservationController
             'with_breakfast' => $request->boolean('with_breakfast'),
             'extra_beds' => $isShort ? 0 : (int) $request->input('extra_beds', 0),
             'deposit' => $request->deposit ?? 0,
+            'payment_method' => $request->input('payment_method', 'cash'),
+            'ewallet_type' => $request->payment_method === 'ewallet' ? $request->ewallet_type : null,
+            'reference_number' => $request->payment_method === 'ewallet' ? $request->reference_number : null,
         ]);
+
+        foreach ($request->room_ids as $roomId) {
+            $isOccupied = Booking::where(function ($q) use ($roomId) {
+                $q->whereJsonContains('booked_rooms', (string) $roomId)
+                    ->orWhereJsonContains('booked_rooms', (int) $roomId);
+            })->where('status', 'checked_in')->exists();
+
+            $isBlocked = RoomBlock::where('room_id', $roomId)
+                ->where('is_active', true)
+                ->where('end_date', '>=', now())
+                ->exists();
+
+            if (! $isOccupied && ! $isBlocked) {
+                Room::where('id', $roomId)->update(['status' => 'reserved']);
+            }
+        }
+
         // Redirect back with a success message
         return redirect()->back()->with('success', 'Reservation created successfully.');
-        //End of store method
+        // End of store method
     }
 
     /**
@@ -134,13 +215,43 @@ class ReservationController
      */
     public function destroy(int $id)
     {
-        Reservation::findOrFail($id)->delete();
+        $reservation = Reservation::findOrFail($id);
+        $roomIds = $reservation->selected_rooms ?? [];
+        $wasReserved = $reservation->status === 'reserved';
+        $reservation->delete();
+
+        if ($wasReserved) {
+            foreach ($roomIds as $roomId) {
+                $hasOtherRes = Reservation::where('status', 'reserved')
+                    ->where(function ($q) use ($roomId) {
+                        $q->whereJsonContains('selected_rooms', (string) $roomId)
+                            ->orWhereJsonContains('selected_rooms', (int) $roomId);
+                    })
+                    ->exists();
+
+                $hasActiveBooking = Booking::where('status', 'checked_in')
+                    ->where(function ($q) use ($roomId) {
+                        $q->whereJsonContains('booked_rooms', (string) $roomId)
+                            ->orWhereJsonContains('booked_rooms', (int) $roomId);
+                    })
+                    ->exists();
+
+                $hasBlock = RoomBlock::where('room_id', $roomId)
+                    ->where('is_active', true)
+                    ->where('end_date', '>=', now())
+                    ->exists();
+
+                if (! $hasOtherRes && ! $hasActiveBooking && ! $hasBlock) {
+                    Room::where('id', $roomId)->update(['status' => 'available']);
+                }
+            }
+        }
 
         return redirect()->route('reservation.index')->with('success', 'Reservation deleted successfully.');
     }
 
     // This function retrieves available rooms based on the specified date range in the request. It checks for overlapping reservations and bookings, excluding those that are cancelled or checked in/out, and returns a list of available rooms.
-    public function getAvailableRooms(Request $request)
+    public function getAvailableRooms(Request $request, RoomAvailabilityService $availability)
     {
         $start = $request->query('start_date');
         $end = $request->query('end_date');
@@ -148,46 +259,21 @@ class ReservationController
         if (! $start || ! $end) {
             return response()->json([]);
         }
-        // Query for reservations and bookings that overlap with the specified date range, excluding those that are cancelled or checked in/out
-        $overlappingReservations = Reservation::whereNotIn('status', ['cancelled', 'checked_in'])->where(function ($query) use ($start, $end) {
-            $query->whereBetween('reservation_start_date', [$start, $end])
-                ->orWhereBetween('reservation_end_date', [$start, $end])
-                ->orWhere(function ($q) use ($start, $end) {
-                    $q->where('reservation_start_date', '<=', $start)
-                        ->where('reservation_end_date', '>=', $end);
-                });
-        })->get();
-        // Query for bookings that overlap with the specified date range, excluding those that are cancelled or checked out
-        $overlappingBookings = Booking::whereNotIn('status', ['cancelled', 'checked_out'])->where(function ($query) use ($start, $end) {
-            $query->whereBetween('check_in_datetime', [$start, $end])
-                ->orWhereBetween('check_out_datetime', [$start, $end])
-                ->orWhere(function ($q) use ($start, $end) {
-                    $q->where('check_in_datetime', '<=', $start)
-                        ->where('check_out_datetime', '>=', $end);
-                });
-        })->get();
-        // Collect the IDs of rooms that are booked in overlapping reservations and bookings
-        $bookedRoomIds = [];
-        foreach ($overlappingReservations as $res) {
-            $bookedRoomIds = array_merge($bookedRoomIds, $res->selected_rooms ?? []);
+
+        $startParsed = Carbon::parse($start);
+        $endParsed = Carbon::parse($end);
+
+        if ($endParsed->lte($startParsed)) {
+            return response()->json([]);
         }
-        foreach ($overlappingBookings as $booking) {
-            $bookedRoomIds = array_merge($bookedRoomIds, $booking->booked_rooms ?? []);
-        }
-        // Remove duplicate room IDs and retrieve the available rooms that are not in the list of booked room IDs
-        // Rooms blocked for maintenance during this period are not available either
-        $blockedRoomIds = \App\Models\RoomBlock::where('is_active', true)
-            ->where('start_date', '<=', $end)
-            ->where('end_date', '>=', $start)
-            ->pluck('room_id')
-            ->all();
-        $bookedRoomIds = array_merge($bookedRoomIds, $blockedRoomIds);
-        // Remove duplicate room IDs and retrieve the available rooms that are not in the list of booked room IDs
-        $bookedRoomIds = array_unique($bookedRoomIds);
+
+        $bookedRoomIds = $availability->conflictingRoomIds($startParsed, $endParsed);
+
         $availableRooms = Room::whereNotIn('id', $bookedRoomIds)->get();
 
         return response()->json($availableRooms);
     }
+
     // Added functions
     public function checkIn(Request $request, int $id, BookingService $bookings)
     {
@@ -213,12 +299,15 @@ class ReservationController
             'guests' => $reservation->guests ?? 1,
             'status' => 'checked_in',
             'deposit' => $reservation->deposit ?? 0,
+            'payment_method' => $reservation->payment_method ?? 'cash',
+            'ewallet_type' => $reservation->ewallet_type,
+            'reference_number' => $reservation->reference_number,
         ]);
 
         $reservation->update(['status' => 'checked_in']);
 
         return redirect()->route('reservation.index')
-            ->with('success', 'Guest checked in. Total: ₱' . number_format($price['total'], 2));
+            ->with('success', 'Guest checked in. Total: ₱'.number_format($price['total'], 2));
     }
 
     /** Keeps the row (status Cancelled) and frees the rooms */
@@ -228,6 +317,32 @@ class ReservationController
 
         if ($reservation->status === 'reserved') {
             $reservation->update(['status' => 'cancelled']);
+
+            foreach ($reservation->selected_rooms ?? [] as $roomId) {
+                $hasOtherRes = Reservation::where('status', 'reserved')
+                    ->where('id', '!=', $reservation->id)
+                    ->where(function ($q) use ($roomId) {
+                        $q->whereJsonContains('selected_rooms', (string) $roomId)
+                            ->orWhereJsonContains('selected_rooms', (int) $roomId);
+                    })
+                    ->exists();
+
+                $hasActiveBooking = Booking::where('status', 'checked_in')
+                    ->where(function ($q) use ($roomId) {
+                        $q->whereJsonContains('booked_rooms', (string) $roomId)
+                            ->orWhereJsonContains('booked_rooms', (int) $roomId);
+                    })
+                    ->exists();
+
+                $hasBlock = RoomBlock::where('room_id', $roomId)
+                    ->where('is_active', true)
+                    ->where('end_date', '>=', now())
+                    ->exists();
+
+                if (! $hasOtherRes && ! $hasActiveBooking && ! $hasBlock) {
+                    Room::where('id', $roomId)->update(['status' => 'available']);
+                }
+            }
         }
 
         return redirect()->route('reservation.index', ['filter' => 'cancelled'])

@@ -1,0 +1,66 @@
+/* Full-page background image styling */
+body {
+    background-image: url('../../images/log.jpg'); 
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center; 
+    justify-content: center; 
+    font-family: Arial, sans-serif;
+    position: relative;
+}
+
+/* --- TOP LEFT BRANDING --- */
+.top-left-brand {
+    position: absolute;
+    top: 25px;
+    left: 30px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.8);
+    z-index: 10;
+}
+
+/* Login box styling */
+.login-card {
+    background-color: rgba(255, 255, 255, 0.90); 
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    padding: 2.5rem;
+}
+
+/* --- LOGO SIZING & POSITIONING --- */
+.logo-container {
+    margin-bottom: 0.5rem;
+}
+
+.login-logo {
+    width: 300px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Welcome Back text styling */
+.welcome-text {
+    color: #443627;
+    font-weight: bold;
+}
+
+/* Applying your vintage brown palette to the button */
+.btn-custom {
+    background-color: #443627;
+    color: #ffffff;
+}
+
+.btn-custom:hover {
+    background-color: #5c4a36;
+    color: #ffffff;
+}
