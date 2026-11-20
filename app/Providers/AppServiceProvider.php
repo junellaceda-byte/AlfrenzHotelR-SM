@@ -6,6 +6,7 @@ use App\Models\Amenity;
 use App\Models\Booking;
 use App\Models\Invoice;
 use App\Models\Room;
+use App\Services\SystemFormatService;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
@@ -99,6 +100,12 @@ class AppServiceProvider extends ServiceProvider
             'modals.quickresmodal',
         ], function ($view) {
             $view->with('availableAmenities', Amenity::where('offered', true)->get());
+        });
+
+        // System-wide timestamp formatting settings shared with all views
+        View::composer('*', function ($view) {
+            $view->with('dateFormat', SystemFormatService::dateFormat());
+            $view->with('timeFormat', SystemFormatService::timeFormat());
         });
     }
 }

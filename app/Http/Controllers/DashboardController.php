@@ -12,8 +12,11 @@ use Carbon\Carbon;
 
 class DashboardController
 {
-    //
-    public function index()
+    /**
+     * Compute real-time room statuses, KPI counts, and active maintenance blocks.
+     * Shared by both Receptionist Dashboard and Administrator Room Management.
+     */
+    public static function getRoomsData(): array
     {
         $now = now()->setTimezone('Asia/Manila');
 
@@ -130,6 +133,7 @@ class DashboardController
 
             return $room;
         });
+
         // Count the number of rooms in each status category
         $availableRooms = $rooms->where('status', 'available')->count();
         $occupiedRooms = $rooms->where('status', 'occupied')->count();
@@ -142,6 +146,21 @@ class DashboardController
             ->where('end_date', '>=', $now)
             ->orderBy('start_date')
             ->get();
+
+        return compact('rooms', 'availableRooms', 'occupiedRooms', 'reservedRooms', 'underMaintenanceRooms', 'activeBlocks');
+    }
+
+    public function index()
+    {
+        $now = now()->setTimezone('Asia/Manila');
+
+        $roomData = self::getRoomsData();
+        $rooms = $roomData['rooms'];
+        $availableRooms = $roomData['availableRooms'];
+        $occupiedRooms = $roomData['occupiedRooms'];
+        $reservedRooms = $roomData['reservedRooms'];
+        $underMaintenanceRooms = $roomData['underMaintenanceRooms'];
+        $activeBlocks = $roomData['activeBlocks'];
         // Count the number of active bookings
         $activeBookings = Booking::count();
         $shortRate = Room::value('short_stay_rate');

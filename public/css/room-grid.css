@@ -1,4 +1,3 @@
-
 /* Room Grid, KPI Cards, and Widgets - Alfrenzo's Hotel */
 
 /* KPI Summary Cards */
@@ -6,7 +5,9 @@
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .kpi-card:hover {
@@ -44,7 +45,7 @@
 }
 
 .notifications-panel .see-more-link {
-    color: #6A4435;
+    color: #6a4435;
     font-weight: 700;
     font-size: clamp(0.75rem, 0.82vw, 0.88rem);
     text-decoration: none;
@@ -77,8 +78,8 @@
 }
 
 .filter-btn-group .btn-filter.active {
-    background-color: #6A4435 !important;
-    border-color: #6A4435 !important;
+    background-color: #6a4435 !important;
+    border-color: #6a4435 !important;
     color: #ffffff !important;
     box-shadow: 0 2px 6px rgba(106, 68, 53, 0.25);
 }
@@ -86,7 +87,10 @@
 /* Room Grid Container */
 .hotel-room-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(clamp(13.5rem, 16vw, 19rem), 1fr));
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(clamp(13.5rem, 16vw, 19rem), 1fr)
+    );
     gap: clamp(0.85rem, 1.2vw, 1.5rem);
 }
 
@@ -99,7 +103,9 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 .hotel-room-card:hover {
@@ -128,7 +134,9 @@
     transform: translate(-50%, -50%) scale(0.9);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s ease, transform 0.22s ease;
+    transition:
+        opacity 0.22s ease,
+        transform 0.22s ease;
     z-index: 5;
 }
 
@@ -140,11 +148,11 @@
 
 .btn-card-amenities {
     background-color: #ffffff !important;
-    color: #6A4435 !important;
+    color: #6a4435 !important;
     font-weight: 800 !important;
     font-size: clamp(0.75rem, 0.8vw, 0.88rem);
     letter-spacing: 0.05em;
-    border: 2px solid #6A4435 !important;
+    border: 2px solid #6a4435 !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
     padding: 0.45rem 0.9rem;
     white-space: nowrap;
@@ -153,7 +161,7 @@
 }
 
 .btn-card-amenities:hover {
-    background-color: #6A4435 !important;
+    background-color: #6a4435 !important;
     color: #ffffff !important;
     transform: scale(1.05);
 }
@@ -217,7 +225,9 @@
 
 .room-overdue-counter .overdue-timer {
     font-variant-numeric: tabular-nums;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
     font-weight: 800;
 }
 

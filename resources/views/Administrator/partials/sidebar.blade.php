@@ -28,10 +28,10 @@
                     OVERVIEW
                 </a>
             </li>
-            <!-- Amenities -->
+            <!-- Sales Reports -->
             <li class="nav-item w-100">
-                <a href="?section=amenity" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'amenity' ? 'active' : '' }}">
-                    AMENITIES
+                <a href="?section=salerep" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'salerep' ? 'active' : '' }}">
+                    SALES REPORTS
                 </a>
             </li>
             <!-- Activities Logs -->
@@ -40,10 +40,10 @@
                     ACTIVITIES LOGS
                 </a>
             </li>
-            <!-- Sales Reports -->
+            <!-- Amenities -->
             <li class="nav-item w-100">
-                <a href="?section=salerep" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'salerep' ? 'active' : '' }}">
-                    SALES REPORTS
+                <a href="?section=amenity" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'amenity' ? 'active' : '' }}">
+                    AMENITIES
                 </a>
             </li>
             <!-- Archive -->

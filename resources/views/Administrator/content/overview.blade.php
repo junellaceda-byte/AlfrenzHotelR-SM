@@ -52,15 +52,17 @@
             
             <!-- Box Body (Scrollable if notifications overflow) -->
             <div class="card-body flex-grow-1 overflow-auto p-3" style="min-height: 150px; max-height: 300px;">
-                <!-- You can loop through your notifications here later -->
-                <div class="text-center text-muted mt-4">
-                    <small>No recent notifications.</small>
+                <!-- Populated dynamically via /api/admin/notifications -->
+                <div id="admin-notification-list">
+                    <div class="text-center text-muted mt-4">
+                        <small>No recent notifications.</small>
+                    </div>
                 </div>
             </div>
 
             <!-- Box Footer -->
             <div class="card-footer bg-white border-top text-end p-2 px-3">
-                <a href="#" class="text-decoration-none fw-bold" style="color: #443627; font-size: 0.85rem;">
+                <a href="#" class="text-decoration-none fw-bold" style="color: #443627; font-size: 0.85rem;" data-bs-toggle="modal" data-bs-target="#adminNotificationsModal">
                     SEE MORE &raquo;
                 </a>
             </div>
@@ -108,3 +110,4 @@
 </div>
 
 @include('Administrator.modals.inout')
+@include('Administrator.modals.notifications')

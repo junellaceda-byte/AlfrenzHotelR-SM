@@ -1,13 +1,78 @@
 <!-- Reuse the overview CSS to keep the design consistent -->
 <link rel="stylesheet" href="{{ asset('CSS/Administrator/overview.css') }}">
 
+<!-- Filter Bar for Sales Reports (Date, Month, Year) -->
+<div class="card border rounded p-3 mb-3 bg-white shadow-sm">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#443627" viewBox="0 0 16 16">
+                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+            </svg>
+            <div>
+                <h6 class="fw-bold m-0" style="color: #443627;">Sales Reports Filter</h6>
+                <small id="salesFilterSubtitle" class="text-muted">Showing live sales data from Receptionist Billing</small>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <!-- Year Selector -->
+            <div>
+                <select id="salesFilterYear" class="form-select form-select-sm border-secondary fw-semibold" style="min-width: 95px; color: #443627;">
+                    @php
+                        $currentYear = (int) now()->setTimezone('Asia/Manila')->format('Y');
+                    @endphp
+                    @for($y = $currentYear + 1; $y >= $currentYear - 4; $y--)
+                        <option value="{{ $y }}" {{ $y === $currentYear ? 'selected' : '' }}>{{ $y }}</option>
+                    @endfor
+                </select>
+            </div>
+
+            <!-- Month Selector -->
+            <div>
+                <select id="salesFilterMonth" class="form-select form-select-sm border-secondary fw-semibold" style="min-width: 130px; color: #443627;">
+                    @php
+                        $currentMonth = (int) now()->setTimezone('Asia/Manila')->format('n');
+                        $months = [
+                            1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+                            5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+                            9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
+                        ];
+                    @endphp
+                    <option value="all">All Months</option>
+                    @foreach($months as $num => $name)
+                        <option value="{{ $num }}" {{ $num === $currentMonth ? 'selected' : '' }}>{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Optional Specific Date Picker -->
+            <div class="d-flex align-items-center gap-1">
+                <input type="date" id="salesFilterDate" class="form-control form-control-sm border-secondary" title="Filter by specific day" style="width: 140px; color: #443627;">
+                <button type="button" id="salesFilterClearDateBtn" class="btn btn-sm btn-outline-secondary text-nowrap d-none" title="Clear specific day filter">
+                    &times;
+                </button>
+            </div>
+
+            <!-- Quick Filter Buttons -->
+            <div class="btn-group" role="group">
+                <button type="button" id="salesFilterThisMonthBtn" class="btn btn-sm text-white" style="background-color: #443627;">
+                    This Month
+                </button>
+                <button type="button" id="salesFilterTodayBtn" class="btn btn-sm btn-outline-secondary">
+                    Today
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Step 1: Top Row Key Financial Metrics -->
 <div class="row g-2 mb-3">
-    <!-- Card 1: Total Revenue (Month) -->
+    <!-- Card 1: Total Revenue (Month/Filtered) -->
     <div class="col-6 col-lg-3">
         <div class="card h-100 rounded p-2 p-sm-3 highlight-pink-flat">
-            <h4 class="text-dark mt-0 mb-1 mb-sm-2 fs-6 text-truncate">Total Revenue (Nov)</h4>
-            <div class="fs-4 fs-sm-3 fw-bold text-dark">₱124,500</div>
+            <h4 id="salesTotalRevenueTitle" class="text-dark mt-0 mb-1 mb-sm-2 fs-6 text-truncate">Total Revenue (Nov)</h4>
+            <div id="salesTotalRevenueValue" class="fs-4 fs-sm-3 fw-bold text-dark">₱124,500</div>
         </div>
     </div>
 
@@ -15,7 +80,7 @@
     <div class="col-6 col-lg-3">
         <div class="card h-100 rounded p-2 p-sm-3 highlight-pink-flat">
             <h4 class="text-dark mt-0 mb-1 mb-sm-2 fs-6 text-truncate">Avg. Daily Rate</h4>
-            <div class="fs-4 fs-sm-3 fw-bold text-dark">₱1,850</div>
+            <div id="salesAdrValue" class="fs-4 fs-sm-3 fw-bold text-dark">₱1,850</div>
         </div>
     </div>
 
@@ -23,7 +88,7 @@
     <div class="col-6 col-lg-3">
         <div class="card h-100 rounded p-2 p-sm-3 highlight-pink-flat">
             <h4 class="text-dark mt-0 mb-1 mb-sm-2 fs-6 text-truncate">Total Bookings</h4>
-            <div class="fs-4 fs-sm-3 fw-bold text-dark">86</div>
+            <div id="salesTotalBookingsValue" class="fs-4 fs-sm-3 fw-bold text-dark">86</div>
         </div>
     </div>
 
@@ -96,11 +161,11 @@
         <div class="card rounded p-3 p-sm-4 highlight-pink-flat" style="background-color: #FFCED8;">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <h4 class="text-dark mt-0 fs-6 text-truncate">Lost Revenue (Cancellations)</h4>
-                <span class="badge bg-danger rounded-pill">5 Bookings</span>
+                <span id="salesCancellationsBadge" class="badge bg-danger rounded-pill">5 Bookings</span>
             </div>
-            <div class="fs-4 fs-sm-3 fw-bold text-danger">-₱12,500</div>
+            <div id="salesCancellationsLost" class="fs-4 fs-sm-3 fw-bold text-danger">-₱12,500</div>
             <small class="text-dark mt-2 d-block" style="font-size: 0.8rem;">
-                *Potential revenue lost from cancelled online reservations this month.
+                *Potential revenue lost from cancelled reservations in this period.
             </small>
         </div>
 
@@ -109,11 +174,11 @@
         <div class="card rounded p-3 p-sm-4 border flex-grow-1" style="border-left: 5px solid #443627 !important;">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <h4 class="mt-0 fs-6 text-truncate" style="color: #443627; font-weight: 600;">Pending Payments</h4>
-                <span class="badge rounded-pill" style="background-color: #443627; color: white;">3 Guests</span>
+                <span id="salesPendingGuestsBadge" class="badge rounded-pill" style="background-color: #443627; color: white;">3 Guests</span>
             </div>
-            <div class="fs-4 fs-sm-3 fw-bold" style="color: #443627;">₱8,400</div>
+            <div id="salesPendingAmount" class="fs-4 fs-sm-3 fw-bold" style="color: #443627;">₱8,400</div>
             <small class="text-muted mt-2 d-block" style="font-size: 0.8rem;">
-                *Unsettled balances from currently checked-in guests (extensions, extra beds, unpaid dues).
+                *Unsettled balances from Receptionist Billing pending payments table.
             </small>
         </div>
 

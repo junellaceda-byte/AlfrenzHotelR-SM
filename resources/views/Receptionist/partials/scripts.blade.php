@@ -644,20 +644,92 @@
     </script>
     <!-- Live Clock -->
     <script>
-        // Live clock in the top bar (Manila time)
-        document.addEventListener('DOMContentLoaded', function () {
-            var dateEl = document.getElementById('current-date');
-            var timeEl = document.getElementById('current-time');
-            if (!dateEl || !timeEl) return;
+        // Live clock in the top bar (Manila time) with dynamic format
+        (function () {
+            function formatPhpDate(date, format) {
+                if (!format) return '';
+                var options = {
+                    timeZone: 'Asia/Manila',
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false
+                };
+                var parts = new Intl.DateTimeFormat('en-US', options).formatToParts(date);
+                var p = {};
+                parts.forEach(function(part) { p[part.type] = part.value; });
 
-            function tick() {
-                var now = new Date();
-                dateEl.textContent = now.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric', timeZone: 'Asia/Manila' });
-                timeEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila' });
+                var Y = p.year || '';
+                var y = Y ? Y.slice(-2) : '';
+                var m = p.month ? p.month.padStart(2, '0') : '';
+                var n = p.month || '';
+                var d = p.day ? p.day.padStart(2, '0') : '';
+                var j = p.day || '';
+                var H = p.hour === '24' ? '00' : (p.hour ? p.hour.padStart(2, '0') : '00');
+                var hourInt = parseInt(H, 10);
+                var hour12 = hourInt % 12 || 12;
+                var h = String(hour12).padStart(2, '0');
+                var g = String(hour12);
+                var G = String(hourInt);
+                var i = p.minute ? p.minute.padStart(2, '0') : '00';
+                var s = p.second ? p.second.padStart(2, '0') : '00';
+                var A = hourInt >= 12 ? 'PM' : 'AM';
+                var a = hourInt >= 12 ? 'pm' : 'am';
+
+                var monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                var monthNamesFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                var M = monthNamesShort[parseInt(n, 10) - 1] || '';
+                var F = monthNamesFull[parseInt(n, 10) - 1] || '';
+
+                var map = {
+                    'Y': Y, 'y': y, 'm': m, 'n': n, 'd': d, 'j': j,
+                    'H': H, 'h': h, 'G': G, 'g': g, 'i': i, 's': s,
+                    'A': A, 'a': a, 'M': M, 'F': F
+                };
+
+                var res = '';
+                for (var k = 0; k < format.length; k++) {
+                    var ch = format[k];
+                    res += (map.hasOwnProperty(ch) ? map[ch] : ch);
+                }
+                return res;
             }
-            tick();
-            setInterval(tick, 1000);
-        });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var dateEl = document.getElementById('current-date');
+                var timeEl = document.getElementById('current-time');
+                if (!dateEl || !timeEl) return;
+
+                var dateFormat = dateEl.getAttribute('data-format') || '{{ $dateFormat ?? "M d, Y" }}';
+                var timeFormat = timeEl.getAttribute('data-format') || '{{ $timeFormat ?? "h:i A" }}';
+
+                function tick() {
+                    var now = new Date();
+                    dateEl.textContent = formatPhpDate(now, dateFormat);
+                    timeEl.textContent = formatPhpDate(now, timeFormat);
+                }
+
+                function syncSettings() {
+                    fetch('{{ route("api.system.settings") }}')
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            if (data && data.date_format) dateFormat = data.date_format;
+                            if (data && data.time_format) timeFormat = data.time_format;
+                            dateEl.setAttribute('data-format', dateFormat);
+                            timeEl.setAttribute('data-format', timeFormat);
+                            tick();
+                        })
+                        .catch(function(e) {});
+                }
+
+                tick();
+                setInterval(tick, 1000);
+                setInterval(syncSettings, 30000);
+            });
+        })();
     </script>
     
     <!-- Block Room Form Script -->

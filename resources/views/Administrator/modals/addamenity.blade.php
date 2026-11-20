@@ -24,6 +24,7 @@
                             <option value="item">item</option>
                             <option value="hours">hours</option>
                             <option value="night">night</option>
+                            <!-- hours & night must be removed in this option, it will be become description -->
                         </select>
                     </div>
                 </div>

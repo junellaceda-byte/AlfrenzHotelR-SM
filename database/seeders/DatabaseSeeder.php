@@ -29,5 +29,14 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AmenitySeeder::class,
         ]);
+        $this->call([
+            MonthlyTargetSeeder::class,
+        ]);
+        $this->call([
+            SystemSettingSeeder::class,
+        ]);
+        $this->call([
+            AdminUserSeeder::class,
+        ]);
     }
 }

@@ -12,10 +12,10 @@
     <div class="d-flex align-items-center gap-2 gap-sm-3">
         <!-- Date and Time (live, Manila time) -->
         <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary small">
-            <span id="current-date">{{ now()->setTimezone('Asia/Manila')->format('M d, Y') }}</span>
+            <span id="current-date" data-format="{{ $dateFormat ?? 'M d, Y' }}">{{ \App\Services\SystemFormatService::formatDate(now()) }}</span>
         </div>
         <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary small">
-            <span id="current-time">{{ now()->setTimezone('Asia/Manila')->format('h:i A') }}</span>
+            <span id="current-time" data-format="{{ $timeFormat ?? 'h:i A' }}">{{ \App\Services\SystemFormatService::formatTime(now()) }}</span>
         </div>
         
         <!-- Notifications bell -->

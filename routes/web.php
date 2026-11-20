@@ -10,10 +10,16 @@ use App\Http\Controllers\RoomBlockController;
 use App\Models\Amenity;
 use App\Models\Booking;
 use App\Models\PaymentLog;
+use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Staff;
+use App\Models\SystemSetting;
+use App\Models\User;
+use App\Services\SystemFormatService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
 
 // ---------------------------------------------------
 // Administrator & Login Routes
@@ -36,6 +42,15 @@ Route::get('/admindashboard', function (Request $request) {
     // Fetch all staff from the database
     $staffs = Staff::all();
 
+    // Fetch real-time room data from database for Room Management section
+    $roomData = DashboardController::getRoomsData();
+    $rooms = $roomData['rooms'];
+    $availableRooms = $roomData['availableRooms'];
+    $occupiedRooms = $roomData['occupiedRooms'];
+    $reservedRooms = $roomData['reservedRooms'];
+    $underMaintenanceRooms = $roomData['underMaintenanceRooms'];
+    $activeBlocks = $roomData['activeBlocks'];
+
     // --- Overview card data (today only, Asia/Manila timezone) ---
     $today = now()->setTimezone('Asia/Manila')->toDateString();
 
@@ -50,9 +65,9 @@ Route::get('/admindashboard', function (Request $request) {
 
     $occupiedRoomIds = collect();
     foreach ($todayBookings as $booking) {
-        $rooms = is_array($booking->booked_rooms) ? $booking->booked_rooms : json_decode($booking->booked_rooms, true);
-        if (! empty($rooms)) {
-            foreach ($rooms as $rId) {
+        $bookingRooms = is_array($booking->booked_rooms) ? $booking->booked_rooms : json_decode($booking->booked_rooms, true);
+        if (! empty($bookingRooms)) {
+            foreach ($bookingRooms as $rId) {
                 $occupiedRoomIds->push((int) $rId);
             }
         }
@@ -101,6 +116,9 @@ Route::get('/admindashboard', function (Request $request) {
     // Fetch all amenities from the database for the Amenities section
     $amenities = Amenity::orderBy('id', 'asc')->get();
 
+    // Administrator user record for Settings
+    $adminUser = User::first() ?? new User(['username' => 'admin']);
+
     // Pass the variables to the admindash layout
     return view('Administrator.layout.admindash', compact(
         'section',
@@ -112,9 +130,122 @@ Route::get('/admindashboard', function (Request $request) {
         'checkOutsToday',
         'totalRooms',
         'todayCheckIns',
-        'todayCheckOuts'
+        'todayCheckOuts',
+        'rooms',
+        'availableRooms',
+        'occupiedRooms',
+        'reservedRooms',
+        'underMaintenanceRooms',
+        'activeBlocks',
+        'adminUser'
     ));
 });
+
+// Admin Room Management Routes
+Route::post('/admin/rooms/store', function (Request $request) {
+    $validated = $request->validate([
+        'room_number' => 'required|string|max:50|unique:rooms,room_number',
+        'short_stay_rate' => 'required|numeric|min:0',
+        'overnight_rate' => 'required|numeric|min:0',
+    ]);
+
+    Room::create([
+        'room_number' => $validated['room_number'],
+        'short_stay_rate' => (float) $validated['short_stay_rate'],
+        'overnight_rate' => (float) $validated['overnight_rate'],
+        'status' => 'available',
+    ]);
+
+    return redirect('/admindashboard?section=rooms')->with('success', 'Room '.$validated['room_number'].' created successfully.');
+})->name('admin.rooms.store');
+
+Route::put('/admin/rooms/{id}/update', function (Request $request, $id) {
+    $validated = $request->validate([
+        'room_number' => 'required|string|max:50|unique:rooms,room_number,'.$id,
+        'short_stay_rate' => 'required|numeric|min:0',
+        'overnight_rate' => 'required|numeric|min:0',
+        'status' => 'nullable|in:available,occupied,under_maintenance,reserved',
+    ]);
+
+    $room = Room::findOrFail($id);
+    $room->update([
+        'room_number' => $validated['room_number'],
+        'short_stay_rate' => (float) $validated['short_stay_rate'],
+        'overnight_rate' => (float) $validated['overnight_rate'],
+        'status' => $validated['status'] ?? $room->status,
+    ]);
+
+    return redirect('/admindashboard?section=rooms')->with('success', 'Room '.$room->room_number.' updated successfully.');
+})->name('admin.rooms.update');
+
+Route::delete('/admin/rooms/{id}/delete', function ($id) {
+    $room = Room::findOrFail($id);
+
+    // Prevent deletion if room has active bookings or reservations
+    $hasActiveBooking = Booking::whereNotIn('status', ['cancelled', 'checked_out'])
+        ->where(function ($q) use ($room) {
+            $q->whereJsonContains('booked_rooms', (string) $room->id)
+                ->orWhereJsonContains('booked_rooms', (int) $room->id);
+        })->exists();
+
+    $hasActiveReservation = Reservation::whereNotIn('status', ['cancelled', 'checked_in'])
+        ->where(function ($q) use ($room) {
+            $q->whereJsonContains('selected_rooms', (string) $room->id)
+                ->orWhereJsonContains('selected_rooms', (int) $room->id);
+        })->exists();
+
+    if ($hasActiveBooking || $hasActiveReservation) {
+        return redirect('/admindashboard?section=rooms')->with('error', 'Cannot delete Room '.$room->room_number.' because it is currently occupied or reserved.');
+    }
+
+    $roomNumber = $room->room_number;
+    $room->delete();
+
+    return redirect('/admindashboard?section=rooms')->with('success', 'Room '.$roomNumber.' deleted successfully.');
+})->name('admin.rooms.destroy');
+
+// Admin Settings Routes (Credentials & Timestamp formats)
+Route::put('/admin/settings', function (Request $request) {
+    $validated = $request->validate([
+        'username' => ['required', 'string', 'max:255'],
+        'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+        'date_format' => ['required', 'string', Rule::in(['M d, Y', 'F d, Y', 'F j, Y', 'Y-m-d', 'm/d/Y', 'd/m/Y'])],
+        'time_format' => ['required', 'string', Rule::in(['h:i A', 'h:i:s A', 'H:i', 'H:i:s'])],
+    ]);
+
+    // Update system-wide timestamp display formats
+    SystemSetting::set('date_format', $validated['date_format']);
+    SystemSetting::set('time_format', $validated['time_format']);
+
+    // Update Administrator credentials
+    $admin = User::first() ?? new User;
+    $admin->username = $validated['username'];
+    $admin->user_id = $validated['username'];
+
+    if (! empty($validated['password'])) {
+        $admin->password = Hash::make($validated['password']);
+    } elseif (! $admin->exists) {
+        $admin->password = Hash::make('admin123');
+    }
+
+    $admin->save();
+
+    return redirect('/admindashboard?section=settings')->with('success', 'System settings and administrator credentials updated successfully.');
+})->name('admin.settings.update');
+
+Route::get('/api/system/settings', function () {
+    $dateFormat = SystemFormatService::dateFormat();
+    $timeFormat = SystemFormatService::timeFormat();
+    $now = now()->setTimezone('Asia/Manila');
+
+    return response()->json([
+        'date_format' => $dateFormat,
+        'time_format' => $timeFormat,
+        'formatted_date' => $now->format($dateFormat),
+        'formatted_time' => $now->format($timeFormat),
+        'server_time' => $now->toIso8601String(),
+    ]);
+})->name('api.system.settings');
 
 Route::post('/amenities/store', function (Request $request) {
     // 1. Validate the incoming data from the form
@@ -291,6 +422,10 @@ Route::get('/api/available-rooms', [ReservationController::class, 'getAvailableR
 // Real-time dashboard polling endpoint: notifications + KPI counts + auto-checkout of overdue rooms
 Route::get('/api/dashboard/notifications', [DashboardApiController::class, 'notifications'])->name('api.dashboard.notifications');
 Route::get('/api/admin/overview-stats', [DashboardApiController::class, 'adminOverviewStats'])->name('api.admin.overview-stats');
+Route::get('/api/admin/revenue-stats', [DashboardApiController::class, 'revenueStats'])->name('api.admin.revenue-stats');
+Route::get('/api/admin/notifications', [DashboardApiController::class, 'adminNotifications'])->name('api.admin.notifications');
+Route::get('/api/admin/sales-report', [DashboardApiController::class, 'salesReport'])->name('api.admin.sales-report');
+Route::post('/api/admin/monthly-target', [DashboardApiController::class, 'saveMonthlyTarget'])->name('api.admin.monthly-target');
 Route::get('/api/amenities', [DashboardApiController::class, 'amenities'])->name('api.amenities');
 
 // Reservation edit & delete
