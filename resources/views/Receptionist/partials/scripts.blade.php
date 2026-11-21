@@ -104,7 +104,7 @@
 
             // 2. (Old Book Choice Modal transitions removed – replaced by #bookNowModal controller below)
 
-            // 3. Add Amenities Preselection & Dynamic Details
+            // 3. Add Amenities Preselection, Dynamic Multi-Selection & List Details
             const amenityButtons = document.querySelectorAll('.btn-trigger-amenity');
             const amenityRoomSelect = document.getElementById('amenityRoomSelect');
             const placeholderRoomNumber = document.getElementById('placeholderRoomNumber');
@@ -112,8 +112,239 @@
             const amenitiesModalEl = document.getElementById('amenitiesModal');
             const formRoomId = document.getElementById('amenitiesFormRoomId');
             const formBookingId = document.getElementById('amenitiesFormBookingId');
+            const amenitiesFormEl = document.getElementById('amenitiesForm');
+            const amenityItemSelect = document.getElementById('amenityItemSelect');
+            const amenityQuantity = document.getElementById('amenityQuantity');
+            const amenitySpecialReq = document.getElementById('amenitySpecialReq');
+            const btnAddAmenityToList = document.getElementById('btnAddAmenityToList');
+            const selectedAmenitiesList = document.getElementById('selectedAmenitiesList');
+            const emptyAmenitiesNotice = document.getElementById('emptyAmenitiesNotice');
+            const selectedAmenitiesBadge = document.getElementById('selectedAmenitiesBadge');
+            const selectedAmenitiesTotal = document.getElementById('selectedAmenitiesTotal');
+            const amenitiesJsonInput = document.getElementById('amenitiesJsonInput');
+            const amenitiesHiddenInputsContainer = document.getElementById('amenitiesHiddenInputsContainer');
+
+            let selectedModalAmenities = [];
+
+            function escapeHtmlLocal(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function formatMoneyLocal(amount) {
+                return Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            function renderSelectedAmenitiesList() {
+                if (!selectedAmenitiesList) return;
+
+                if (selectedModalAmenities.length === 0) {
+                    if (emptyAmenitiesNotice) emptyAmenitiesNotice.style.display = 'block';
+                    if (selectedAmenitiesBadge) selectedAmenitiesBadge.textContent = '0 items';
+                    if (selectedAmenitiesTotal) selectedAmenitiesTotal.textContent = '₱0.00';
+                    selectedAmenitiesList.innerHTML = '';
+                    if (amenitiesJsonInput) amenitiesJsonInput.value = '';
+                    if (amenitiesHiddenInputsContainer) amenitiesHiddenInputsContainer.innerHTML = '';
+                    return;
+                }
+
+                if (emptyAmenitiesNotice) emptyAmenitiesNotice.style.display = 'none';
+                if (selectedAmenitiesBadge) {
+                    selectedAmenitiesBadge.textContent = selectedModalAmenities.length + (selectedModalAmenities.length === 1 ? ' item' : ' items');
+                }
+
+                let total = 0;
+                let html = '';
+                let hiddenHtml = '';
+
+                selectedModalAmenities.forEach((item, index) => {
+                    const subtotal = item.quantity * item.price;
+                    total += subtotal;
+
+                    hiddenHtml += '<input type="hidden" name="amenities[' + index + '][amenity_id]" value="' + escapeHtmlLocal(item.amenityId) + '">';
+                    hiddenHtml += '<input type="hidden" name="amenities[' + index + '][quantity]" value="' + item.quantity + '">';
+                    hiddenHtml += '<input type="hidden" name="amenities[' + index + '][notes]" value="' + escapeHtmlLocal(item.notes || '') + '">';
+
+                    html += '<div class="list-group-item bg-white rounded border p-2 mb-1 d-flex align-items-center justify-content-between" data-index="' + index + '">' +
+                        '<div class="me-2 text-truncate" style="max-width: 175px;">' +
+                            '<div class="fw-bold text-dark small text-truncate" title="' + escapeHtmlLocal(item.name) + '">' + escapeHtmlLocal(item.name) + '</div>' +
+                            '<div class="text-muted" style="font-size: 0.72rem;">' +
+                                '₱' + formatMoneyLocal(item.price) + ' / ' + escapeHtmlLocal(item.charged) +
+                                (item.notes ? ' <span class="badge bg-light text-secondary border ms-1">' + escapeHtmlLocal(item.notes) + '</span>' : '') +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="d-flex align-items-center gap-1">' +
+                            '<div class="input-group input-group-sm" style="width: 75px;">' +
+                                '<button class="btn btn-outline-secondary btn-item-minus px-1 py-0" type="button" data-index="' + index + '" title="Decrease quantity">-</button>' +
+                                '<input type="number" class="form-control form-control-sm text-center px-0 py-0 input-item-quantity" min="1" max="20" value="' + item.quantity + '" data-index="' + index + '">' +
+                                '<button class="btn btn-outline-secondary btn-item-plus px-1 py-0" type="button" data-index="' + index + '" title="Increase quantity">+</button>' +
+                            '</div>' +
+                            '<div class="text-end fw-bold small text-dark ms-1" style="min-width: 65px;">' +
+                                '₱' + formatMoneyLocal(subtotal) +
+                            '</div>' +
+                            '<button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1 btn-item-remove" data-index="' + index + '" title="Remove item">' +
+                                '<span style="font-size: 1.1rem; line-height: 1; font-weight: bold;">&times;</span>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
+                });
+
+                selectedAmenitiesList.innerHTML = html;
+                if (selectedAmenitiesTotal) selectedAmenitiesTotal.textContent = '₱' + formatMoneyLocal(total);
+                if (amenitiesJsonInput) {
+                    amenitiesJsonInput.value = JSON.stringify(selectedModalAmenities.map(function(i) {
+                        return {
+                            amenity_id: i.amenityId,
+                            quantity: i.quantity,
+                            notes: i.notes
+                        };
+                    }));
+                }
+                if (amenitiesHiddenInputsContainer) {
+                    amenitiesHiddenInputsContainer.innerHTML = hiddenHtml;
+                }
+            }
+
+            function addAmenityFromInputs() {
+                if (!amenityItemSelect || !amenityItemSelect.value) return false;
+                const opt = amenityItemSelect.options[amenityItemSelect.selectedIndex];
+                if (!opt || !opt.value) return false;
+
+                const id = opt.value;
+                const name = opt.getAttribute('data-name') || opt.text.split('(')[0].trim();
+                const price = parseFloat(opt.getAttribute('data-price')) || 0;
+                const charged = opt.getAttribute('data-charged') || 'item';
+                const qty = Math.max(1, parseInt(amenityQuantity ? amenityQuantity.value : 1, 10) || 1);
+                const notes = amenitySpecialReq ? amenitySpecialReq.value.trim() : '';
+
+                const existingIndex = selectedModalAmenities.findIndex(function(a) {
+                    return String(a.amenityId) === String(id);
+                });
+
+                if (existingIndex > -1) {
+                    selectedModalAmenities[existingIndex].quantity += qty;
+                    if (notes) {
+                        selectedModalAmenities[existingIndex].notes = selectedModalAmenities[existingIndex].notes
+                            ? (selectedModalAmenities[existingIndex].notes + ', ' + notes)
+                            : notes;
+                    }
+                } else {
+                    selectedModalAmenities.push({
+                        amenityId: id,
+                        name: name,
+                        price: price,
+                        charged: charged,
+                        quantity: qty,
+                        notes: notes
+                    });
+                }
+
+                renderSelectedAmenitiesList();
+
+                // Reset inputs for next selection so user can choose multiple amenities easily
+                amenityItemSelect.value = '';
+                if (amenityQuantity) amenityQuantity.value = 1;
+                if (amenitySpecialReq) amenitySpecialReq.value = '';
+
+                const scrollArea = document.getElementById('selectedAmenitiesScrollArea');
+                if (scrollArea) {
+                    scrollArea.scrollTop = scrollArea.scrollHeight;
+                }
+                return true;
+            }
+
+            if (amenityItemSelect) {
+                amenityItemSelect.addEventListener('change', function() {
+                    addAmenityFromInputs();
+                });
+            }
+
+            if (btnAddAmenityToList) {
+                btnAddAmenityToList.addEventListener('click', function() {
+                    if (!amenityItemSelect || !amenityItemSelect.value) {
+                        alert('Please choose an amenity from the dropdown first.');
+                        return;
+                    }
+                    addAmenityFromInputs();
+                });
+            }
+
+            if (selectedAmenitiesList) {
+                selectedAmenitiesList.addEventListener('click', function(e) {
+                    const btnRemove = e.target.closest('.btn-item-remove');
+                    if (btnRemove) {
+                        const index = parseInt(btnRemove.getAttribute('data-index'), 10);
+                        if (!isNaN(index) && selectedModalAmenities[index]) {
+                            selectedModalAmenities.splice(index, 1);
+                            renderSelectedAmenitiesList();
+                        }
+                        return;
+                    }
+
+                    const btnMinus = e.target.closest('.btn-item-minus');
+                    if (btnMinus) {
+                        const index = parseInt(btnMinus.getAttribute('data-index'), 10);
+                        if (!isNaN(index) && selectedModalAmenities[index]) {
+                            if (selectedModalAmenities[index].quantity > 1) {
+                                selectedModalAmenities[index].quantity--;
+                                renderSelectedAmenitiesList();
+                            } else {
+                                selectedModalAmenities.splice(index, 1);
+                                renderSelectedAmenitiesList();
+                            }
+                        }
+                        return;
+                    }
+
+                    const btnPlus = e.target.closest('.btn-item-plus');
+                    if (btnPlus) {
+                        const index = parseInt(btnPlus.getAttribute('data-index'), 10);
+                        if (!isNaN(index) && selectedModalAmenities[index]) {
+                            if (selectedModalAmenities[index].quantity < 20) {
+                                selectedModalAmenities[index].quantity++;
+                                renderSelectedAmenitiesList();
+                            }
+                        }
+                        return;
+                    }
+                });
+
+                selectedAmenitiesList.addEventListener('change', function(e) {
+                    const inputQty = e.target.closest('.input-item-quantity');
+                    if (inputQty) {
+                        const index = parseInt(inputQty.getAttribute('data-index'), 10);
+                        if (!isNaN(index) && selectedModalAmenities[index]) {
+                            let val = parseInt(inputQty.value, 10);
+                            if (isNaN(val) || val < 1) val = 1;
+                            if (val > 20) val = 20;
+                            selectedModalAmenities[index].quantity = val;
+                            renderSelectedAmenitiesList();
+                        }
+                    }
+                });
+            }
+
+            function resetAmenitiesModalState() {
+                selectedModalAmenities = [];
+                renderSelectedAmenitiesList();
+                if (amenityItemSelect) amenityItemSelect.value = '';
+                if (amenityQuantity) amenityQuantity.value = 1;
+                if (amenitySpecialReq) amenitySpecialReq.value = '';
+            }
+
+            if (amenitiesModalEl) {
+                amenitiesModalEl.addEventListener('hidden.bs.modal', function() {
+                    resetAmenitiesModalState();
+                });
+            }
 
             function updateGuestDetails(roomNumber, guestName, roomId, bookingId) {
+                resetAmenitiesModalState();
                 if (placeholderRoomNumber) {
                     placeholderRoomNumber.textContent = roomNumber ? `Room ${roomNumber}` : 'Room --';
                 }
@@ -163,26 +394,44 @@
                 }
             });
 
-            const amenitiesFormEl = document.getElementById('amenitiesForm');
             if (amenitiesFormEl) {
                 amenitiesFormEl.addEventListener('submit', function(e) {
-                    const amenityItemSelect = document.getElementById('amenityItemSelect');
+                    // If an amenity is selected in the dropdown but hasn't been added yet, add it
+                    if (amenityItemSelect && amenityItemSelect.value) {
+                        addAmenityFromInputs();
+                    }
+
                     if (!amenityRoomSelect || !amenityRoomSelect.value) {
                         e.preventDefault();
                         alert('Please select an occupied room.');
                         return;
                     }
-                    if (!amenityItemSelect || !amenityItemSelect.value) {
+
+                    if (selectedModalAmenities.length === 0) {
                         e.preventDefault();
-                        alert('Please select an amenity item.');
+                        alert('Please select at least one amenity to add.');
                         return;
                     }
+
                     if (formRoomId) {
                         formRoomId.value = amenityRoomSelect.value;
                     }
                     const selectedOpt = amenityRoomSelect.options[amenityRoomSelect.selectedIndex];
                     if (formBookingId && selectedOpt) {
                         formBookingId.value = selectedOpt.getAttribute('data-booking-id') || '';
+                    }
+
+                    // Fallback populate single-item fields for backwards compatibility
+                    if (selectedModalAmenities.length > 0) {
+                        if (amenityItemSelect) {
+                            amenityItemSelect.value = selectedModalAmenities[0].amenityId;
+                        }
+                        if (amenityQuantity) {
+                            amenityQuantity.value = selectedModalAmenities[0].quantity;
+                        }
+                        if (amenitySpecialReq) {
+                            amenitySpecialReq.value = selectedModalAmenities[0].notes || '';
+                        }
                     }
                 });
             }
@@ -954,7 +1203,7 @@
 
         /**
          * Update KPI number cards.
-         * @param {Object} kpi  { available, occupied, reserved, maintenance }
+         * @param {Object} kpi  { available, occupied, reserved, maintenance, total }
          */
         function updateKpi(kpi) {
             var fields = {
@@ -967,6 +1216,11 @@
                 var el = document.getElementById(id);
                 if (el) { el.textContent = fields[id]; }
             });
+            // Sync total rooms label if present (e.g. "Total: X Rooms" in room management sections)
+            if (kpi.total !== undefined) {
+                var totalLabel = document.getElementById('total-rooms-label');
+                if (totalLabel) { totalLabel.textContent = kpi.total; }
+            }
         }
 
         /**
@@ -1039,6 +1293,7 @@
                         counterEl.classList.remove('d-none');
                     }
 
+                    card.classList.add('is-overdue');
                     // Show OVERDUE overlay on the room image
                     var wrapper = card.querySelector('.room-image-wrapper');
                     if (wrapper && !wrapper.querySelector('.overlay-overdue')) {
@@ -1056,6 +1311,7 @@
                     }
                 } else {
                     // Scheduled check-out date and time have not passed yet
+                    card.classList.remove('is-overdue');
                     if (counterEl) {
                         counterEl.classList.add('d-none');
                     }
@@ -1069,6 +1325,7 @@
                             if (!wrapper.querySelector('.overlay-occupied')) {
                                 var occ = document.createElement('div');
                                 occ.className = 'position-absolute top-0 start-0 w-100 h-100 overlay-occupied';
+                                occ.textContent = 'OCCUPIED';
                                 wrapper.appendChild(occ);
                             }
                         }
@@ -1169,7 +1426,15 @@
                             }
                         }
                         overlay.className = 'position-absolute top-0 start-0 w-100 h-100 ' + overlayClass;
-                        if (overlayClass === 'overlay-overdue') { overlay.textContent = 'OVERDUE'; }
+                        if (overlayClass === 'overlay-overdue') {
+                            overlay.textContent = 'OVERDUE';
+                        } else if (overlayClass === 'overlay-occupied') {
+                            overlay.textContent = 'OCCUPIED';
+                        } else if (overlayClass === 'overlay-reserved') {
+                            overlay.textContent = 'RESERVED';
+                        } else if (overlayClass === 'overlay-maintenance') {
+                            overlay.textContent = 'UNDER MAINTENANCE';
+                        }
                         wrapper.appendChild(overlay);
                     }
 
@@ -1184,6 +1449,8 @@
                                 isOverdue = true;
                             }
                         }
+
+                        card.classList.toggle('is-overdue', isOverdue);
 
                         if (!isOverdue) {
                             var heading = card.querySelector('.room-number-heading');

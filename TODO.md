@@ -77,10 +77,22 @@ Rule: never edit or delete old migrations, add new ones.
 
 ## Activity Logs: not finished
 
-This is where it shown the receptionist actively did in the receptionist dashboard. it will display;
+In Activity Logs. This is where it shown the receptionist actively did in the receptionist dashboard. it will display;
 
-- [] Confirmed Payments
-- [] Cancellations
-- [] Overdue
+- [] Payment filter for Confirmed Payments
+- [] Cancellations filter for Cancellations
+- [] Overdues filter for Overdue
+- [] Login filter for LogIn of Receptionist only
 
-## Archives Content not finished
+
+
+## Log In credentials for the Administrator and Receptionist not finished
+- [] There should be already a saved username and password in migration table for the Administrator (only able to change it when already inside the Administrator dashboard in Account Management section)
+- [] Let the credentials in the Administrator -> Account Management section be used for Logging in to the Receptionist side
+NOTE: Do not edit anything in the Account Management just let the credentials be used for logging in by Receptionist
+
+
+
+## Settings Content not finished
+- [] Transfer the input field of Administrator Credentials username and password editing in Account Management after the Receptionist credentials, make it work to be able to let the Administrator to replace its current saved username and password.
+- [] Timestamp Display Format

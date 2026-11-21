@@ -55,7 +55,6 @@
         @method('PUT')
 
         <!-- Administrator Credentials Section -->
-        <h6 class="fw-bold section-heading mb-3">Administrator Credentials</h6>
         <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <label for="username" class="form-label fw-semibold">Username</label>

@@ -4,12 +4,45 @@
 
 @section('receptionist-content')
 <div class="container-fluid p-0">
-    <!-- Status filters -->
-    <div class="d-flex gap-2 mb-3 flex-wrap">
-        @foreach(['all' => 'All', 'in_house' => 'In house', 'overdue' => 'Overdue', 'completed' => 'Completed', 'cancelled' => 'Cancelled'] as $key => $label)
-            <a href="{{ route('booking.index', ['filter' => $key]) }}"
-               class="btn {{ $filter === $key ? 'btn-brown' : 'btn-outline-secondary' }}">{{ $label }}</a>
-        @endforeach
+    <!-- Top Action Row: Status filters on left, Search bar & Export to Excel button on top-right corner -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <!-- Status filters -->
+        <div class="d-flex gap-2 flex-wrap">
+            @foreach(['all' => 'All', 'in_house' => 'In house', 'overdue' => 'Overdue', 'completed' => 'Completed', 'cancelled' => 'Cancelled'] as $key => $label)
+                <a href="{{ route('booking.index', array_merge(request()->query(), ['filter' => $key, 'page' => 1])) }}"
+                   class="btn {{ $filter === $key ? 'btn-brown' : 'btn-outline-secondary' }}">{{ $label }}</a>
+            @endforeach
+        </div>
+
+        <!-- Search Bar and Export to Excel Button (Top-Right Corner) -->
+        <div class="d-flex align-items-center gap-2 ms-auto">
+            <!-- Search Bar -->
+            <form method="GET" action="{{ route('booking.index') }}" class="d-flex align-items-center m-0" id="bookingSearchForm">
+                @if(request('filter'))
+                    <input type="hidden" name="filter" value="{{ request('filter') }}">
+                @endif
+                <div class="input-group input-group-sm" style="width: 250px;">
+                    <button type="submit" class="input-group-text bg-white border-end-0 text-muted" title="Search" style="cursor: pointer;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                        </svg>
+                    </button>
+                    <input type="text" name="search" id="bookingSearchInput" class="form-control border-start-0 ps-0" placeholder="Search bookings..." value="{{ request('search') }}" aria-label="Search bookings">
+                    @if(request('search'))
+                        <a href="{{ route('booking.index', array_filter(['filter' => request('filter')])) }}" class="btn btn-outline-secondary border-start-0 d-flex align-items-center justify-content-center" title="Clear search" style="font-size: 1rem; line-height: 1;">&times;</a>
+                    @endif
+                </div>
+            </form>
+
+            <!-- Export to Excel Button -->
+            <button type="button" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1.5 text-nowrap fw-semibold px-2.5 py-1.5" data-bs-toggle="modal" data-bs-target="#exportBookingModal" id="openExportBookingModalBtn" title="Export Booking History to Excel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                Export to Excel
+            </button>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0">
@@ -237,9 +270,37 @@
     </div>
 </div>
 
+@include('Receptionist.modals.exportbookingmodal')
+
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Search across all pages with debounced submission and cursor focus retention
+        const searchInput = document.getElementById('bookingSearchInput');
+        const searchForm = document.getElementById('bookingSearchForm');
+        if (searchInput && searchForm) {
+            let searchDebounceTimer = null;
+
+            // Retain focus and cursor position if search is already active
+            if (searchInput.value) {
+                searchInput.focus();
+                const len = searchInput.value.length;
+                searchInput.setSelectionRange(len, len);
+            }
+
+            // Automatically submit after typing pause (searches all pages on server)
+            searchInput.addEventListener('input', function () {
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(function () {
+                    searchForm.submit();
+                }, 500);
+            });
+
+            // Prevent double submission on Enter key
+            searchForm.addEventListener('submit', function () {
+                clearTimeout(searchDebounceTimer);
+            });
+        }
         // Fills a small charges table (rows are built with textContent, so no HTML can sneak in)
         function fillRows(tbodyId, rows, emptyText) {
             var tbody = document.getElementById(tbodyId);

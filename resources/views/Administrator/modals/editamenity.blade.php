@@ -22,16 +22,11 @@
                         <input type="number" name="price" step="0.01" class="form-control" value="{{ $amenity->price }}" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-muted small mb-1">Amenity charged per</label>
-                        <select name="charged" class="form-select" required>
-                            <option value="person" {{ $amenity->charged == 'person' ? 'selected' : '' }}>person</option>
-                            <option value="item" {{ $amenity->charged == 'item' ? 'selected' : '' }}>item</option>
-                            <option value="hours" {{ $amenity->charged == 'hours' ? 'selected' : '' }}>hours</option>
-                            <option value="night" {{ $amenity->charged == 'night' ? 'selected' : '' }}>night</option>
-                        </select>
+                        <label class="form-label fw-bold text-muted small mb-1">Description</label>
+                        <input type="text" name="charged" class="form-control" value="{{ $amenity->charged }}" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-muted small mb-1">Offered Status</label>
+                        <label class="form-label fw-bold text-muted small mb-1">Status</label>
                         <select name="offered" class="form-select" required>
                             <option value="1" {{ $amenity->offered ? 'selected' : '' }}>On (Being Offered)</option>
                             <option value="0" {{ !$amenity->offered ? 'selected' : '' }}>Off (Not Offered)</option>

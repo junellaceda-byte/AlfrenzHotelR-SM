@@ -147,7 +147,7 @@
                 $reservationArrival = $room->reservation_arrival ?? '';
             @endphp
             
-            <div class="hotel-room-card {{ $room->status === 'occupied' ? 'is-occupied' : '' }}" 
+            <div class="hotel-room-card {{ $room->status === 'occupied' ? 'is-occupied' : '' }} {{ $isOverdue ? 'is-overdue' : '' }}" 
                  data-status="{{ $room->status === 'maintenance' ? 'under_maintenance' : $room->status }}" 
                  data-room-id="{{ $room->id }}"
                  data-checkout="{{ $checkoutDatetime }}"
@@ -159,12 +159,12 @@
                         @if($isOverdue)
                             <div class="position-absolute top-0 start-0 w-100 h-100 overlay-overdue">OVERDUE</div>
                         @else
-                            <div class="position-absolute top-0 start-0 w-100 h-100 overlay-occupied"></div>
+                            <div class="position-absolute top-0 start-0 w-100 h-100 overlay-occupied">OCCUPIED</div>
                         @endif
                     @elseif($room->status == 'reserved')
-                        <div class="position-absolute top-0 start-0 w-100 h-100 overlay-reserved"></div>
+                        <div class="position-absolute top-0 start-0 w-100 h-100 overlay-reserved">RESERVED</div>
                     @elseif($room->status == 'maintenance' || $room->status == 'under_maintenance')
-                        <div class="position-absolute top-0 start-0 w-100 h-100 overlay-maintenance"></div>
+                        <div class="position-absolute top-0 start-0 w-100 h-100 overlay-maintenance">UNDER MAINTENANCE</div>
                     @endif
 
                     <!-- Hover Action Button: Only on Occupied, Non-Overdue Rooms -->

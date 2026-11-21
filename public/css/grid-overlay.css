@@ -18,3 +18,42 @@
 .overlay-reserved {
     background-color: rgba(37, 40, 189, 0.6); /* 54, 69, 79 is Dark Charcoal */
 }
+
+/* Text overlay typography and centering for room tiles */
+.overlay-occupied,
+.overlay-reserved,
+.overlay-maintenance {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: clamp(0.85rem, 1vw, 1.15rem);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    line-height: 1.25;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    transition: opacity 0.22s ease;
+}
+
+/* When hovering over an Occupied room tile, temporarily replace the OCCUPIED overlay with Add Amenities button */
+.hotel-room-card.is-occupied:hover .overlay-occupied {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* If the room is Overdue, ensure hover does not show Add Amenities and overdue overlay stays visible */
+.hotel-room-card.is-overdue:hover .card-hover-action,
+.hotel-room-card:has(.overlay-overdue):hover .card-hover-action {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    display: none !important;
+}
+
+.hotel-room-card.is-overdue:hover .overlay-overdue,
+.hotel-room-card:has(.overlay-overdue):hover .overlay-overdue {
+    opacity: 1 !important;
+    display: flex !important;
+}

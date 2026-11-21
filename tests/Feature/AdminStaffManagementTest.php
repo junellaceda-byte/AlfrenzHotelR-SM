@@ -58,11 +58,15 @@ class AdminStaffManagementTest extends TestCase
 
         // Active table headers
         $response->assertSee('Employee');
-        $response->assertSee('Gmail');
+        $response->assertSee('Email');
         $response->assertSee('Contact Number');
-        $response->assertSee('Username');
         $response->assertSee('Status');
         $response->assertSee('Last active');
+
+        // Username column header and cell must NOT exist in the Account Management table (similar to Password)
+        $response->assertDontSee('<th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4">Username</th>', false);
+        $response->assertDontSee('col-staff-username', false);
+        $response->assertDontSee('staff-cell-username', false);
 
         // Password column header must NOT exist in the Staff table
         $response->assertDontSee('<th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4">Password</th>', false);
@@ -142,7 +146,7 @@ class AdminStaffManagementTest extends TestCase
         $response->assertSee('id="addStaffModal"', false);
         $response->assertSee('name="first_name"', false);
         $response->assertSee('name="last_name"', false);
-        $response->assertSee('name="gmail"', false);
+        $response->assertSee('name="email"', false);
         $response->assertSee('name="contact_number"', false);
         $response->assertSee('name="username"', false);
         $response->assertSee('name="password"', false);

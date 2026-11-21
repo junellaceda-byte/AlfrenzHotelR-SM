@@ -57,8 +57,8 @@
                     <tr>
                         <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start">Amenity</th>
                         <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start">Price</th>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start">Charged</th>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-center">Offered</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start">Description</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-center">Status</th>
                         <!-- Desktop Actions Header (hidden on mobile, visible on desktop) -->
                         <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-end d-none d-md-table-cell">Actions</th>
                     </tr>
@@ -73,7 +73,7 @@
                                 <span class="amenity-price fw-semibold" style="color: #6A4435;">₱{{ number_format($amenity->price, 2) }}</span>
                             </td>
                             <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start text-nowrap">
-                                <span class="amenity-charged text-secondary">per {{ $amenity->charged }}</span>
+                                <span class="amenity-charged text-secondary">{{ $amenity->charged }}</span>
                             </td>
                             <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-center text-nowrap">
                                 <div class="d-flex justify-content-center align-items-center">

@@ -46,22 +46,16 @@
                     AMENITIES
                 </a>
             </li>
-            <!-- Archive -->
-            <li class="nav-item w-100">
-                <a href="?section=archives" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'archives' ? 'active' : '' }}">
-                    ARCHIVE
-                </a>
-            </li>
             <!-- Room Management -->
             <li class="nav-item w-100">
                 <a href="?section=rooms" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'rooms' ? 'active' : '' }}">
                     ROOM MANAGEMENT
                 </a>
             </li>
-            <!-- Staff -->
+            <!-- Account Management -->
             <li class="nav-item w-100">
-                <a href="?section=staff" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'staff' ? 'active' : '' }}">
-                    STAFF
+                <a href="?section=accman" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section') == 'accman' ? 'active' : '' }}">
+                    Account Management
                 </a>
             </li>
             <!-- Settings -->

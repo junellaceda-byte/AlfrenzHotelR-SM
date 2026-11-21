@@ -9,6 +9,8 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\RoomBlockController;
 use App\Models\Amenity;
 use App\Models\Booking;
+use App\Models\Invoice;
+use App\Models\MonthlyTarget;
 use App\Models\PaymentLog;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -16,6 +18,7 @@ use App\Models\Staff;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\SystemFormatService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
@@ -119,6 +122,9 @@ Route::get('/admindashboard', function (Request $request) {
     // Administrator user record for Settings
     $adminUser = User::first() ?? new User(['username' => 'admin']);
 
+    // Stay Type distribution data for initial render
+    $stayTypeData = app(DashboardApiController::class)->buildStayTypeData('monthly', (int) now()->setTimezone('Asia/Manila')->format('Y'), (int) now()->setTimezone('Asia/Manila')->format('n'));
+
     // Pass the variables to the admindash layout
     return view('Administrator.layout.admindash', compact(
         'section',
@@ -137,7 +143,8 @@ Route::get('/admindashboard', function (Request $request) {
         'reservedRooms',
         'underMaintenanceRooms',
         'activeBlocks',
-        'adminUser'
+        'adminUser',
+        'stayTypeData'
     ));
 });
 
@@ -252,7 +259,7 @@ Route::post('/amenities/store', function (Request $request) {
     $validated = $request->validate([
         'name' => 'required|string|max:255',
         'price' => 'required|numeric',
-        'charged' => 'required|in:person,item,hours,night',
+        'charged' => 'required|string|max:255',
     ]);
 
     // 2. Set default offered status to true
@@ -278,7 +285,7 @@ Route::put('/amenities/{id}/update', function (Request $request, $id) {
     $validated = $request->validate([
         'name' => 'required|string|max:255',
         'price' => 'required|numeric',
-        'charged' => 'required|in:person,item,hours,night',
+        'charged' => 'required|string|max:255',
         'offered' => 'required|boolean',
     ]);
 
@@ -333,15 +340,26 @@ Route::post('/staff/store', function (Request $request) {
     $validated = $request->validate([
         'first_name' => 'required|string|max:255',
         'last_name' => 'required|string|max:255',
-        'gmail' => 'nullable|string|max:255',
+        'email' => 'required_without:gmail|nullable|string|email|max:255',
+        'gmail' => 'required_without:email|nullable|string|email|max:255',
         'contact_number' => 'nullable|string|max:255',
         'username' => 'required|string|max:255|unique:staff',
         'password' => 'required|string|min:6',
     ]);
 
+    $emailValue = $request->input('email') ?? $request->input('gmail');
+    $validated['email'] = $emailValue;
+    $validated['gmail'] = $emailValue;
+
     Staff::create($validated);
 
-    return redirect('/admindashboard?section=staff');
+    $redirectSection = $request->input('section');
+    if (! $redirectSection) {
+        $referer = (string) $request->headers->get('referer', '');
+        $redirectSection = str_contains($referer, 'section=accman') ? 'accman' : 'staff';
+    }
+
+    return redirect('/admindashboard?section='.$redirectSection)->with('success', 'Staff account created successfully.');
 });
 
 // Route to Update Staff
@@ -349,25 +367,42 @@ Route::put('/staff/{id}/update', function (Request $request, $id) {
     $validated = $request->validate([
         'first_name' => 'required|string|max:255',
         'last_name' => 'required|string|max:255',
-        'gmail' => 'nullable|string|max:255',
+        'email' => 'required_without:gmail|nullable|string|email|max:255',
+        'gmail' => 'required_without:email|nullable|string|email|max:255',
         'contact_number' => 'nullable|string|max:255',
         // The unique rule ignores the current staff ID so they can keep their existing username
         'username' => 'required|string|max:255|unique:staff,username,'.$id,
         'password' => 'required|string|min:6',
     ]);
 
+    $emailValue = $request->input('email') ?? $request->input('gmail');
+    $validated['email'] = $emailValue;
+    $validated['gmail'] = $emailValue;
+
     $staff = Staff::findOrFail($id);
     $staff->update($validated);
 
-    return redirect('/admindashboard?section=staff');
+    $redirectSection = $request->input('section');
+    if (! $redirectSection) {
+        $referer = (string) $request->headers->get('referer', '');
+        $redirectSection = str_contains($referer, 'section=accman') ? 'accman' : 'staff';
+    }
+
+    return redirect('/admindashboard?section='.$redirectSection)->with('success', 'Staff account updated successfully.');
 });
 
 // Route to Delete Staff
-Route::delete('/staff/{id}/delete', function ($id) {
+Route::delete('/staff/{id}/delete', function (Request $request, $id) {
     $staff = Staff::findOrFail($id);
     $staff->delete();
 
-    return redirect('/admindashboard?section=staff');
+    $redirectSection = $request->input('section');
+    if (! $redirectSection) {
+        $referer = (string) $request->headers->get('referer', '');
+        $redirectSection = str_contains($referer, 'section=accman') ? 'accman' : 'staff';
+    }
+
+    return redirect('/admindashboard?section='.$redirectSection)->with('success', 'Staff account deleted successfully.');
 });
 
 // ---------------------------------------------------
@@ -385,6 +420,7 @@ Route::get('/dashboardreceptionist', [DashboardController::class, 'index'])->nam
 
 // Bookings Records View
 Route::get('/bookings', [BookingController::class, 'index'])->name('booking.index');
+Route::get('/bookings/export', [BookingController::class, 'export'])->name('booking.export');
 
 // Post Route for BookingController
 Route::post('/bookings', [BookingController::class, 'store'])->name('booking.store');
@@ -423,10 +459,186 @@ Route::get('/api/available-rooms', [ReservationController::class, 'getAvailableR
 Route::get('/api/dashboard/notifications', [DashboardApiController::class, 'notifications'])->name('api.dashboard.notifications');
 Route::get('/api/admin/overview-stats', [DashboardApiController::class, 'adminOverviewStats'])->name('api.admin.overview-stats');
 Route::get('/api/admin/revenue-stats', [DashboardApiController::class, 'revenueStats'])->name('api.admin.revenue-stats');
+Route::get('/api/admin/stay-type-stats', [DashboardApiController::class, 'stayTypeStats'])->name('api.admin.stay-type-stats');
 Route::get('/api/admin/notifications', [DashboardApiController::class, 'adminNotifications'])->name('api.admin.notifications');
 Route::get('/api/admin/sales-report', [DashboardApiController::class, 'salesReport'])->name('api.admin.sales-report');
 Route::post('/api/admin/monthly-target', [DashboardApiController::class, 'saveMonthlyTarget'])->name('api.admin.monthly-target');
 Route::get('/api/amenities', [DashboardApiController::class, 'amenities'])->name('api.amenities');
+
+// Sales Report CSV Export
+Route::get('/admin/sales-report/export', function (Request $request) {
+    $now = now()->setTimezone('Asia/Manila');
+    $currentYear = (int) $now->format('Y');
+    $currentMonth = (int) $now->format('n');
+
+    $selectedYear = (int) $request->input('year', $currentYear);
+    $monthInput = $request->input('month', (string) $currentMonth);
+    $selectedDate = $request->input('date');
+
+    $isSpecificDate = ! empty($selectedDate) && strtotime((string) $selectedDate) !== false;
+    $isAllMonths = ($monthInput === 'all');
+    $selectedMonth = $isAllMonths ? null : (int) $monthInput;
+
+    if ($isSpecificDate) {
+        $rangeStart = Carbon::parse($selectedDate, 'Asia/Manila')->startOfDay();
+        $rangeEnd = Carbon::parse($selectedDate, 'Asia/Manila')->endOfDay();
+        $periodLabel = $rangeStart->format('M_j_Y');
+    } elseif (! $isAllMonths && $selectedMonth) {
+        $rangeStart = Carbon::create($selectedYear, $selectedMonth, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
+        $rangeEnd = $rangeStart->copy()->endOfMonth();
+        $periodLabel = $rangeStart->format('F_Y');
+    } else {
+        $rangeStart = Carbon::create($selectedYear, 1, 1, 0, 0, 0, 'Asia/Manila')->startOfYear();
+        $rangeEnd = $rangeStart->copy()->endOfYear();
+        $periodLabel = 'Year_'.$selectedYear;
+    }
+
+    // Revenue from payment logs
+    $paymentLogs = PaymentLog::where('status', 'successful')
+        ->where(function ($q) use ($rangeStart, $rangeEnd) {
+            $q->whereBetween('paid_at', [$rangeStart, $rangeEnd])
+                ->orWhere(function ($sub) use ($rangeStart, $rangeEnd) {
+                    $sub->whereNull('paid_at')->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+                });
+        })
+        ->with('invoice.booking.guest')
+        ->get();
+
+    $totalRevenue = (float) $paymentLogs->sum('amount_paid');
+
+    $paidInvoices = Invoice::where('status', 'paid')
+        ->where(function ($q) use ($rangeStart, $rangeEnd) {
+            $q->whereBetween('updated_at', [$rangeStart, $rangeEnd])
+                ->orWhereHas('paymentLogs', function ($plQ) use ($rangeStart, $rangeEnd) {
+                    $plQ->where('status', 'successful')
+                        ->where(function ($inner) use ($rangeStart, $rangeEnd) {
+                            $inner->whereBetween('paid_at', [$rangeStart, $rangeEnd])
+                                ->orWhereBetween('created_at', [$rangeStart, $rangeEnd]);
+                        });
+                });
+        })
+        ->with(['booking.guest', 'booking.charges'])
+        ->get();
+
+    if ($totalRevenue == 0 && $paidInvoices->isNotEmpty()) {
+        $totalRevenue = (float) $paidInvoices->sum('grand_total');
+    }
+
+    $totalRoomCharges = (float) $paidInvoices->sum('room_charges');
+    $totalExtraCharges = (float) $paidInvoices->sum('extra_charges_total');
+    $totalRoomNights = 0;
+
+    foreach ($paidInvoices as $inv) {
+        $booking = $inv->booking;
+        if ($booking) {
+            $roomsCount = is_array($booking->booked_rooms) ? count($booking->booked_rooms) : 1;
+            $totalRoomNights += ($roomsCount * ($booking->nights ?: 1));
+        } else {
+            $totalRoomNights += 1;
+        }
+    }
+
+    $adr = $totalRoomNights > 0 ? round($totalRoomCharges / $totalRoomNights, 2) : 0.00;
+    $totalBookings = $paidInvoices->pluck('booking_id')->filter()->unique()->count() ?: $paidInvoices->count();
+
+    $cancelledReservations = Reservation::where('status', 'cancelled')
+        ->whereBetween('updated_at', [$rangeStart, $rangeEnd])->get();
+    $cancelledBookings = Booking::where('status', 'cancelled')
+        ->whereBetween('updated_at', [$rangeStart, $rangeEnd])->get();
+    $cancellationsCount = $cancelledReservations->count() + $cancelledBookings->count();
+    $lostRevenue = (float) $cancelledReservations->sum('deposit') + (float) $cancelledBookings->sum('deposit');
+    if ($lostRevenue == 0 && $cancellationsCount > 0) {
+        foreach ($cancelledReservations as $res) {
+            $rooms = is_array($res->selected_rooms) ? $res->selected_rooms : (json_decode($res->selected_rooms, true) ?? []);
+            $lostRevenue += count($rooms) * 2200;
+        }
+        foreach ($cancelledBookings as $bk) {
+            $rooms = is_array($bk->booked_rooms) ? $bk->booked_rooms : (json_decode($bk->booked_rooms, true) ?? []);
+            $lostRevenue += count($rooms) * 2200;
+        }
+    }
+
+    $pendingInvoices = Invoice::where('status', 'unpaid')->get();
+    $pendingGuestsCount = $pendingInvoices->pluck('booking_id')->filter()->unique()->count() ?: $pendingInvoices->count();
+    $pendingAmount = (float) $pendingInvoices->sum('grand_total');
+
+    $targetMonth = $selectedMonth ?: $currentMonth;
+    $targetRecord = MonthlyTarget::where('year', $selectedYear)->where('month', $targetMonth)->first();
+    $monthlyTarget = $targetRecord ? (float) $targetRecord->target_amount : 150000.00;
+
+    // Build invoice rows for the detail section
+    $rows = $paidInvoices->map(function ($inv) {
+        $booking = $inv->booking;
+        $guest = $booking?->guest;
+        $guestName = $guest ? trim(($guest->fname ?? '').' '.($guest->lname ?? '')) : 'N/A';
+        $rooms = $booking ? (is_array($booking->booked_rooms) ? $booking->booked_rooms : (json_decode($booking->booked_rooms, true) ?? [])) : [];
+        $roomStr = ! empty($rooms) ? 'Room '.implode(', ', $rooms) : 'N/A';
+        $paidAt = $inv->updated_at ? Carbon::parse($inv->updated_at)->setTimezone('Asia/Manila')->format('Y-m-d H:i') : 'N/A';
+
+        return [
+            'Invoice #' => $inv->id,
+            'Guest Name' => $guestName,
+            'Room(s)' => $roomStr,
+            'Nights' => $booking?->nights ?? 'N/A',
+            'Stay Type' => ucwords(str_replace('_', ' ', $booking?->stay_type ?? 'N/A')),
+            'Room Charges (PHP)' => number_format((float) $inv->room_charges, 2),
+            'Extra Charges (PHP)' => number_format((float) $inv->extra_charges_total, 2),
+            'Grand Total (PHP)' => number_format((float) $inv->grand_total, 2),
+            'Status' => ucfirst($inv->status ?? 'paid'),
+            'Paid At' => $paidAt,
+        ];
+    });
+
+    $filename = 'Sales_Report_'.$periodLabel.'.csv';
+
+    $headers = [
+        'Content-Type' => 'text/csv; charset=UTF-8',
+        'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        'Pragma' => 'no-cache',
+        'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+        'Expires' => '0',
+    ];
+
+    $callback = function () use ($rows, $totalRevenue, $totalRoomCharges, $totalExtraCharges, $adr, $totalBookings, $monthlyTarget, $lostRevenue, $cancellationsCount, $pendingAmount, $pendingGuestsCount, $periodLabel) {
+        $handle = fopen('php://output', 'w');
+
+        // UTF-8 BOM for Excel compatibility
+        fwrite($handle, "\xEF\xBB\xBF");
+
+        // ---- Summary section ----
+        fputcsv($handle, ['SALES REPORT SUMMARY']);
+        fputcsv($handle, ['Period', str_replace('_', ' ', $periodLabel)]);
+        fputcsv($handle, ['Generated At', now()->setTimezone('Asia/Manila')->format('Y-m-d H:i:s')]);
+        fputcsv($handle, []);
+        fputcsv($handle, ['Metric', 'Value']);
+        fputcsv($handle, ['Total Revenue (PHP)', number_format($totalRevenue, 2)]);
+        fputcsv($handle, ['Average Daily Rate / ADR (PHP)', number_format($adr, 2)]);
+        fputcsv($handle, ['Total Bookings', $totalBookings]);
+        fputcsv($handle, ['Monthly Target (PHP)', number_format($monthlyTarget, 2)]);
+        fputcsv($handle, ['Room Charges (PHP)', number_format($totalRoomCharges, 2)]);
+        fputcsv($handle, ['Extra Charges (PHP)', number_format($totalExtraCharges, 2)]);
+        fputcsv($handle, ['Lost Revenue - Cancellations (PHP)', number_format($lostRevenue, 2)]);
+        fputcsv($handle, ['Cancellations Count', $cancellationsCount]);
+        fputcsv($handle, ['Pending Payments (PHP)', number_format($pendingAmount, 2)]);
+        fputcsv($handle, ['Pending Guests Count', $pendingGuestsCount]);
+        fputcsv($handle, []);
+
+        // ---- Detailed invoices section ----
+        if ($rows->isNotEmpty()) {
+            fputcsv($handle, ['PAID INVOICES DETAIL']);
+            fputcsv($handle, array_keys($rows->first()));
+            foreach ($rows as $row) {
+                fputcsv($handle, array_values($row));
+            }
+        } else {
+            fputcsv($handle, ['No paid invoices found for this period.']);
+        }
+
+        fclose($handle);
+    };
+
+    return response()->stream($callback, 200, $headers);
+})->name('admin.sales-report.export');
 
 // Reservation edit & delete
 Route::put('/reservation/{id}', [ReservationController::class, 'update'])->name('reservation.update');

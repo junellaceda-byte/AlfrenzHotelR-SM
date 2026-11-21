@@ -137,6 +137,7 @@ class DashboardApiController
         $availableCount = collect($roomStatuses)->filter(fn ($s) => $s === 'available')->count();
         $reservedCount = collect($roomStatuses)->filter(fn ($s) => $s === 'reserved')->count();
         $maintenanceCount = collect($roomStatuses)->filter(fn ($s) => $s === 'under_maintenance')->count();
+        $totalRooms = $rooms->count();
 
         return response()->json([
             'due_guests' => $dueGuests,
@@ -145,6 +146,7 @@ class DashboardApiController
                 'occupied' => $occupiedCount,
                 'reserved' => $reservedCount,
                 'maintenance' => $maintenanceCount,
+                'total' => $totalRooms,
             ],
             'room_statuses' => $roomStatuses,
             'room_checkouts' => $roomCheckouts,
@@ -296,7 +298,332 @@ class DashboardApiController
             'checkins_list' => $checkInsFormatted,
             'checkouts_list' => $checkOutsFormatted,
             'revenue_chart' => $this->buildRevenueStatisticsData(),
+            'stay_type_chart' => $this->buildStayTypeData('monthly', (int) now()->format('Y'), (int) now()->format('n')),
         ]);
+    }
+
+    /**
+     * API endpoint for Booking Stay Type donut chart in Administrator Overview.
+     * Categorizes actual booking records from Receptionist Booking History into:
+     * - Short Stays: 3 Hours, 6 Hours, 12 Hours
+     * - Long Stays: 24 Hours
+     * Supports specific day selection via calendar filter alongside Weekly, Monthly, and Yearly timeframes.
+     */
+    public function stayTypeStats(Request $request)
+    {
+        $now = now()->setTimezone('Asia/Manila');
+        $timeframe = strtolower(trim((string) $request->input('timeframe', 'monthly')));
+        if (! in_array($timeframe, ['weekly', 'monthly', 'yearly'])) {
+            $timeframe = 'monthly';
+        }
+
+        $dateInput = $request->input('date');
+        $yearInput = $request->input('year');
+        $monthInput = $request->input('month');
+        $weekInput = $request->input('week', 'all');
+
+        $specificDate = null;
+        if (! empty($dateInput) && strtotime((string) $dateInput) !== false) {
+            $parsedDate = Carbon::parse($dateInput, 'Asia/Manila');
+            $specificDate = $parsedDate->toDateString();
+            $year = ($yearInput !== null && $yearInput !== 'all' && $yearInput !== '') ? (int) $yearInput : (int) $parsedDate->format('Y');
+            $month = ($monthInput !== null && $monthInput !== 'all' && $monthInput !== '') ? (int) $monthInput : (int) $parsedDate->format('n');
+            $day = (int) $parsedDate->format('j');
+            $week = ($weekInput && $weekInput !== 'all') ? $weekInput : min(5, (int) ceil($day / 7));
+        } else {
+            $year = ($yearInput !== null && $yearInput !== 'all' && $yearInput !== '') ? (int) $yearInput : (int) $now->format('Y');
+            $month = ($monthInput !== null && $monthInput !== 'all' && $monthInput !== '') ? (int) $monthInput : (($timeframe === 'weekly') ? (int) $now->format('n') : 'all');
+            $week = ($weekInput && $weekInput !== '') ? $weekInput : 'all';
+        }
+
+        $allYears = ($yearInput === 'all');
+        $allMonths = ($monthInput === 'all');
+
+        return response()->json($this->buildStayTypeData($timeframe, $year, $month, $week, $allYears, $allMonths, $specificDate));
+    }
+
+    /**
+     * Builds Booking Stay Type statistics (counts and percentage shares)
+     * from actual Receptionist Booking History records.
+     * When $specificDate is provided, filters for that exact day.
+     */
+    public function buildStayTypeData(
+        string $timeframe = 'monthly',
+        int $year = 2026,
+        int|string $month = 'all',
+        int|string $week = 'all',
+        bool $allYears = false,
+        bool $allMonths = false,
+        ?string $specificDate = null
+    ): array {
+        $now = now()->setTimezone('Asia/Manila');
+
+        $isExactDate = (! empty($specificDate) && strtotime((string) $specificDate) !== false);
+
+        if ($isExactDate) {
+            $parsedExact = Carbon::parse($specificDate, 'Asia/Manila');
+            $rangeStart = $parsedExact->copy()->startOfDay();
+            $rangeEnd = $parsedExact->copy()->endOfDay();
+        } elseif ($timeframe === 'yearly') {
+            if ($allYears) {
+                $rangeStart = Carbon::create(2022, 1, 1, 0, 0, 0, 'Asia/Manila')->startOfYear();
+                $rangeEnd = $now->copy()->addYears(2)->endOfYear();
+            } else {
+                $rangeStart = Carbon::create($year, 1, 1, 0, 0, 0, 'Asia/Manila')->startOfYear();
+                $rangeEnd = $rangeStart->copy()->endOfYear();
+            }
+        } elseif ($timeframe === 'weekly') {
+            $m = ($month === 'all') ? (int) $now->format('n') : (int) $month;
+            $monthStart = Carbon::create($year, $m, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
+            $monthEnd = $monthStart->copy()->endOfMonth();
+
+            if ($week !== 'all' && (int) $week >= 1 && (int) $week <= 5) {
+                $w = (int) $week;
+                $startDay = (($w - 1) * 7) + 1;
+                $endDay = min($monthEnd->day, $w * 7);
+                $rangeStart = Carbon::create($year, $m, $startDay, 0, 0, 0, 'Asia/Manila')->startOfDay();
+                $rangeEnd = Carbon::create($year, $m, $endDay, 0, 0, 0, 'Asia/Manila')->endOfDay();
+            } else {
+                $rangeStart = $monthStart;
+                $rangeEnd = $monthEnd;
+            }
+        } else { // monthly
+            if ($month === 'all' || $allMonths) {
+                $rangeStart = Carbon::create($year, 1, 1, 0, 0, 0, 'Asia/Manila')->startOfYear();
+                $rangeEnd = $rangeStart->copy()->endOfYear();
+            } else {
+                $m = (int) $month;
+                $rangeStart = Carbon::create($year, $m, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
+                $rangeEnd = $rangeStart->copy()->endOfMonth();
+            }
+        }
+
+        // Fetch actual bookings from Receptionist Booking History within the date range
+        $bookings = Booking::where(function ($q) use ($rangeStart, $rangeEnd) {
+            $q->whereBetween('check_in_datetime', [$rangeStart, $rangeEnd])
+                ->orWhere(function ($sub) use ($rangeStart, $rangeEnd) {
+                    $sub->whereNull('check_in_datetime')
+                        ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+                });
+        })->get();
+
+        $counts = [
+            '3_hours' => 0,
+            '6_hours' => 0,
+            '12_hours' => 0,
+            '24_hours' => 0,
+        ];
+
+        foreach ($bookings as $b) {
+            $cat = $this->categorizeBookingStayDuration($b);
+            $counts[$cat]++;
+        }
+
+        $total = array_sum($counts);
+        $percentages = [
+            '3_hours' => $total > 0 ? round(($counts['3_hours'] / $total) * 100, 1) : 0.0,
+            '6_hours' => $total > 0 ? round(($counts['6_hours'] / $total) * 100, 1) : 0.0,
+            '12_hours' => $total > 0 ? round(($counts['12_hours'] / $total) * 100, 1) : 0.0,
+            '24_hours' => $total > 0 ? round(($counts['24_hours'] / $total) * 100, 1) : 0.0,
+        ];
+
+        // Grouped data breakdown depending on timeframe:
+        // Monthly: grouped by the 12 calendar months (Jan - Dec)
+        // Weekly: grouped into five weeks (Week 1 to Week 5)
+        // Yearly: grouped by calendar year (e.g. 2022 - 2026)
+        $groupedData = [];
+
+        if ($timeframe === 'monthly') {
+            for ($m = 1; $m <= 12; $m++) {
+                $mStart = Carbon::create($year, $m, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
+                $mEnd = $mStart->copy()->endOfMonth();
+                $mBookings = Booking::where(function ($q) use ($mStart, $mEnd) {
+                    $q->whereBetween('check_in_datetime', [$mStart, $mEnd])
+                        ->orWhere(function ($sub) use ($mStart, $mEnd) {
+                            $sub->whereNull('check_in_datetime')
+                                ->whereBetween('created_at', [$mStart, $mEnd]);
+                        });
+                })->get();
+
+                $mCounts = ['3_hours' => 0, '6_hours' => 0, '12_hours' => 0, '24_hours' => 0];
+                foreach ($mBookings as $mb) {
+                    $mCounts[$this->categorizeBookingStayDuration($mb)]++;
+                }
+                $mTotal = array_sum($mCounts);
+
+                $groupedData[] = [
+                    'label' => Carbon::create()->month($m)->format('F'),
+                    'month' => $m,
+                    'year' => $year,
+                    'counts' => $mCounts,
+                    'total' => $mTotal,
+                ];
+            }
+        } elseif ($timeframe === 'weekly') {
+            $m = ($month === 'all') ? (int) $now->format('n') : (int) $month;
+            $mEnd = Carbon::create($year, $m, 1, 0, 0, 0, 'Asia/Manila')->endOfMonth();
+
+            for ($w = 1; $w <= 5; $w++) {
+                $startDay = (($w - 1) * 7) + 1;
+                $endDay = min($mEnd->day, $w * 7);
+                $wStart = Carbon::create($year, $m, $startDay, 0, 0, 0, 'Asia/Manila')->startOfDay();
+                $wEnd = Carbon::create($year, $m, $endDay, 0, 0, 0, 'Asia/Manila')->endOfDay();
+
+                $wBookings = Booking::where(function ($q) use ($wStart, $wEnd) {
+                    $q->whereBetween('check_in_datetime', [$wStart, $wEnd])
+                        ->orWhere(function ($sub) use ($wStart, $wEnd) {
+                            $sub->whereNull('check_in_datetime')
+                                ->whereBetween('created_at', [$wStart, $wEnd]);
+                        });
+                })->get();
+
+                $wCounts = ['3_hours' => 0, '6_hours' => 0, '12_hours' => 0, '24_hours' => 0];
+                foreach ($wBookings as $wb) {
+                    $wCounts[$this->categorizeBookingStayDuration($wb)]++;
+                }
+                $wTotal = array_sum($wCounts);
+
+                $groupedData[] = [
+                    'label' => 'Week '.$w,
+                    'week' => $w,
+                    'month' => $m,
+                    'year' => $year,
+                    'counts' => $wCounts,
+                    'total' => $wTotal,
+                ];
+            }
+        } elseif ($timeframe === 'yearly') {
+            for ($y = 2022; $y <= 2026; $y++) {
+                $yStart = Carbon::create($y, 1, 1, 0, 0, 0, 'Asia/Manila')->startOfYear();
+                $yEnd = $yStart->copy()->endOfYear();
+
+                $yBookings = Booking::where(function ($q) use ($yStart, $yEnd) {
+                    $q->whereBetween('check_in_datetime', [$yStart, $yEnd])
+                        ->orWhere(function ($sub) use ($yStart, $yEnd) {
+                            $sub->whereNull('check_in_datetime')
+                                ->whereBetween('created_at', [$yStart, $yEnd]);
+                        });
+                })->get();
+
+                $yCounts = ['3_hours' => 0, '6_hours' => 0, '12_hours' => 0, '24_hours' => 0];
+                foreach ($yBookings as $yb) {
+                    $yCounts[$this->categorizeBookingStayDuration($yb)]++;
+                }
+                $yTotal = array_sum($yCounts);
+
+                $groupedData[] = [
+                    'label' => (string) $y,
+                    'year' => $y,
+                    'counts' => $yCounts,
+                    'total' => $yTotal,
+                ];
+            }
+        }
+
+        return [
+            'is_exact_date' => $isExactDate,
+            'selected_date' => $specificDate,
+            'selected_date_formatted' => $isExactDate ? Carbon::parse($specificDate)->format('M d, Y') : null,
+            'timeframe' => $timeframe,
+            'year' => $year,
+            'month' => $month,
+            'week' => $week,
+            'total' => $total,
+            'labels' => ['3 Hours', '6 Hours', '12 Hours', '24 Hours'],
+            'counts' => [
+                $counts['3_hours'],
+                $counts['6_hours'],
+                $counts['12_hours'],
+                $counts['24_hours'],
+            ],
+            'percentages' => [
+                $percentages['3_hours'],
+                $percentages['6_hours'],
+                $percentages['12_hours'],
+                $percentages['24_hours'],
+            ],
+            'colors' => ['#30AFFF', '#10B981', '#F59E0B', '#6A4435'],
+            'categories' => [
+                [
+                    'key' => '3_hours',
+                    'label' => '3 Hours',
+                    'group' => 'Short Stays',
+                    'color' => '#30AFFF',
+                    'count' => $counts['3_hours'],
+                    'percentage' => $percentages['3_hours'],
+                ],
+                [
+                    'key' => '6_hours',
+                    'label' => '6 Hours',
+                    'group' => 'Short Stays',
+                    'color' => '#10B981',
+                    'count' => $counts['6_hours'],
+                    'percentage' => $percentages['6_hours'],
+                ],
+                [
+                    'key' => '12_hours',
+                    'label' => '12 Hours',
+                    'group' => 'Short Stays',
+                    'color' => '#F59E0B',
+                    'count' => $counts['12_hours'],
+                    'percentage' => $percentages['12_hours'],
+                ],
+                [
+                    'key' => '24_hours',
+                    'label' => '24 Hours',
+                    'group' => 'Long Stays',
+                    'color' => '#6A4435',
+                    'count' => $counts['24_hours'],
+                    'percentage' => $percentages['24_hours'],
+                ],
+            ],
+            'grouped_data' => $groupedData,
+        ];
+    }
+
+    /**
+     * Categorizes a booking duration based on actual Receptionist Booking History fields:
+     * - Short Stays: 3 Hours, 6 Hours, 12 Hours
+     * - Long Stays: 24 Hours
+     */
+    public function categorizeBookingStayDuration(Booking $b): string
+    {
+        // 1. Explicit short stay hours
+        $hours = (int) ($b->short_stay_hours ?? 0);
+        if ($hours === 3) {
+            return '3_hours';
+        }
+        if ($hours === 6) {
+            return '6_hours';
+        }
+        if ($hours === 12) {
+            return '12_hours';
+        }
+        if ($hours === 24) {
+            return '24_hours';
+        }
+
+        // 2. Based on stay_type and datetime difference
+        $stayType = strtolower(trim((string) ($b->stay_type ?? 'overnight')));
+        if ($stayType === 'short_stay') {
+            if ($b->check_in_datetime && $b->check_out_datetime) {
+                $diff = abs(Carbon::parse($b->check_in_datetime)->diffInHours(Carbon::parse($b->check_out_datetime)));
+                if ($diff <= 4) {
+                    return '3_hours';
+                }
+                if ($diff <= 8) {
+                    return '6_hours';
+                }
+                if ($diff <= 16) {
+                    return '12_hours';
+                }
+            }
+
+            return '3_hours'; // Fallback for unspecified short stay
+        }
+
+        // 3. Overnight / 24 hours / long stays
+        return '24_hours';
     }
 
     /**

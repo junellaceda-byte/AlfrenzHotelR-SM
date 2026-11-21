@@ -29,10 +29,10 @@
                 <select class="form-select">
                     <option>All activity</option>
                     <option>Payment</option>
-                    <option>Booking</option>
-                    <option>Stay</option>
-                    <option>Sign-in</option>
-                    <option>Owner change</option>
+                    <option>Cancellations</option>
+                    <option>Bookings</option>
+                    <option>Overdues</option>
+                    <option>Login</option>
                 </select>
             </div>
 

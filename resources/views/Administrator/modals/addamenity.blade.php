@@ -18,14 +18,8 @@
                         <input type="number" name="price" step="0.01" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-muted small mb-1">Amenity charged per</label>
-                        <select name="charged" class="form-select" required>
-                            <option value="person">person</option>
-                            <option value="item">item</option>
-                            <option value="hours">hours</option>
-                            <option value="night">night</option>
-                            <!-- hours & night must be removed in this option, it will be become description -->
-                        </select>
+                        <label class="form-label fw-bold text-muted small mb-1">Description</label>
+                        <input type="text" name="charged" class="form-control" placeholder="e.g. per item, per hour, per person" required>
                     </div>
                 </div>
                 <div class="modal-footer">

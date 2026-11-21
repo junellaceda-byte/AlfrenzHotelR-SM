@@ -33,11 +33,6 @@
             <span id="liveTime" class="d-none">{{ \App\Services\SystemFormatService::formatTime(now()) }}</span>
         </div>
 
-        <!-- Notification Button with SVG Icon -->
-        <button type="button" class="btn bg-white border rounded shadow-sm d-flex align-items-center justify-content-center p-2 text-secondary" style="width: 38px; height: 38px;" title="Notifications">
-            <img src="{{ asset('icons/bell.svg') }}" alt="Notification Bell" style="width: 18px; height: 18px;">
-        </button>
-
         <!-- Admin Avatar -->
         <div class="border rounded-circle bg-white shadow-sm fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; color: #6A4435; font-size: 0.95rem;" title="Administrator">
             A

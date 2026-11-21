@@ -16,6 +16,7 @@ use App\Services\InvoiceService;
 use App\Services\RoomAvailabilityService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class BookingController
 {
@@ -23,10 +24,81 @@ class BookingController
     public function index(Request $request)
     {
         $filter = $request->query('filter', 'all');
+        $search = trim((string) $request->input('search', ''));
 
         $query = Booking::with(['guest', 'invoice.paymentLogs', 'charges'])
             ->orderByRaw("CASE WHEN status = 'checked_in' THEN 0 ELSE 1 END")
             ->orderByDesc('created_at');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                // Booking ID / Code e.g. "BK-0001", "BK-1", "0001", "1"
+                if (preg_match('/^(?:BK-?)?0*(\d+)$/i', $search, $m)) {
+                    $q->orWhere('id', (int) $m[1]);
+                }
+
+                $q->orWhere('phone', 'like', "%{$search}%");
+
+                // Room numbers: e.g. "01", "1", "Room 1"
+                if (preg_match('/\b\d+\b/', $search, $rMatch)) {
+                    $rNum = (int) $rMatch[0];
+                    $q->orWhere('booked_rooms', 'like', "%\"{$rNum}\"%")
+                        ->orWhere('booked_rooms', 'like', "%{$rNum}%")
+                        ->orWhere('booked_rooms', 'like', '%"'.str_pad((string) $rNum, 2, '0', STR_PAD_LEFT).'"%');
+                }
+                $q->orWhere('booked_rooms', 'like', "%{$search}%");
+
+                // Walk-in search
+                if (stripos($search, 'walk') !== false) {
+                    $q->orWhereDoesntHave('guest');
+                }
+
+                // Status search
+                if (stripos($search, 'cancel') !== false) {
+                    $q->orWhere('status', 'cancelled');
+                }
+                if (stripos($search, 'complet') !== false) {
+                    $q->orWhere(function ($comp) {
+                        $comp->where('status', 'checked_out')
+                            ->orWhereHas('invoice', fn ($i) => $i->where('status', 'paid'));
+                    });
+                }
+                if (stripos($search, 'in house') !== false || stripos($search, 'in_house') !== false) {
+                    $q->orWhere(function ($ih) {
+                        $ih->where('status', 'checked_in')
+                            ->whereHas('invoice', fn ($i) => $i->where('status', 'unpaid'));
+                    });
+                }
+                if (stripos($search, 'overdue') !== false) {
+                    $now = now()->setTimezone('Asia/Manila');
+                    $q->orWhere(function ($ov) use ($now) {
+                        $ov->whereNotIn('status', ['cancelled', 'checked_out'])
+                            ->where('check_out_datetime', '<', $now);
+                    });
+                }
+
+                // Guest Name (first name, last name, full name)
+                $q->orWhereHas('guest', function ($gQ) use ($search) {
+                    $gQ->where(function ($nameQ) use ($search) {
+                        $nameQ->where('fname', 'like', "%{$search}%")
+                            ->orWhere('lname', 'like', "%{$search}%");
+
+                        // Support matching "First Last" across both fields
+                        $words = array_values(array_filter(preg_split('/\s+/', $search)));
+                        if (count($words) > 1) {
+                            $nameQ->orWhere(function ($multiQ) use ($words) {
+                                foreach ($words as $word) {
+                                    $multiQ->where(function ($subQ) use ($word) {
+                                        $subQ->where('fname', 'like', "%{$word}%")
+                                            ->orWhere('lname', 'like', "%{$word}%");
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+            });
+        }
 
         if ($filter === 'in_house') {
             $query->where('status', 'checked_in')
@@ -326,25 +398,55 @@ class BookingController
     }
 
     /**
-     * Add an amenity to an occupied room's current booking from the Add Amenities modal.
+     * Add one or multiple amenities to an occupied room's current booking from the Add Amenities modal.
      */
     public function addAmenityToRoom(Request $request, InvoiceService $invoices)
     {
         $request->validate([
             'room_id' => 'required',
-            'amenity_id' => 'required|exists:amenities,id',
+            'amenity_id' => 'nullable|exists:amenities,id',
             'quantity' => 'nullable|integer|min:1|max:20',
             'notes' => 'nullable|string|max:255',
+            'amenities' => 'nullable|array',
+            'amenities.*.amenity_id' => 'required_with:amenities|exists:amenities,id',
+            'amenities.*.quantity' => 'nullable|integer|min:1|max:20',
+            'amenities.*.notes' => 'nullable|string|max:255',
+            'amenities_json' => 'nullable|string',
         ]);
 
         $roomId = $request->room_id;
-        $amenity = Amenity::findOrFail($request->amenity_id);
-        if (! $amenity->offered) {
-            return back()->withErrors(['amenity_id' => 'The selected amenity is not currently offered.']);
+
+        // Collect items from multiple possible inputs (array, JSON string, or single amenity_id)
+        $rawItems = [];
+        if ($request->has('amenities') && is_array($request->amenities)) {
+            $rawItems = $request->amenities;
+        } elseif ($request->filled('amenities_json')) {
+            $decoded = json_decode($request->amenities_json, true);
+            if (is_array($decoded)) {
+                $rawItems = $decoded;
+            }
+        } elseif ($request->filled('amenity_id')) {
+            $rawItems = [[
+                'amenity_id' => $request->amenity_id,
+                'quantity' => $request->input('quantity', 1),
+                'notes' => $request->input('notes'),
+            ]];
         }
-        $qty = max(1, (int) $request->input('quantity', 1));
-        $unitPrice = (float) $amenity->price;
-        $totalAmount = $qty * $unitPrice;
+
+        $items = [];
+        foreach ($rawItems as $rawItem) {
+            if (! empty($rawItem['amenity_id'])) {
+                $items[] = [
+                    'amenity_id' => (int) $rawItem['amenity_id'],
+                    'quantity' => max(1, (int) ($rawItem['quantity'] ?? 1)),
+                    'notes' => isset($rawItem['notes']) ? trim((string) $rawItem['notes']) : null,
+                ];
+            }
+        }
+
+        if (empty($items)) {
+            return back()->withErrors(['amenity_id' => 'Please select at least one amenity.']);
+        }
 
         $now = now()->setTimezone('Asia/Manila');
         $booking = null;
@@ -372,23 +474,15 @@ class BookingController
             return back()->withErrors(['amenity' => 'No active occupied booking found for Room '.str_pad($roomId, 2, '0', STR_PAD_LEFT).'.']);
         }
 
-        $description = $amenity->name;
-        if ($request->filled('notes')) {
-            $description .= ' ('.trim($request->notes).')';
+        // Validate that all requested amenities are currently offered
+        foreach ($items as $item) {
+            $amenity = Amenity::find($item['amenity_id']);
+            if (! $amenity || ! $amenity->offered) {
+                return back()->withErrors(['amenity_id' => 'The selected amenity is not currently offered.']);
+            }
         }
 
-        // 1. Record billing charge
-        Charge::create([
-            'booking_id' => $booking->id,
-            'type' => 'amenity',
-            'description' => $description,
-            'quantity' => $qty,
-            'unit_price' => $unitPrice,
-            'amount' => $totalAmount,
-            'is_paid' => false,
-        ]);
-
-        // 2. Ensure invoice exists and record in available_amenities for billing modal
+        // 1. Ensure invoice exists for the booking
         if (! $booking->invoice) {
             Invoice::create([
                 'booking_id' => $booking->id,
@@ -404,15 +498,46 @@ class BookingController
             $booking->refresh();
         }
 
-        AvailableAmenity::create([
-            'booking_id' => $booking->id,
-            'invoice_id' => $booking->invoice->id,
-            'item_name' => $description,
-            'quantity' => $qty,
-            'unit_price' => $unitPrice,
-            'total_amount' => $totalAmount,
-            'is_available' => true,
-        ]);
+        // 2. Record billing charges and available amenities in a single transaction
+        $addedDetails = [];
+        $grandAddedTotal = 0.0;
+
+        DB::transaction(function () use ($items, $booking, &$addedDetails, &$grandAddedTotal) {
+            foreach ($items as $item) {
+                $amenity = Amenity::findOrFail($item['amenity_id']);
+                $qty = max(1, (int) ($item['quantity'] ?? 1));
+                $unitPrice = (float) $amenity->price;
+                $totalAmount = $qty * $unitPrice;
+
+                $description = $amenity->name;
+                if (! empty($item['notes'])) {
+                    $description .= ' ('.trim($item['notes']).')';
+                }
+
+                Charge::create([
+                    'booking_id' => $booking->id,
+                    'type' => 'amenity',
+                    'description' => $description,
+                    'quantity' => $qty,
+                    'unit_price' => $unitPrice,
+                    'amount' => $totalAmount,
+                    'is_paid' => false,
+                ]);
+
+                AvailableAmenity::create([
+                    'booking_id' => $booking->id,
+                    'invoice_id' => $booking->invoice->id,
+                    'item_name' => $description,
+                    'quantity' => $qty,
+                    'unit_price' => $unitPrice,
+                    'total_amount' => $totalAmount,
+                    'is_available' => true,
+                ]);
+
+                $grandAddedTotal += $totalAmount;
+                $addedDetails[] = "{$amenity->name} (x{$qty})";
+            }
+        });
 
         // 3. Recalculate invoice totals
         $invoices->recalculate($booking);
@@ -420,7 +545,18 @@ class BookingController
         $guestName = $booking->guest ? trim(($booking->guest->fname ?? 'Guest').' '.($booking->guest->lname ?? '')) : 'Guest';
         $roomNumStr = str_pad($roomId, 2, '0', STR_PAD_LEFT);
 
-        return back()->with('success', "Amenity '{$amenity->name}' (x{$qty} - ₱".number_format($totalAmount, 2).") successfully added to Room {$roomNumStr} ({$guestName}).");
+        if (count($items) === 1) {
+            $firstAmenity = Amenity::find($items[0]['amenity_id']);
+            $firstQty = $items[0]['quantity'];
+            $firstTotal = $firstQty * (float) ($firstAmenity ? $firstAmenity->price : 0);
+            $name = $firstAmenity ? $firstAmenity->name : 'Amenity';
+
+            return back()->with('success', "Amenity '{$name}' (x{$firstQty} - ₱".number_format($firstTotal, 2).") successfully added to Room {$roomNumStr} ({$guestName}).");
+        }
+
+        $amenitiesSummary = implode(', ', $addedDetails);
+
+        return back()->with('success', count($items)." amenities ({$amenitiesSummary} - Total: ₱".number_format($grandAddedTotal, 2).") successfully added to Room {$roomNumStr} ({$guestName}).");
     }
 
     /**
@@ -453,5 +589,582 @@ class BookingController
         Booking::findOrFail($id)->delete();
 
         return redirect()->route('booking.index')->with('success', 'Booking deleted successfully.');
+    }
+
+    /**
+     * Export Booking History records within the selected date range to an Excel-compatible CSV file
+     * with a complete itemized breakdown of room charges, amenities, additional charges, discounts, and payments.
+     */
+    public function export(Request $request)
+    {
+        $now = now()->setTimezone('Asia/Manila');
+        $preset = $request->input('preset');
+        $fromInput = $request->input('from') ?? $request->input('from_date');
+        $toInput = $request->input('to') ?? $request->input('to_date');
+        $filter = $request->input('filter', 'all');
+        $search = trim((string) $request->input('search', ''));
+
+        if ($preset === 'last7') {
+            $rangeStart = $now->copy()->subDays(6)->startOfDay();
+            $rangeEnd = $now->copy()->endOfDay();
+            $label = 'Last_7_Days';
+        } elseif ($preset === 'lastMonth') {
+            $rangeStart = $now->copy()->subMonthNoOverflow()->startOfMonth();
+            $rangeEnd = $rangeStart->copy()->endOfMonth();
+            $label = 'Last_Month_'.$rangeStart->format('M_Y');
+        } elseif ($preset === 'thisMonth') {
+            $rangeStart = $now->copy()->startOfMonth();
+            $rangeEnd = $rangeStart->copy()->endOfMonth();
+            $label = 'This_Month_'.$rangeStart->format('M_Y');
+        } elseif (! empty($fromInput) && ! empty($toInput)) {
+            $rangeStart = Carbon::parse($fromInput, 'Asia/Manila')->startOfDay();
+            $rangeEnd = Carbon::parse($toInput, 'Asia/Manila')->endOfDay();
+            $label = $rangeStart->format('m_d_Y').'_to_'.$rangeEnd->format('m_d_Y');
+        } elseif (! empty($fromInput)) {
+            $rangeStart = Carbon::parse($fromInput, 'Asia/Manila')->startOfDay();
+            $rangeEnd = $now->copy()->endOfDay();
+            $label = 'From_'.$rangeStart->format('m_d_Y');
+        } else {
+            $rangeStart = $now->copy()->startOfMonth();
+            $rangeEnd = $rangeStart->copy()->endOfMonth();
+            $label = 'This_Month_'.$rangeStart->format('M_Y');
+        }
+
+        if ($rangeStart->gt($rangeEnd)) {
+            [$rangeStart, $rangeEnd] = [$rangeEnd->copy()->startOfDay(), $rangeStart->copy()->endOfDay()];
+        }
+
+        $query = Booking::with(['guest', 'invoice.paymentLogs', 'invoice.amenities', 'charges'])
+            ->where(function ($q) use ($rangeStart, $rangeEnd) {
+                $q->whereBetween('check_in_datetime', [$rangeStart, $rangeEnd])
+                    ->orWhereBetween('check_out_datetime', [$rangeStart, $rangeEnd])
+                    ->orWhereBetween('created_at', [$rangeStart, $rangeEnd])
+                    ->orWhereHas('invoice.paymentLogs', function ($plQ) use ($rangeStart, $rangeEnd) {
+                        $plQ->whereBetween('paid_at', [$rangeStart, $rangeEnd])
+                            ->orWhereBetween('created_at', [$rangeStart, $rangeEnd]);
+                    });
+            })
+            ->orderByDesc('created_at');
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                if (preg_match('/^(?:BK-?)?0*(\d+)$/i', $search, $m)) {
+                    $q->orWhere('id', (int) $m[1]);
+                }
+                $q->orWhere('phone', 'like', "%{$search}%");
+                if (preg_match('/\b\d+\b/', $search, $rMatch)) {
+                    $rNum = (int) $rMatch[0];
+                    $q->orWhere('booked_rooms', 'like', "%\"{$rNum}\"%")
+                        ->orWhere('booked_rooms', 'like', "%{$rNum}%")
+                        ->orWhere('booked_rooms', 'like', '%"'.str_pad((string) $rNum, 2, '0', STR_PAD_LEFT).'"%');
+                }
+                $q->orWhere('booked_rooms', 'like', "%{$search}%");
+                if (stripos($search, 'walk') !== false) {
+                    $q->orWhereDoesntHave('guest');
+                }
+                if (stripos($search, 'cancel') !== false) {
+                    $q->orWhere('status', 'cancelled');
+                }
+                if (stripos($search, 'complet') !== false) {
+                    $q->orWhere(function ($comp) {
+                        $comp->where('status', 'checked_out')
+                            ->orWhereHas('invoice', fn ($i) => $i->where('status', 'paid'));
+                    });
+                }
+                if (stripos($search, 'in house') !== false || stripos($search, 'in_house') !== false) {
+                    $q->orWhere(function ($ih) {
+                        $ih->where('status', 'checked_in')
+                            ->whereHas('invoice', fn ($i) => $i->where('status', 'unpaid'));
+                    });
+                }
+                if (stripos($search, 'overdue') !== false) {
+                    $nowManila = now()->setTimezone('Asia/Manila');
+                    $q->orWhere(function ($ov) use ($nowManila) {
+                        $ov->whereNotIn('status', ['cancelled', 'checked_out'])
+                            ->where('check_out_datetime', '<', $nowManila);
+                    });
+                }
+                $q->orWhereHas('guest', function ($gQ) use ($search) {
+                    $gQ->where(function ($nameQ) use ($search) {
+                        $nameQ->where('fname', 'like', "%{$search}%")
+                            ->orWhere('lname', 'like', "%{$search}%");
+                        $words = array_values(array_filter(preg_split('/\s+/', $search)));
+                        if (count($words) > 1) {
+                            $nameQ->orWhere(function ($multiQ) use ($words) {
+                                foreach ($words as $word) {
+                                    $multiQ->where(function ($subQ) use ($word) {
+                                        $subQ->where('fname', 'like', "%{$word}%")
+                                            ->orWhere('lname', 'like', "%{$word}%");
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+            });
+        }
+
+        if ($filter === 'in_house') {
+            $query->where('status', 'checked_in')
+                ->whereHas('invoice', fn ($q) => $q->where('status', 'unpaid'));
+        } elseif ($filter === 'overdue') {
+            $query->whereNotIn('status', ['cancelled', 'checked_out'])
+                ->where('check_out_datetime', '<', $now)
+                ->where(function ($q) {
+                    $q->whereDoesntHave('invoice')
+                        ->orWhereHas('invoice', fn ($i) => $i->where('status', '!=', 'paid'));
+                });
+        } elseif ($filter === 'completed') {
+            $query->where('status', '!=', 'cancelled')
+                ->where(function ($q) {
+                    $q->where('status', 'checked_out')
+                        ->orWhereHas('invoice', fn ($i) => $i->where('status', 'paid'));
+                });
+        } elseif ($filter === 'cancelled') {
+            $query->where('status', 'cancelled');
+        }
+
+        $bookings = $query->get();
+        $allRoomsKeyed = Room::all()->keyBy('id');
+
+        $filename = 'Booking_History_'.$label.'.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($bookings, $rangeStart, $rangeEnd, $now, $allRoomsKeyed, $filter) {
+            $handle = fopen('php://output', 'w');
+
+            // UTF-8 BOM for Microsoft Excel compatibility
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            // Header Section
+            fputcsv($handle, ['HOTEL BOOKING HISTORY REPORT - ITEMIZED PAYMENT BREAKDOWN']);
+            fputcsv($handle, ['Date Range From', $rangeStart->format('m/d/Y')]);
+            fputcsv($handle, ['Date Range To', $rangeEnd->format('m/d/Y')]);
+            fputcsv($handle, ['Status Filter', ucfirst(str_replace('_', ' ', $filter))]);
+            fputcsv($handle, ['Generated At', now()->setTimezone('Asia/Manila')->format('m/d/Y h:i:s A')]);
+            fputcsv($handle, []);
+
+            // Summary Metrics Calculation
+            $totalRevenue = 0.0;
+            $inHouseCount = 0;
+            $completedCount = 0;
+            $overdueCount = 0;
+            $cancelledCount = 0;
+            $totalRoomRevenue = 0.0;
+            $totalAmenitiesRevenue = 0.0;
+            $totalAdditionalChargesRevenue = 0.0;
+            $totalDiscountsApplied = 0.0;
+
+            // Process and cache details for each booking
+            $processedBookings = [];
+
+            foreach ($bookings as $b) {
+                $invoice = $b->invoice;
+                $log = $invoice ? ($invoice->paymentLogs->where('status', 'successful')->sortByDesc('id')->first() ?? $invoice->paymentLogs->sortByDesc('id')->first()) : null;
+
+                $paid = $invoice && $invoice->status === 'paid';
+                $cancelled = ($b->status === 'cancelled');
+                $overdue = $b->check_out_datetime && Carbon::parse($b->check_out_datetime)->lt($now);
+                $statusText = $cancelled ? 'Cancelled'
+                    : (($paid || $b->status === 'checked_out') ? 'Completed'
+                    : ($overdue ? 'Overdue' : 'In house'));
+
+                if ($cancelled) {
+                    $cancelledCount++;
+                } elseif ($paid || $b->status === 'checked_out') {
+                    $completedCount++;
+                } elseif ($overdue) {
+                    $overdueCount++;
+                } else {
+                    $inHouseCount++;
+                }
+
+                // 1. Room Charges Details
+                $roomIds = is_array($b->booked_rooms) ? $b->booked_rooms : (json_decode($b->booked_rooms, true) ?? []);
+                $roomNumbersList = [];
+                foreach ($roomIds as $rId) {
+                    $roomObj = $allRoomsKeyed->get($rId);
+                    $roomNumbersList[] = $roomObj ? ('Room '.str_pad($roomObj->room_number, 2, '0', STR_PAD_LEFT)) : ('Room '.str_pad((string) $rId, 2, '0', STR_PAD_LEFT));
+                }
+                $roomNumbersStr = ! empty($roomNumbersList) ? implode(', ', $roomNumbersList) : '-';
+
+                $nights = (int) ($b->nights ?: 1);
+                if ($nights <= 0 && $b->check_in_datetime && $b->check_out_datetime) {
+                    $nights = max(1, (int) Carbon::parse($b->check_in_datetime)->diffInDays(Carbon::parse($b->check_out_datetime)));
+                }
+
+                $roomChargesFromDB = $b->charges ? $b->charges->where('type', 'room') : collect();
+                if ($roomChargesFromDB->isNotEmpty()) {
+                    $totalRoomCharges = (float) $roomChargesFromDB->sum('amount');
+                    $firstCharge = $roomChargesFromDB->first();
+                    $roomRate = (float) ($firstCharge->unit_price > 0 ? $firstCharge->unit_price : ($totalRoomCharges / max(1, $nights * max(1, count($roomIds)))));
+                } else {
+                    $totalRoomCharges = (float) ($invoice->room_charges ?? 0);
+                    $firstRoom = ! empty($roomIds) ? $allRoomsKeyed->get($roomIds[0]) : null;
+                    if ($firstRoom) {
+                        $roomRate = $b->stay_type === 'short_stay' ? (float) $firstRoom->short_stay_rate : (float) $firstRoom->overnight_rate;
+                    } else {
+                        $roomRate = $totalRoomCharges > 0 ? round($totalRoomCharges / max(1, $nights * max(1, count($roomIds))), 2) : 0.0;
+                    }
+                }
+
+                // 2. Amenities Details
+                $amenitiesList = [];
+                $amenitiesChargesFromDB = $b->charges ? $b->charges->where('type', 'amenity') : collect();
+                if ($amenitiesChargesFromDB->isNotEmpty()) {
+                    foreach ($amenitiesChargesFromDB as $ac) {
+                        $qty = max(1, (int) $ac->quantity);
+                        $uPrice = (float) $ac->unit_price;
+                        $tAmount = (float) $ac->amount;
+                        $amenitiesList[] = [
+                            'name' => $ac->description,
+                            'quantity' => $qty,
+                            'unit_price' => $uPrice,
+                            'total_amount' => $tAmount,
+                        ];
+                    }
+                } elseif ($invoice && $invoice->amenities && $invoice->amenities->isNotEmpty()) {
+                    foreach ($invoice->amenities as $ia) {
+                        $qty = max(1, (int) ($ia->quantity ?? 1));
+                        $uPrice = (float) ($ia->unit_price ?? $ia->price ?? 0);
+                        $tAmount = (float) ($ia->total_amount ?? ($qty * $uPrice));
+                        $amenitiesList[] = [
+                            'name' => $ia->item_name ?? 'Amenity',
+                            'quantity' => $qty,
+                            'unit_price' => $uPrice,
+                            'total_amount' => $tAmount,
+                        ];
+                    }
+                }
+                $totalAmenityCharges = (float) collect($amenitiesList)->sum('total_amount');
+                $amenitiesSummaryStr = ! empty($amenitiesList)
+                    ? collect($amenitiesList)->map(fn ($a) => "{$a['name']} (x{$a['quantity']} @ ".number_format($a['unit_price'], 2).' = '.number_format($a['total_amount'], 2).')')->implode('; ')
+                    : 'None';
+
+                // 3. Additional Charges / Extra Fees
+                $additionalChargesList = [];
+                $extraChargesFromDB = $b->charges ? $b->charges->whereNotIn('type', ['room', 'amenity']) : collect();
+                if ($extraChargesFromDB->isNotEmpty()) {
+                    foreach ($extraChargesFromDB as $ec) {
+                        $qty = max(1, (int) $ec->quantity);
+                        $uPrice = (float) ($ec->unit_price ?? ($ec->amount / $qty));
+                        $tAmount = (float) $ec->amount;
+                        $additionalChargesList[] = [
+                            'name' => $ec->description,
+                            'quantity' => $qty,
+                            'unit_price' => $uPrice,
+                            'total_amount' => $tAmount,
+                        ];
+                    }
+                }
+
+                $accountedExtras = $totalAmenityCharges + collect($additionalChargesList)->sum('total_amount');
+                $invoiceExtraCharges = (float) ($invoice->extra_charges_total ?? 0);
+                if ($invoiceExtraCharges > $accountedExtras + 0.01) {
+                    $diff = $invoiceExtraCharges - $accountedExtras;
+                    $additionalChargesList[] = [
+                        'name' => 'Other Billed Extra Charges',
+                        'quantity' => 1,
+                        'unit_price' => $diff,
+                        'total_amount' => $diff,
+                    ];
+                }
+                $totalAdditionalCharges = (float) collect($additionalChargesList)->sum('total_amount');
+                $additionalChargesSummaryStr = ! empty($additionalChargesList)
+                    ? collect($additionalChargesList)->map(fn ($e) => "{$e['name']} (x{$e['quantity']} @ ".number_format($e['unit_price'], 2).' = '.number_format($e['total_amount'], 2).')')->implode('; ')
+                    : 'None';
+
+                // 4. Discounts
+                $discountType = $b->discount_type;
+                $discountLabel = match ($discountType) {
+                    'senior' => 'Senior Citizen (20%)',
+                    'pwd' => 'PWD (20%)',
+                    'special' => 'Special Discount',
+                    'regular', 'none', null => 'None',
+                    default => ucwords(str_replace('_', ' ', (string) $discountType)),
+                };
+                $discountAmount = (float) ($invoice->discount_amount ?? 0);
+                if ($discountLabel === 'None' && $discountAmount > 0) {
+                    $discountLabel = 'Applied Discount';
+                }
+
+                // 5. Payment Details
+                $isPaid = $invoice && $invoice->status === 'paid';
+                $amountPaid = 0.0;
+                if ($log && $log->amount_paid > 0) {
+                    $amountPaid = (float) $log->amount_paid;
+                } elseif ($isPaid) {
+                    $amountPaid = (float) ($invoice->grand_total ?? 0);
+                } elseif ($b->deposit > 0) {
+                    $amountPaid = (float) $b->deposit;
+                }
+
+                $paymentDate = 'Not paid yet';
+                if ($log && ($log->paid_at || $log->created_at)) {
+                    $paymentDate = Carbon::parse($log->paid_at ?? $log->created_at)->setTimezone('Asia/Manila')->format('m/d/Y h:i A');
+                } elseif ($isPaid && $invoice->updated_at) {
+                    $paymentDate = Carbon::parse($invoice->updated_at)->setTimezone('Asia/Manila')->format('m/d/Y h:i A');
+                }
+
+                $methodRaw = $log?->payment_method ?? $b->payment_method ?? '-';
+                $cleanMethod = trim(strtolower((string) $methodRaw));
+                $isEwallet = in_array($cleanMethod, ['ewallet', 'gcash', 'e-wallet', 'paymaya', 'paypal']);
+                $paymentMethodFormatted = match ($cleanMethod) {
+                    'ewallet', 'gcash', 'e-wallet', 'paymaya', 'paypal' => 'E-Wallet'.(! empty($b->ewallet_type) && strtolower($b->ewallet_type) !== 'ewallet' ? ' ('.strtoupper($b->ewallet_type).')' : ''),
+                    'cash' => 'Cash',
+                    'credit_card' => 'Credit Card',
+                    'bank_transfer' => 'Bank Transfer',
+                    '-', '' => '-',
+                    default => ucfirst(str_replace('_', ' ', (string) $methodRaw)),
+                };
+
+                $refNo = $log?->reference_number ?? $b->reference_number ?? null;
+                $ewalletRefFormatted = (! empty($refNo)) ? (string) $refNo : ($isEwallet ? 'Not specified' : 'N/A');
+
+                if ($paid || $b->status === 'checked_out') {
+                    $totalRevenue += $amountPaid;
+                    $totalRoomRevenue += $totalRoomCharges;
+                    $totalAmenitiesRevenue += $totalAmenityCharges;
+                    $totalAdditionalChargesRevenue += $totalAdditionalCharges;
+                    $totalDiscountsApplied += $discountAmount;
+                }
+
+                $processedBookings[] = [
+                    'booking' => $b,
+                    'booking_no' => 'BK-'.str_pad($b->id, 4, '0', STR_PAD_LEFT),
+                    'first_name' => $b->guest?->fname ?? 'Walk-in',
+                    'last_name' => $b->guest?->lname ?: '-',
+                    'full_name' => trim(($b->guest?->fname ?? 'Walk-in').' '.($b->guest?->lname ?? '')),
+                    'phone' => $b->phone ?: '-',
+                    'status' => $statusText,
+                    'stay_type' => $b->stay_type === 'short_stay' ? 'Short stay ('.$b->short_stay_hours.' hrs)' : '24 hours'.($b->with_breakfast ? ' with breakfast' : ''),
+                    'checkin' => $b->check_in_datetime ? Carbon::parse($b->check_in_datetime)->format('m/d/Y h:i A') : 'N/A',
+                    'checkout' => $b->check_out_datetime ? Carbon::parse($b->check_out_datetime)->format('m/d/Y h:i A') : 'N/A',
+                    'room_numbers' => $roomNumbersStr,
+                    'room_rate' => $roomRate,
+                    'nights' => $nights,
+                    'total_room_charges' => $totalRoomCharges,
+                    'room_charges_db' => $roomChargesFromDB,
+                    'amenities_list' => $amenitiesList,
+                    'amenities_summary' => $amenitiesSummaryStr,
+                    'total_amenity_charges' => $totalAmenityCharges,
+                    'additional_charges_list' => $additionalChargesList,
+                    'additional_charges_summary' => $additionalChargesSummaryStr,
+                    'total_additional_charges' => $totalAdditionalCharges,
+                    'discount_label' => $discountLabel,
+                    'discount_amount' => $discountAmount,
+                    'amount_paid' => $amountPaid,
+                    'payment_date' => $paymentDate,
+                    'payment_method' => $paymentMethodFormatted,
+                    'ewallet_ref' => $ewalletRefFormatted,
+                    'is_paid' => $isPaid,
+                ];
+            }
+
+            fputcsv($handle, ['SUMMARY METRICS', 'VALUE']);
+            fputcsv($handle, ['Total Bookings', count($processedBookings)]);
+            fputcsv($handle, ['Completed Bookings', $completedCount]);
+            fputcsv($handle, ['In-House Bookings', $inHouseCount]);
+            fputcsv($handle, ['Overdue Bookings', $overdueCount]);
+            fputcsv($handle, ['Cancelled Bookings', $cancelledCount]);
+            fputcsv($handle, ['Total Room Charges (PHP)', number_format($totalRoomRevenue, 2)]);
+            fputcsv($handle, ['Total Amenity Charges (PHP)', number_format($totalAmenitiesRevenue, 2)]);
+            fputcsv($handle, ['Total Additional Charges (PHP)', number_format($totalAdditionalChargesRevenue, 2)]);
+            fputcsv($handle, ['Total Discounts Applied (PHP)', number_format($totalDiscountsApplied, 2)]);
+            fputcsv($handle, ['Total Revenue / Amount Paid (PHP)', number_format($totalRevenue, 2)]);
+            fputcsv($handle, []);
+
+            // SECTION 1: BOOKING SUMMARY & PAYMENT OVERVIEW
+            fputcsv($handle, ['--- BOOKING SUMMARY & PAYMENT OVERVIEW ---']);
+            fputcsv($handle, [
+                'Booking No.',
+                'Guest First Name',
+                'Guest Last Name',
+                'Phone',
+                'Status',
+                'Stay Type',
+                'Check-in',
+                'Check-out',
+                'Room Number(s)',
+                'Room Rate (PHP)',
+                'Number of Nights',
+                'Total Room Charges (PHP)',
+                'Purchased Amenities (Item, Qty, Unit Price, Total)',
+                'Total Amenity Charges (PHP)',
+                'Additional Charges / Extra Fees',
+                'Total Additional Charges (PHP)',
+                'Applied Discount',
+                'Discount Amount (PHP)',
+                'Total Amount Paid (PHP)',
+                'Payment Date',
+                'Payment Method',
+                'E-Wallet Reference Number',
+            ]);
+
+            if (empty($processedBookings)) {
+                fputcsv($handle, ['No booking records found within the selected date range.']);
+            } else {
+                foreach ($processedBookings as $pb) {
+                    fputcsv($handle, [
+                        $pb['booking_no'],
+                        $pb['first_name'],
+                        $pb['last_name'],
+                        $pb['phone'],
+                        $pb['status'],
+                        $pb['stay_type'],
+                        $pb['checkin'],
+                        $pb['checkout'],
+                        $pb['room_numbers'],
+                        number_format($pb['room_rate'], 2),
+                        $pb['nights'],
+                        number_format($pb['total_room_charges'], 2),
+                        $pb['amenities_summary'],
+                        number_format($pb['total_amenity_charges'], 2),
+                        $pb['additional_charges_summary'],
+                        number_format($pb['total_additional_charges'], 2),
+                        $pb['discount_label'],
+                        number_format($pb['discount_amount'], 2),
+                        number_format($pb['amount_paid'], 2),
+                        $pb['payment_date'],
+                        $pb['payment_method'],
+                        $pb['ewallet_ref'],
+                    ]);
+                }
+            }
+
+            fputcsv($handle, []);
+
+            // SECTION 2: ITEMIZED CHARGES & BILLING BREAKDOWN (ALL PAID & BILLED ITEMS)
+            fputcsv($handle, ['--- ITEMIZED CHARGES & BILLING BREAKDOWN (ALL PAID & BILLED ITEMS) ---']);
+            fputcsv($handle, [
+                'Booking No.',
+                'Guest Name',
+                'Charge Category',
+                'Item / Charge Description',
+                'Room Number',
+                'Quantity / Nights',
+                'Unit Price (PHP)',
+                'Total Amount (PHP)',
+                'Payment Date',
+                'Payment Method',
+                'E-Wallet Reference Number',
+            ]);
+
+            if (empty($processedBookings)) {
+                fputcsv($handle, ['No itemized records available.']);
+            } else {
+                foreach ($processedBookings as $pb) {
+                    // Room Charge Line(s)
+                    if ($pb['room_charges_db']->isNotEmpty()) {
+                        foreach ($pb['room_charges_db'] as $rc) {
+                            fputcsv($handle, [
+                                $pb['booking_no'],
+                                $pb['full_name'],
+                                'Room Charge',
+                                $rc->description,
+                                $pb['room_numbers'],
+                                $pb['nights'],
+                                number_format((float) $rc->unit_price, 2),
+                                number_format((float) $rc->amount, 2),
+                                $pb['payment_date'],
+                                $pb['payment_method'],
+                                $pb['ewallet_ref'],
+                            ]);
+                        }
+                    } elseif ($pb['total_room_charges'] > 0) {
+                        fputcsv($handle, [
+                            $pb['booking_no'],
+                            $pb['full_name'],
+                            'Room Charge',
+                            'Room Accommodation ('.$pb['stay_type'].')',
+                            $pb['room_numbers'],
+                            $pb['nights'],
+                            number_format($pb['room_rate'], 2),
+                            number_format($pb['total_room_charges'], 2),
+                            $pb['payment_date'],
+                            $pb['payment_method'],
+                            $pb['ewallet_ref'],
+                        ]);
+                    }
+
+                    // Amenity Charge Line(s)
+                    foreach ($pb['amenities_list'] as $amenityItem) {
+                        fputcsv($handle, [
+                            $pb['booking_no'],
+                            $pb['full_name'],
+                            'Amenity',
+                            $amenityItem['name'],
+                            $pb['room_numbers'],
+                            $amenityItem['quantity'],
+                            number_format($amenityItem['unit_price'], 2),
+                            number_format($amenityItem['total_amount'], 2),
+                            $pb['payment_date'],
+                            $pb['payment_method'],
+                            $pb['ewallet_ref'],
+                        ]);
+                    }
+
+                    // Additional Charges Line(s)
+                    foreach ($pb['additional_charges_list'] as $extraItem) {
+                        fputcsv($handle, [
+                            $pb['booking_no'],
+                            $pb['full_name'],
+                            'Additional Charge',
+                            $extraItem['name'],
+                            $pb['room_numbers'],
+                            $extraItem['quantity'],
+                            number_format($extraItem['unit_price'], 2),
+                            number_format($extraItem['total_amount'], 2),
+                            $pb['payment_date'],
+                            $pb['payment_method'],
+                            $pb['ewallet_ref'],
+                        ]);
+                    }
+
+                    // Discount Line (if any)
+                    if ($pb['discount_amount'] > 0) {
+                        fputcsv($handle, [
+                            $pb['booking_no'],
+                            $pb['full_name'],
+                            'Discount',
+                            $pb['discount_label'].' Discount',
+                            $pb['room_numbers'],
+                            1,
+                            '-'.number_format($pb['discount_amount'], 2),
+                            '-'.number_format($pb['discount_amount'], 2),
+                            $pb['payment_date'],
+                            $pb['payment_method'],
+                            $pb['ewallet_ref'],
+                        ]);
+                    }
+
+                    // Payment Settlement Summary Line
+                    fputcsv($handle, [
+                        $pb['booking_no'],
+                        $pb['full_name'],
+                        'Payment',
+                        $pb['is_paid'] ? 'Total Amount Paid (Settled)' : 'Total Amount Paid / Received',
+                        $pb['room_numbers'],
+                        1,
+                        number_format($pb['amount_paid'], 2),
+                        number_format($pb['amount_paid'], 2),
+                        $pb['payment_date'],
+                        $pb['payment_method'],
+                        $pb['ewallet_ref'],
+                    ]);
+                }
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

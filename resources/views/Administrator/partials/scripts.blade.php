@@ -116,7 +116,7 @@
                 if (activeData) {
                     revenueChart.data.labels = activeData.labels;
                     revenueChart.data.datasets[0].data = activeData.data;
-                    revenueChart.update();
+                    revenueChart.update('none');
                 }
             }
 
@@ -158,41 +158,282 @@
         }
 
         // ==========================================
-        // 2. Booking Sources Donut Chart (Overview Section)
+        // 2. Booking Stay Type Donut Chart (Overview Section)
         // ==========================================
         const donutCanvas = document.getElementById('bookingSourceChart');
 
         if (donutCanvas) {
-            new Chart(donutCanvas.getContext('2d'), {
+            let activeStayTypeTimeframe = 'monthly';
+            let stayTypeChart = null;
+
+            const datePicker = document.getElementById('stayTypeDatePicker');
+            const clearDateBtn = document.getElementById('clearStayTypeDateBtn');
+            const scopeLabel = document.getElementById('stayTypeScopeLabel');
+            const exactDateBadge = document.getElementById('stayTypeExactDateBadge');
+            const monthSelect = document.getElementById('stayTypeMonthSelect');
+            const weekSelect = document.getElementById('stayTypeWeekSelect');
+            const yearSelect = document.getElementById('stayTypeYearSelect');
+            const timeframeBtns = document.querySelectorAll('.stay-tf-btn');
+            const legendRows = document.getElementById('stayTypeLegendRows');
+
+            const stayTypeLabels = ['3 Hours', '6 Hours', '12 Hours', '24 Hours'];
+            const stayTypeColorArray = ['#30AFFF', '#10B981', '#F59E0B', '#6A4435'];
+
+            function renderStayTypeLegend(categories, total, isExactDate, dateFormatted) {
+                if (!legendRows) return;
+                legendRows.innerHTML = '';
+
+                if (!categories || categories.length === 0 || total === 0) {
+                    legendRows.innerHTML = `
+                        <div class="col-12 text-center text-muted py-2">
+                            <small class="fw-semibold">${isExactDate ? `No bookings found on ${dateFormatted}.` : 'No booking records found for this period.'}</small>
+                        </div>
+                    `;
+                    return;
+                }
+
+                categories.forEach(cat => {
+                    const col = document.createElement('div');
+                    col.className = 'col-6';
+                    col.innerHTML = `
+                        <div class="d-flex align-items-center justify-content-between p-1 px-1.5 rounded bg-light border">
+                            <div class="d-flex align-items-center gap-1.5 text-truncate">
+                                <span class="d-inline-block rounded-circle flex-shrink-0" style="width: 10px; height: 10px; background-color: ${cat.color};"></span>
+                                <span class="fw-semibold text-dark text-truncate" style="font-size: 0.72rem;">${cat.label}</span>
+                            </div>
+                            <div class="text-end ps-1">
+                                <span class="fw-bold text-dark" style="font-size: 0.75rem;">${cat.count}</span>
+                                <span class="text-muted" style="font-size: 0.68rem;">(${cat.percentage}%)</span>
+                            </div>
+                        </div>
+                    `;
+                    legendRows.appendChild(col);
+                });
+            }
+
+            // Initialize Chart.js doughnut
+            stayTypeChart = new Chart(donutCanvas.getContext('2d'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Online Reservation', 'Walk-in'],
+                    labels: stayTypeLabels,
                     datasets: [{
-                        data: [65, 35], // Dummy data percentages
-                        backgroundColor: [
-                            '#30AFFF', // Bright blue for Online
-                            '#FFCED8'  // Light pink for Walk-in
-                        ],
-                        borderWidth: 0,
-                        hoverOffset: 4
+                        data: [0, 0, 0, 0],
+                        backgroundColor: stayTypeColorArray,
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '75%', // Makes the donut ring thinner and more modern
+                    cutout: '70%',
                     plugins: {
                         legend: {
-                            position: 'bottom', // Moves the labels to the bottom
-                            labels: {
-                                padding: 20,
-                                font: { weight: 'bold' },
-                                color: '#443627' // Your primary brown for the text
+                            display: false // Using our clean custom badges below
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                                    return ` ${label}: ${value} booking(s) (${pct}%)`;
+                                }
                             }
                         }
                     }
                 }
             });
+
+            function updateStayTypeVisibility() {
+                if (activeStayTypeTimeframe === 'weekly') {
+                    if (weekSelect) weekSelect.classList.remove('d-none');
+                    if (monthSelect) monthSelect.classList.remove('d-none');
+                    if (yearSelect) yearSelect.classList.remove('d-none');
+                } else if (activeStayTypeTimeframe === 'monthly') {
+                    if (weekSelect) weekSelect.classList.add('d-none');
+                    if (monthSelect) monthSelect.classList.remove('d-none');
+                    if (yearSelect) yearSelect.classList.remove('d-none');
+                } else if (activeStayTypeTimeframe === 'yearly') {
+                    if (weekSelect) weekSelect.classList.add('d-none');
+                    if (monthSelect) monthSelect.classList.add('d-none');
+                    if (yearSelect) yearSelect.classList.remove('d-none');
+                }
+            }
+
+            let isFetchingStayType = false;
+
+            function fetchStayTypeData() {
+                if (isFetchingStayType) return;
+                isFetchingStayType = true;
+
+                const hasSpecificDate = Boolean(datePicker && datePicker.value);
+                const params = new URLSearchParams({
+                    timeframe: activeStayTypeTimeframe,
+                    year: yearSelect ? yearSelect.value : '2026',
+                    month: monthSelect ? monthSelect.value : 'all',
+                    week: (activeStayTypeTimeframe === 'weekly' && weekSelect) ? weekSelect.value : 'all'
+                });
+
+                if (hasSpecificDate) {
+                    params.set('date', datePicker.value);
+                    if (clearDateBtn) clearDateBtn.classList.remove('d-none');
+                } else {
+                    if (clearDateBtn) clearDateBtn.classList.add('d-none');
+                }
+
+                fetch(`/api/admin/stay-type-stats?${params.toString()}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!stayTypeChart) return;
+
+                        const counts = data.counts || [0, 0, 0, 0];
+                        const total = data.total || 0;
+
+                        if (total === 0) {
+                            // If all 0, show empty placeholder ring with light grey
+                            stayTypeChart.data.labels = stayTypeLabels;
+                            stayTypeChart.data.datasets[0].data = [1, 0, 0, 0];
+                            stayTypeChart.data.datasets[0].backgroundColor = ['#E5E7EB', '#E5E7EB', '#E5E7EB', '#E5E7EB'];
+                        } else {
+                            stayTypeChart.data.labels = data.labels || stayTypeLabels;
+                            stayTypeChart.data.datasets[0].data = counts;
+                            stayTypeChart.data.datasets[0].backgroundColor = data.colors || stayTypeColorArray;
+                        }
+
+                        stayTypeChart.update('none');
+                        renderStayTypeLegend(data.categories || [], total, data.is_exact_date, data.selected_date_formatted);
+
+                        // Update Status Labels
+                        if (scopeLabel) {
+                            if (data.is_exact_date) {
+                                scopeLabel.textContent = `Exact Day: ${data.selected_date_formatted}`;
+                            } else {
+                                const tfTitle = activeStayTypeTimeframe.charAt(0).toUpperCase() + activeStayTypeTimeframe.slice(1);
+                                if (activeStayTypeTimeframe === 'weekly') {
+                                    const wText = (weekSelect && weekSelect.value !== 'all') ? `Week ${weekSelect.value}` : 'All Weeks';
+                                    scopeLabel.textContent = `Timeframe: Weekly (${wText}, ${monthSelect ? monthSelect.options[monthSelect.selectedIndex]?.text : ''})`;
+                                } else if (activeStayTypeTimeframe === 'yearly') {
+                                    scopeLabel.textContent = `Timeframe: Yearly (${yearSelect ? yearSelect.value : ''})`;
+                                } else {
+                                    const mText = (monthSelect && monthSelect.value !== 'all') ? monthSelect.options[monthSelect.selectedIndex]?.text : 'All Months';
+                                    scopeLabel.textContent = `Timeframe: Monthly (${mText} ${yearSelect ? yearSelect.value : ''})`;
+                                }
+                            }
+                        }
+
+                        if (exactDateBadge) {
+                            if (data.is_exact_date) {
+                                exactDateBadge.textContent = 'Exact Date Filter Active';
+                                exactDateBadge.className = 'badge bg-success-subtle text-success border border-success-subtle fw-semibold';
+                                exactDateBadge.classList.remove('d-none');
+                            } else {
+                                exactDateBadge.classList.add('d-none');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error fetching stay type stats:', err);
+                    })
+                    .finally(() => {
+                        isFetchingStayType = false;
+                    });
+            }
+
+            // Timeframe button switching (Weekly, Monthly, Yearly)
+            timeframeBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    timeframeBtns.forEach(b => {
+                        b.classList.remove('active');
+                        b.classList.add('btn-outline-secondary');
+                        b.style.backgroundColor = '';
+                        b.style.borderColor = '';
+                        b.style.color = '';
+                    });
+
+                    this.classList.add('active');
+                    this.classList.remove('btn-outline-secondary');
+                    this.style.backgroundColor = '#6A4435';
+                    this.style.borderColor = '#6A4435';
+                    this.style.color = '#ffffff';
+
+                    activeStayTypeTimeframe = this.getAttribute('data-tf');
+                    updateStayTypeVisibility();
+                    fetchStayTypeData();
+                });
+            });
+
+            // Specific day calendar date picker changes
+            if (datePicker) {
+                datePicker.addEventListener('change', function () {
+                    if (this.value) {
+                        const [y, m, d] = this.value.split('-').map(Number);
+                        if (yearSelect) yearSelect.value = y;
+                        if (monthSelect) monthSelect.value = m;
+                        if (weekSelect) {
+                            const w = Math.min(5, Math.ceil(d / 7));
+                            weekSelect.value = w;
+                        }
+                        if (clearDateBtn) clearDateBtn.classList.remove('d-none');
+                    } else {
+                        if (clearDateBtn) clearDateBtn.classList.add('d-none');
+                    }
+                    fetchStayTypeData();
+                });
+            }
+
+            // Clear date filter button: restores the data based on selected timeframe
+            if (clearDateBtn) {
+                clearDateBtn.addEventListener('click', function () {
+                    if (datePicker) {
+                        datePicker.value = '';
+                    }
+                    this.classList.add('d-none');
+                    fetchStayTypeData();
+                });
+            }
+
+            // Month select changes (switching month clears specific day filter and restores timeframe)
+            if (monthSelect) {
+                monthSelect.addEventListener('change', function () {
+                    if (datePicker && datePicker.value) {
+                        datePicker.value = '';
+                        if (clearDateBtn) clearDateBtn.classList.add('d-none');
+                    }
+                    fetchStayTypeData();
+                });
+            }
+
+            // Year select changes (switching year clears specific day filter and restores timeframe)
+            if (yearSelect) {
+                yearSelect.addEventListener('change', function () {
+                    if (datePicker && datePicker.value) {
+                        datePicker.value = '';
+                        if (clearDateBtn) clearDateBtn.classList.add('d-none');
+                    }
+                    fetchStayTypeData();
+                });
+            }
+
+            // Week select changes (switching week clears specific day filter and restores timeframe)
+            if (weekSelect) {
+                weekSelect.addEventListener('change', function () {
+                    if (datePicker && datePicker.value) {
+                        datePicker.value = '';
+                        if (clearDateBtn) clearDateBtn.classList.add('d-none');
+                    }
+                    fetchStayTypeData();
+                });
+            }
+
+            // Initial load
+            updateStayTypeVisibility();
+            fetchStayTypeData();
+
+            // Real-time synchronization every 5 seconds with Receptionist bookings
+            setInterval(fetchStayTypeData, 5000);
         }
 
         // ==========================================
@@ -429,7 +670,7 @@
                 if (dataset) {
                     occupancyTrendChart.data.labels = dataset.labels;
                     occupancyTrendChart.data.datasets[0].data = dataset.data;
-                    occupancyTrendChart.update();
+                    occupancyTrendChart.update('none');
                 }
             }
 
@@ -440,7 +681,7 @@
                     revenueBreakdownChart.data.labels = dataset.labels;
                     revenueBreakdownChart.data.datasets[0].data = dataset.roomRate;
                     revenueBreakdownChart.data.datasets[1].data = dataset.extraCharges;
-                    revenueBreakdownChart.update();
+                    revenueBreakdownChart.update('none');
                 }
             }
 
@@ -494,8 +735,13 @@
                 }).join('');
             }
 
+            let isFetchingSalesReport = false;
+
             // Main Data Fetcher
             function fetchSalesReport() {
+                if (isFetchingSalesReport) return;
+                isFetchingSalesReport = true;
+
                 const yearSelect = document.getElementById('salesFilterYear');
                 const monthSelect = document.getElementById('salesFilterMonth');
                 const dateInput = document.getElementById('salesFilterDate');
@@ -544,10 +790,10 @@
                         // Gauge Chart Update
                         if (gaugeChart) {
                             const progress = data.monthly_target_progress || 0;
-                            gaugeChart.updateSeries([progress]);
+                            gaugeChart.updateSeries([progress], false);
                             gaugeChart.updateOptions({
                                 labels: ['Achieved of ' + (data.monthly_target_formatted || '₱150k') + ' Goal']
-                            });
+                            }, false, false);
                         }
 
                         // Lost Revenue (Cancellations)
@@ -577,6 +823,9 @@
                     })
                     .catch(err => {
                         console.error('Sales report fetch error:', err);
+                    })
+                    .finally(() => {
+                        isFetchingSalesReport = false;
                     });
             }
 
@@ -708,6 +957,9 @@
 
             // Initial fetch
             fetchSalesReport();
+
+            // Real-time synchronization every 5 seconds with Receptionist billing and transactions
+            setInterval(fetchSalesReport, 5000);
         }
 
         // ==========================================
@@ -1086,30 +1338,186 @@
 (function () {
     function initAdminRoomsSection() {
         const filterGroup = document.getElementById('adminRoomFilterGroup');
-        if (!filterGroup) return;
+        const hotelRoomGrid = document.getElementById('hotelRoomGrid');
+        if (!filterGroup || !hotelRoomGrid) return;
 
         const filterButtons = filterGroup.querySelectorAll('.btn-filter');
-        const roomCards = document.querySelectorAll('#hotelRoomGrid .hotel-room-card');
+        let currentFilter = 'all';
+
+        function applyCurrentFilter() {
+            const roomCards = hotelRoomGrid.querySelectorAll('.hotel-room-card');
+            roomCards.forEach(function (card) {
+                const cardStatus = card.getAttribute('data-status');
+                if (currentFilter === 'all') {
+                    card.style.display = '';
+                } else if (cardStatus === currentFilter) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
 
         filterButtons.forEach(function (btn) {
             btn.addEventListener('click', function () {
                 filterButtons.forEach(function (b) { b.classList.remove('active'); });
                 this.classList.add('active');
-
-                const selectedFilter = this.getAttribute('data-filter');
-
-                roomCards.forEach(function (card) {
-                    const cardStatus = card.getAttribute('data-status');
-                    if (selectedFilter === 'all') {
-                        card.style.display = '';
-                    } else if (cardStatus === selectedFilter) {
-                        card.style.display = '';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
+                currentFilter = this.getAttribute('data-filter') || 'all';
+                applyCurrentFilter();
             });
         });
+
+        // Real-time synchronization of room statuses, times, and KPI counts with Receptionist side
+        const kpiAvailable = document.getElementById('admin-kpi-available');
+        const kpiOccupied = document.getElementById('admin-kpi-occupied');
+        const kpiReserved = document.getElementById('admin-kpi-reserved');
+        const kpiMaintenance = document.getElementById('admin-kpi-maintenance');
+
+        const badgeHtmlMap = {
+            available: '<span class="badge bg-success">Available</span>',
+            occupied: '<span class="badge bg-danger">Occupied</span>',
+            reserved: '<span class="badge bg-warning text-dark">Reserved</span>',
+            under_maintenance: '<span class="badge bg-secondary">Under Maintenance</span>',
+            maintenance: '<span class="badge bg-secondary">Under Maintenance</span>'
+        };
+
+        const overlayClassMap = {
+            occupied: 'overlay-occupied',
+            reserved: 'overlay-reserved',
+            under_maintenance: 'overlay-maintenance',
+            maintenance: 'overlay-maintenance'
+        };
+
+        let isSyncingRooms = false;
+
+        function syncAdminRooms() {
+            if (isSyncingRooms) return;
+            isSyncingRooms = true;
+
+            fetch('/api/dashboard/notifications', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data) return;
+
+                    // Update KPI counters
+                    if (data.kpi) {
+                        if (kpiAvailable && data.kpi.available !== undefined) kpiAvailable.textContent = data.kpi.available;
+                        if (kpiOccupied && data.kpi.occupied !== undefined) kpiOccupied.textContent = data.kpi.occupied;
+                        if (kpiReserved && data.kpi.reserved !== undefined) kpiReserved.textContent = data.kpi.reserved;
+                        if (kpiMaintenance && data.kpi.maintenance !== undefined) kpiMaintenance.textContent = data.kpi.maintenance;
+
+                        // Update total room count label in Admin Room Management
+                        if (data.kpi.total !== undefined) {
+                            const totalRoomsLabel = document.getElementById('admin-total-rooms-label');
+                            if (totalRoomsLabel) totalRoomsLabel.textContent = data.kpi.total;
+                            // Also update admin-total-rooms in Overview if present on this page
+                            const adminTotalRoomsEl = document.getElementById('admin-total-rooms');
+                            if (adminTotalRoomsEl) adminTotalRoomsEl.textContent = data.kpi.total;
+                        }
+                    }
+
+                    if (data.room_statuses) {
+                        let hasChanges = false;
+                        const roomCards = hotelRoomGrid.querySelectorAll('.hotel-room-card');
+
+                        roomCards.forEach(function (card) {
+                            const roomId = card.getAttribute('data-room-id');
+                            if (!roomId || !data.room_statuses.hasOwnProperty(roomId)) return;
+
+                            const rawStatus = data.room_statuses[roomId];
+                            const normalizedStatus = (rawStatus === 'maintenance') ? 'under_maintenance' : rawStatus;
+                            const oldStatus = card.getAttribute('data-status');
+
+                            // Check checkout datetime / overdue
+                            let isOverdue = false;
+                            if (data.room_checkouts && data.room_checkouts[roomId]) {
+                                card.setAttribute('data-checkout', data.room_checkouts[roomId]);
+                                const coTime = new Date(data.room_checkouts[roomId]).getTime();
+                                if (!isNaN(coTime) && Date.now() > coTime) {
+                                    isOverdue = true;
+                                }
+                            }
+
+                            if (oldStatus !== normalizedStatus) {
+                                hasChanges = true;
+                                card.setAttribute('data-status', normalizedStatus);
+                                card.classList.toggle('is-occupied', normalizedStatus === 'occupied');
+
+                                // Update overlay
+                                const wrapper = card.querySelector('.room-image-wrapper');
+                                if (wrapper) {
+                                    ['overlay-occupied', 'overlay-reserved', 'overlay-maintenance', 'overlay-overdue'].forEach(cls => {
+                                        const el = wrapper.querySelector('.' + cls);
+                                        if (el) el.remove();
+                                    });
+
+                                    let targetOverlayClass = overlayClassMap[normalizedStatus];
+                                    if (normalizedStatus === 'occupied' && isOverdue) {
+                                        targetOverlayClass = 'overlay-overdue';
+                                    }
+
+                                    if (targetOverlayClass) {
+                                        const overlay = document.createElement('div');
+                                        overlay.className = 'position-absolute top-0 start-0 w-100 h-100 ' + targetOverlayClass;
+                                        if (targetOverlayClass === 'overlay-overdue') {
+                                            overlay.textContent = 'OVERDUE';
+                                        }
+                                        wrapper.appendChild(overlay);
+                                    }
+                                }
+
+                                // Update Badge
+                                const badgeContainer = card.querySelector('.room-card-body .d-flex.justify-content-between.align-items-center > div:first-child');
+                                if (badgeContainer && badgeHtmlMap[normalizedStatus]) {
+                                    badgeContainer.innerHTML = badgeHtmlMap[normalizedStatus];
+                                }
+
+                                // Update Delete button visibility inside .room-admin-actions
+                                const deleteBtn = card.querySelector('.room-admin-actions .btn-danger');
+                                if (deleteBtn) {
+                                    deleteBtn.style.display = (normalizedStatus === 'occupied') ? 'none' : '';
+                                }
+                            }
+
+                            // Update dynamic times text if available
+                            const timeTextContainer = card.querySelector('.room-card-body .d-flex.justify-content-between.align-items-center .room-times-text');
+                            if (timeTextContainer) {
+                                if (normalizedStatus === 'under_maintenance' && data.room_blocking_periods && data.room_blocking_periods[roomId]) {
+                                    timeTextContainer.textContent = data.room_blocking_periods[roomId];
+                                    timeTextContainer.className = 'room-times-text text-end room-blocking-period text-muted';
+                                } else if (normalizedStatus === 'occupied' && data.room_times && data.room_times[roomId]) {
+                                    const times = data.room_times[roomId];
+                                    timeTextContainer.className = 'room-times-text text-end text-muted';
+                                    timeTextContainer.innerHTML = `<div><span class="text-muted">IN:</span> ${times.in}</div><div><span class="text-muted">OUT:</span> ${times.out}</div>`;
+                                } else if (normalizedStatus === 'reserved' && data.room_reservation_arrivals && data.room_reservation_arrivals[roomId]) {
+                                    timeTextContainer.className = 'room-times-text text-end room-reservation-arrival text-muted';
+                                    timeTextContainer.innerHTML = `<div><span class="text-muted">Arrival:</span></div><div>${data.room_reservation_arrivals[roomId]}</div>`;
+                                } else if (normalizedStatus === 'available') {
+                                    timeTextContainer.innerHTML = '';
+                                }
+                            }
+                        });
+
+                        if (hasChanges) {
+                            applyCurrentFilter();
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Room status sync error:', err);
+                })
+                .finally(() => {
+                    isSyncingRooms = false;
+                });
+        }
+
+        // Run room status sync every 5 seconds
+        setInterval(syncAdminRooms, 5000);
     }
 
     if (document.readyState === 'loading') {

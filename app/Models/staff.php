@@ -17,11 +17,46 @@ class Staff extends Model
     protected $fillable = [
         'first_name',
         'last_name',
+        'email',
         'gmail',
         'contact_number',
         'username',
         'password',
     ];
+
+    /**
+     * Get the employee email address.
+     */
+    public function getEmailAttribute(?string $value): ?string
+    {
+        return $value ?? $this->attributes['gmail'] ?? null;
+    }
+
+    /**
+     * Set the employee email address and keep gmail attribute synchronized.
+     */
+    public function setEmailAttribute(?string $value): void
+    {
+        $this->attributes['email'] = $value;
+        $this->attributes['gmail'] = $value;
+    }
+
+    /**
+     * Get the employee gmail address (legacy compatibility).
+     */
+    public function getGmailAttribute(?string $value): ?string
+    {
+        return $value ?? $this->attributes['email'] ?? null;
+    }
+
+    /**
+     * Set the employee gmail address and keep email attribute synchronized.
+     */
+    public function setGmailAttribute(?string $value): void
+    {
+        $this->attributes['gmail'] = $value;
+        $this->attributes['email'] = $value;
+    }
 
     /**
      * Get the decrypted plain text password.

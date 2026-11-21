@@ -62,6 +62,15 @@
                     Today
                 </button>
             </div>
+
+            <!-- Export to Excel Button -->
+            <button type="button" id="salesExportExcelBtn" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1" title="Export current report data to Excel">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                Export to Excel
+            </button>
         </div>
     </div>
 </div>
@@ -247,3 +256,29 @@
 
 <!-- 2. ApexCharts CDN for the Gauge Chart -->
 <script src="{{ asset('js/Administrator JS/apexcharts.min.js') }}"></script>
+
+<!-- Export to Excel button: reads current active filter and triggers CSV download -->
+<script>
+(function () {
+    'use strict';
+
+    document.getElementById('salesExportExcelBtn').addEventListener('click', function () {
+        var year  = document.getElementById('salesFilterYear').value;
+        var month = document.getElementById('salesFilterMonth').value;
+        var date  = document.getElementById('salesFilterDate').value || '';
+
+        var params = new URLSearchParams({ year: year, month: month });
+        if (date) {
+            params.set('date', date);
+        }
+
+        var url = '/admin/sales-report/export?' + params.toString();
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+}());
+</script>
