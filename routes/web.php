@@ -75,13 +75,30 @@ Route::post('/login', function (Request $request) {
             if ($staff->password === $password) {
                 $matches = true;
             }
-        } catch (\Throwable $e) {}
-
-        if (! $matches && Hash::check($password, $staff->getRawOriginal('password'))) {
-            $matches = true;
+        } catch (Throwable $e) {
         }
 
-        if (! $matches && $staff->getRawOriginal('password') === $password) {
+        // Check if decrypted password is a bcrypt/argon hash
+        if (! $matches && ! empty($staff->password) && (str_starts_with($staff->password, '$2y$') || str_starts_with($staff->password, '$2a$') || str_starts_with($staff->password, '$2b$'))) {
+            try {
+                if (Hash::check($password, $staff->password)) {
+                    $matches = true;
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
+        $raw = (string) $staff->getRawOriginal('password');
+        if (! $matches && (str_starts_with($raw, '$2y$') || str_starts_with($raw, '$2a$') || str_starts_with($raw, '$2b$'))) {
+            try {
+                if (Hash::check($password, $raw)) {
+                    $matches = true;
+                }
+            } catch (Throwable $e) {
+            }
+        }
+
+        if (! $matches && $raw === $password) {
             $matches = true;
         }
 
@@ -243,7 +260,7 @@ Route::get('/admindashboard', function (Request $request) {
         'filterDate',
         'filterSearch'
     ));
-});
+})->middleware('auth.admin')->name('admin.dashboard');
 
 // Admin Room Management Routes
 Route::post('/admin/rooms/store', function (Request $request) {
@@ -308,10 +325,10 @@ Route::delete('/admin/rooms/{id}/delete', function ($id) {
     return redirect('/admindashboard?section=rooms')->with('success', 'Room '.$roomNumber.' deleted successfully.');
 })->name('admin.rooms.destroy');
 
-// Admin Settings Routes (Credentials & Timestamp formats)
+// Admin Settings Routes (Timestamp formats)
 Route::put('/admin/settings', function (Request $request) {
     $validated = $request->validate([
-        'username' => ['required', 'string', 'max:255'],
+        'username' => ['nullable', 'string', 'max:255'],
         'password' => ['nullable', 'string', 'min:6', 'confirmed'],
         'date_format' => ['required', 'string', Rule::in(['M d, Y', 'F d, Y', 'F j, Y', 'Y-m-d', 'm/d/Y', 'd/m/Y'])],
         'time_format' => ['required', 'string', Rule::in(['h:i A', 'h:i:s A', 'H:i', 'H:i:s'])],
@@ -321,7 +338,31 @@ Route::put('/admin/settings', function (Request $request) {
     SystemSetting::set('date_format', $validated['date_format']);
     SystemSetting::set('time_format', $validated['time_format']);
 
-    // Update Administrator credentials
+    // Update Administrator credentials if provided (for backwards compatibility)
+    if (! empty($validated['username'])) {
+        $admin = User::first() ?? new User;
+        $admin->username = $validated['username'];
+        $admin->user_id = $validated['username'];
+
+        if (! empty($validated['password'])) {
+            $admin->password = Hash::make($validated['password']);
+        } elseif (! $admin->exists) {
+            $admin->password = Hash::make('admin123');
+        }
+
+        $admin->save();
+    }
+
+    return redirect('/admindashboard?section=settings')->with('success', 'System timestamp format settings updated successfully.');
+})->middleware('auth.admin')->name('admin.settings.update');
+
+// Admin Credentials Route (Managed directly within Account Management)
+Route::put('/admin/credentials', function (Request $request) {
+    $validated = $request->validate([
+        'username' => ['required', 'string', 'max:255'],
+        'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+    ]);
+
     $admin = User::first() ?? new User;
     $admin->username = $validated['username'];
     $admin->user_id = $validated['username'];
@@ -334,8 +375,14 @@ Route::put('/admin/settings', function (Request $request) {
 
     $admin->save();
 
-    return redirect('/admindashboard?section=settings')->with('success', 'System settings and administrator credentials updated successfully.');
-})->name('admin.settings.update');
+    if (session('role') === 'admin') {
+        session(['user_id' => $admin->username]);
+    }
+
+    $redirectSection = $request->input('section', 'accman');
+
+    return redirect('/admindashboard?section='.$redirectSection)->with('success', 'Administrator credentials updated successfully.');
+})->middleware('auth.admin')->name('admin.credentials.update');
 
 Route::get('/api/system/settings', function () {
     $dateFormat = SystemFormatService::dateFormat();
@@ -513,10 +560,10 @@ Route::get('/', function () {
 });
 
 // Dashboard
-Route::get('/dashboardreceptionist', [DashboardController::class, 'index'])->name('dashboard.index');
+Route::get('/dashboardreceptionist', [DashboardController::class, 'index'])->middleware('auth.receptionist')->name('dashboard.index');
 
 // Bookings Records View
-Route::get('/bookings', [BookingController::class, 'index'])->name('booking.index');
+Route::get('/bookings', [BookingController::class, 'index'])->middleware('auth.receptionist')->name('booking.index');
 Route::get('/bookings/export', [BookingController::class, 'export'])->name('booking.export');
 
 // Post Route for BookingController
@@ -533,10 +580,18 @@ Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus'])-
 // })->name('guest.index');
 
 // Billing Records
-Route::get('/billing', [BillingController::class, 'index'])->name('content.billing');
+Route::get('/billing', [BillingController::class, 'index'])->middleware('auth.receptionist')->name('content.billing');
 Route::post('/billing/{invoice_id}/add-amenity', [BillingController::class, 'addAmenity'])->name('billing.addAmenity');
 Route::post('/billing/{invoice_id}/remove-amenity', [BillingController::class, 'removeAmenity'])->name('billing.removeAmenity');
 Route::post('/billing/{invoice_id}/process-payment', [BillingController::class, 'processPayment'])->name('billing.processPayment');
+
+// Receptionist Settings View
+Route::get('/receptionist/settings', function (Request $request) {
+    $staffId = session('staff_id');
+    $staff = $staffId ? Staff::find($staffId) : null;
+
+    return view('Receptionist.content.settings', compact('staff'));
+})->middleware('auth.receptionist')->name('receptionist.settings');
 
 // Reservation Routes
 // Post Route for ReservationController
@@ -549,7 +604,7 @@ Route::post('/room-blocks', [RoomBlockController::class, 'store'])->name('room-b
 Route::post('/room-blocks/{id}/remove', [RoomBlockController::class, 'destroy'])->name('room-block.destroy');
 
 // Get Routes for ReservationController
-Route::get('/reservation', [ReservationController::class, 'index'])->name('reservation.index');
+Route::get('/reservation', [ReservationController::class, 'index'])->middleware('auth.receptionist')->name('reservation.index');
 Route::get('/api/available-rooms', [ReservationController::class, 'getAvailableRooms'])->name('api.available-rooms');
 
 // Real-time dashboard polling endpoint: notifications + KPI counts + auto-checkout of overdue rooms

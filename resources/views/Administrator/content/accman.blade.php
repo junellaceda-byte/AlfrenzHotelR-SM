@@ -149,7 +149,109 @@
         </div>
     </div>
 
+    <!-- Administrator Credentials Section (Immediately after Receptionist Credentials) -->
+    <div class="card p-4 border rounded shadow-sm mt-4 bg-white" id="adminCredentialsSection">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="fw-bold mb-1" style="color: #443627;">Administrator Credentials</h5>
+                <p class="text-muted small mb-0">Manage and update the Administrator username and login password.</p>
+            </div>
+            <span class="badge text-bg-light border text-secondary fw-semibold">Administrator Account</span>
+        </div>
+
+        @if (session('success') && (request('section') === 'accman' || !request('section')))
+            <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if ($errors->any() && (request('section') === 'accman' || old('section') === 'accman'))
+            <div class="alert alert-danger mb-3">
+                <ul class="mb-0 ps-3">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form action="{{ route('admin.credentials.update') }}" method="POST">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="section" value="accman">
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label for="admin_acc_username" class="form-label fw-semibold text-secondary small text-uppercase">Username <span class="text-danger">*</span></label>
+                    <input type="text"
+                           class="form-control"
+                           id="admin_acc_username"
+                           name="username"
+                           value="{{ old('username', $adminUser->username ?? auth()->user()->username ?? 'admin') }}"
+                           required>
+                    <small class="text-muted">Username used to log in to the Administrator dashboard.</small>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="admin_acc_password" class="form-label fw-semibold text-secondary small text-uppercase">New Password</label>
+                    <div class="input-group">
+                        <input type="password"
+                               class="form-control"
+                               id="admin_acc_password"
+                               name="password"
+                               placeholder="Leave blank to keep current">
+                        <button class="btn btn-outline-secondary toggle-admin-password" type="button" data-target="admin_acc_password" title="Toggle password visibility">
+                            <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/></svg>
+                        </button>
+                    </div>
+                    <small class="text-muted">Minimum 6 characters. Leave empty to preserve current password.</small>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="admin_acc_password_confirmation" class="form-label fw-semibold text-secondary small text-uppercase">Confirm New Password</label>
+                    <div class="input-group">
+                        <input type="password"
+                               class="form-control"
+                               id="admin_acc_password_confirmation"
+                               name="password_confirmation"
+                               placeholder="Re-enter new password">
+                        <button class="btn btn-outline-secondary toggle-admin-password" type="button" data-target="admin_acc_password_confirmation" title="Toggle password visibility">
+                            <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/></svg>
+                        </button>
+                    </div>
+                    <small class="text-muted">Must match the new password entered above.</small>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn text-white fw-semibold px-4 py-2" style="background-color: #443627; border-color: #443627;">
+                    Save Administrator Credentials
+                </button>
+            </div>
+        </form>
+    </div>
+
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.toggle-admin-password').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var targetId = this.getAttribute('data-target');
+                var input = document.getElementById(targetId);
+                if (!input) return;
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    this.innerHTML = '<svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z"/><path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"/></svg>';
+                } else {
+                    input.type = 'password';
+                    this.innerHTML = '<svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/></svg>';
+                }
+            });
+        });
+    });
+</script>
 
 <!-- Included ONLY ONCE at the very bottom -->
 @include('Administrator.modals.addacc')

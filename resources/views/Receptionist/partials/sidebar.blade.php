@@ -42,6 +42,12 @@
                 BILLING
             </a>
         </li>
+        <!-- Settings -->
+        <li class="nav-item w-100">
+            <a href="{{ route('receptionist.settings') }}" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request()->routeIs('receptionist.settings*') ? 'active' : '' }}">
+                SETTINGS
+            </a>
+        </li>
         <!-- Logout Option -->
         <li class="nav-item w-100">
             <button type="button" class="nav-link sidebar-nav-link text-uppercase fw-bold" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">

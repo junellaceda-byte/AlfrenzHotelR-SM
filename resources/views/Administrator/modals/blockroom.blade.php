@@ -48,7 +48,7 @@
                             <div class="d-flex justify-content-between align-items-center border-bottom py-1.5 small">
                                 <div>
                                     <span class="fw-semibold">Room {{ str_pad($block->room->room_number ?? $block->room_id, 2, '0', STR_PAD_LEFT) }}</span> &mdash; {{ $block->reason }}<br>
-                                    <span class="text-muted" style="font-size: 0.72rem;">{{ $block->start_date->format('M d, h:i A') }} &rarr; {{ $block->end_date->format('M d, h:i A') }}</span>
+                                    <span class="text-muted" style="font-size: 0.72rem;">{{ \App\Services\SystemFormatService::formatDateTime($block->start_date) }} &rarr; {{ \App\Services\SystemFormatService::formatDateTime($block->end_date) }}</span>
                                 </div>
                                 <form method="POST" action="{{ route('room-block.destroy', $block->id) }}" class="d-inline mb-0">
                                     @csrf

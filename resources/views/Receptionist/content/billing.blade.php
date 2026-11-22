@@ -61,8 +61,8 @@
                                 @forelse($pendingPayments as $invoice)
                                 <tr>
                                     <td>
-                                        <div class="small">{{ $invoice->booking->check_out_datetime ? $invoice->booking->check_out_datetime->format('M j, Y') : 'N/A' }}</div>
-                                        <div class="text-muted small">{{ $invoice->booking->check_out_datetime ? $invoice->booking->check_out_datetime->format('h:i A') : '' }}</div>
+                                        <div class="small">{{ $invoice->booking->check_out_datetime ? \App\Services\SystemFormatService::formatDate($invoice->booking->check_out_datetime) : 'N/A' }}</div>
+                                        <div class="text-muted small">{{ $invoice->booking->check_out_datetime ? \App\Services\SystemFormatService::formatTime($invoice->booking->check_out_datetime) : '' }}</div>
                                     </td>
                                     <td>
                                         <div>{{ $invoice->booking->guest->fname ?? 'N/A' }} {{ $invoice->booking->guest->lname ?? '' }}</div>
@@ -174,8 +174,8 @@
                                 @endphp
                                 <tr>
                                     <td>
-                                        <div class="small">{{ $invoice->updated_at->format('M j, Y') }}</div>
-                                        <div class="text-muted small">{{ $invoice->updated_at->format('h:i A') }}</div>
+                                        <div class="small">{{ \App\Services\SystemFormatService::formatDate($invoice->updated_at) }}</div>
+                                        <div class="text-muted small">{{ \App\Services\SystemFormatService::formatTime($invoice->updated_at) }}</div>
                                     </td>
                                     <td>
                                         <div>{{ $invoice->booking->guest->fname ?? 'N/A' }} {{ $invoice->booking->guest->lname ?? '' }}</div>
@@ -195,7 +195,7 @@
                                         <button type="button" class="btn btn-sm btn-outline-secondary btn-view-payment"
                                             data-guest="{{ trim(($invoice->booking->guest->fname ?? 'N/A') . ' ' . ($invoice->booking->guest->lname ?? '')) }}"
                                             data-rooms="@if(is_array($invoice->booking->booked_rooms)) Room {{ implode(', ', $invoice->booking->booked_rooms) }} @else Room {{ $invoice->booking->booked_rooms }} @endif"
-                                            data-paid-at="{{ $invoice->updated_at->format('M j, Y h:i A') }}"
+                                            data-paid-at="{{ \App\Services\SystemFormatService::formatDateTime($invoice->updated_at) }}"
                                             data-method="{{ $methodFormatted }}"
                                             data-is-ewallet="{{ $isEwallet ? '1' : '0' }}"
                                             data-reference-number="{{ $referenceNumber }}"

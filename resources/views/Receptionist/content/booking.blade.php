@@ -87,7 +87,7 @@
                                 $cancelled = $booking->status === 'cancelled';
                                 $overdue = $booking->check_out_datetime->lt(now()->setTimezone('Asia/Manila'));
                                 $discount = ['senior' => 'Senior Citizen (20%)', 'pwd' => 'PWD (20%)'][$booking->discount_type] ?? 'None';
-                                $paidOn = $log ? $log->created_at->format('M d, Y h:i A') : null;
+                                $paidOn = $log ? \App\Services\SystemFormatService::formatDateTime($log->created_at) : null;
                                 $statusText = $cancelled ? 'Cancelled'
                                     : (($paid || $booking->status === 'checked_out') ? 'Completed'
                                     : ($overdue ? 'Overdue' : 'In house'));
@@ -100,8 +100,8 @@
                                     'phone' => $booking->phone ?: '-',
                                     'stay' => $stay,
                                     'rooms' => $rooms,
-                                    'checkin' => $booking->check_in_datetime->format('M d, Y h:i A'),
-                                    'checkout' => $booking->check_out_datetime->format('M d, Y h:i A'),
+                                    'checkin' => \App\Services\SystemFormatService::formatDateTime($booking->check_in_datetime),
+                                    'checkout' => \App\Services\SystemFormatService::formatDateTime($booking->check_out_datetime),
                                     'discount' => $discount,
                                     'status' => $statusText,
                                     'paid_on' => $paidOn ?? 'Not paid yet',

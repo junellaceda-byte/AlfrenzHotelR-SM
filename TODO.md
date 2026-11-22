@@ -92,9 +92,21 @@ In Activity Logs. This is where it shows what the receptionist actively did in t
 
 - [x] Administrator login with saved username and password
 - [x] Let the credentials in the Administrator -> Account Management section be used for Logging in to the Receptionist side
-  NOTE: Do not edit anything in the Account Management just let the credentials be used for logging in by Receptionist
+      NOTE: Do not edit anything in the Account Management just let the credentials be used for logging in by Receptionist
 
 ## Settings Content not finished
 
-- [] Transfer the input field of Administrator Credentials username and password editing in Account Management after the Receptionist credentials, make it work to be able to let the Administrator to replace its current saved username and password.
-- [] Timestamp Display Format
+- [x] Transfer the input field of Administrator Credentials username and password editing in Account Management after the Receptionist credentials, make it work to be able to let the Administrator to replace its current saved username and password.
+- [x] Timestamp Display Format
+
+## Nov 22, 2026
+
+## Problems
+
+## Displaying Problem?
+
+- [ ] problem in modal when reserving or book, it doesn't register the deposit, which less the pay. Because the guest already advance deposit. When they are already check in, the guest can't get refund their payments.
+
+## Displaying in Real-time problem, removing the quantity option?
+
+- [ ] the problem in amenities modal, the quantity does not function anything because it has in the right side a list of amenities that was added, and also when the admin edit a item from the amenities section, while the receptionist is adding amenities in the room the selected amenities list is not updating in real-time. Is it okay though?

@@ -185,7 +185,7 @@ class ActivityLogService
         $guestName = $guest ? trim(($guest->fname ?? '').' '.($guest->lname ?? '')) : 'Walk-in Guest';
         $roomsStr = static::formatRooms($booking->booked_rooms);
         $checkOutTime = $booking->check_out_datetime ? Carbon::parse($booking->check_out_datetime) : null;
-        $timeStr = $checkOutTime ? $checkOutTime->format('M d, Y h:i A') : 'N/A';
+        $timeStr = $checkOutTime ? SystemFormatService::formatDateTime($checkOutTime) : 'N/A';
 
         return ActivityLog::create([
             'staff_id' => null, // Explicitly NULL for system-generated
@@ -264,7 +264,7 @@ class ActivityLogService
                 'staff_name' => trim($staff->first_name.' '.$staff->last_name),
                 'email' => $staff->email,
                 'login_date' => $now->toDateString(),
-                'login_time' => $now->format('h:i:s A'),
+                'login_time' => SystemFormatService::formatTime($now),
                 'ip_address' => $request?->ip(),
                 'user_agent' => $request?->userAgent(),
             ],
@@ -283,8 +283,8 @@ class ActivityLogService
         $roomsStr = static::formatRooms($booking->booked_rooms);
         $stayType = $booking->stay_type ?? 'overnight';
 
-        $checkIn = $booking->check_in_datetime ? Carbon::parse($booking->check_in_datetime)->format('M d, Y h:i A') : 'N/A';
-        $checkOut = $booking->check_out_datetime ? Carbon::parse($booking->check_out_datetime)->format('M d, Y h:i A') : 'N/A';
+        $checkIn = $booking->check_in_datetime ? SystemFormatService::formatDateTime($booking->check_in_datetime) : 'N/A';
+        $checkOut = $booking->check_out_datetime ? SystemFormatService::formatDateTime($booking->check_out_datetime) : 'N/A';
 
         $descType = ($type === 'reservation' || $booking->status === 'reserved') ? 'Reservation' : 'Immediate Booking';
 
@@ -327,8 +327,8 @@ class ActivityLogService
         $roomsStr = static::formatRooms($reservation->selected_rooms);
         $stayType = $reservation->stay_type ?? 'overnight';
 
-        $start = $reservation->reservation_start_date ? Carbon::parse($reservation->reservation_start_date)->format('M d, Y h:i A') : 'N/A';
-        $end = $reservation->reservation_end_date ? Carbon::parse($reservation->reservation_end_date)->format('M d, Y h:i A') : 'N/A';
+        $start = $reservation->reservation_start_date ? SystemFormatService::formatDateTime($reservation->reservation_start_date) : 'N/A';
+        $end = $reservation->reservation_end_date ? SystemFormatService::formatDateTime($reservation->reservation_end_date) : 'N/A';
         $deposit = (float) ($reservation->deposit ?? 0);
 
         return ActivityLog::create([

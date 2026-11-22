@@ -21,7 +21,7 @@
                                     $guestName = trim(($booking->guest->fname ?? 'Guest') . ' ' . ($booking->guest->lname ?? ''));
                                     $rooms = is_array($booking->booked_rooms) ? $booking->booked_rooms : (json_decode($booking->booked_rooms, true) ?? []);
                                     $roomStr = !empty($rooms) ? 'Room ' . implode(', ', $rooms) : 'Room N/A';
-                                    $timeStr = $booking->check_in_datetime ? \Carbon\Carbon::parse($booking->check_in_datetime)->format('g:i A') : '';
+                                    $timeStr = $booking->check_in_datetime ? \App\Services\SystemFormatService::formatTime($booking->check_in_datetime) : '';
                                 @endphp
                                 <tr>
                                     <td class="py-3 px-4 fw-semibold">{{ $guestName }}</td>
@@ -64,7 +64,7 @@
                                     $rooms = is_array($booking->booked_rooms) ? $booking->booked_rooms : (json_decode($booking->booked_rooms, true) ?? []);
                                     $roomStr = !empty($rooms) ? 'Room ' . implode(', ', $rooms) : 'Room N/A';
                                     $time = $booking->actual_check_out ?? $booking->check_out_datetime;
-                                    $timeStr = $time ? \Carbon\Carbon::parse($time)->format('g:i A') : '';
+                                    $timeStr = $time ? \App\Services\SystemFormatService::formatTime($time) : '';
                                 @endphp
                                 <tr>
                                     <td class="py-3 px-4 fw-semibold">{{ $guestName }}</td>

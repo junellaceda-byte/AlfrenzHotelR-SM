@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Staff;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\SystemFormatService;
@@ -32,22 +33,71 @@ class AdminSettingsTest extends TestCase
         );
     }
 
-    public function test_admin_settings_page_renders_with_current_settings_and_username(): void
+    public function test_admin_settings_page_renders_with_timestamp_formats_and_accman_link(): void
     {
         $response = $this->get('/admindashboard?section=settings');
 
         $response->assertStatus(200);
         $response->assertSee('System Settings');
-        $response->assertSee('Administrator Credentials');
-        $response->assertSee('value="admin"', false);
-        $response->assertSee('M d, Y');
-        $response->assertSee('h:i A');
+        $response->assertSee('Timestamp Display Format');
+        $response->assertSee('Time Display Mode');
+        $response->assertSee('12-Hour Format');
+        $response->assertSee('24-Hour Format');
+        $response->assertSee('Go to Account Management');
     }
 
-    public function test_admin_can_update_system_formats(): void
+    public function test_account_management_page_contains_administrator_credentials_section(): void
+    {
+        $response = $this->get('/admindashboard?section=accman');
+
+        $response->assertStatus(200);
+        $response->assertSee('Administrator Credentials');
+        $response->assertSee('admin_acc_username', false);
+        $response->assertSee('admin_acc_password', false);
+        $response->assertSee('admin_acc_password_confirmation', false);
+        $response->assertSee('Save Administrator Credentials');
+    }
+
+    public function test_admin_can_update_credentials_from_account_management(): void
+    {
+        $response = $this->put(route('admin.credentials.update'), [
+            'username' => 'newadminuser',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+            'section' => 'accman',
+        ]);
+
+        $response->assertRedirect('/admindashboard?section=accman');
+        $response->assertSessionHas('success');
+
+        $admin = User::first();
+        $this->assertSame('newadminuser', $admin->username);
+        $this->assertTrue(Hash::check('NewPassword123!', $admin->password));
+
+        // Verify new credentials work for logging in
+        $loginResponse = $this->post('/login', [
+            'username' => 'newadminuser',
+            'password' => 'NewPassword123!',
+        ]);
+        $loginResponse->assertRedirect('/admindashboard');
+    }
+
+    public function test_admin_credentials_update_requires_confirmation_when_password_provided(): void
+    {
+        $response = $this->from('/admindashboard?section=accman')->put(route('admin.credentials.update'), [
+            'username' => 'admin',
+            'password' => 'Mismatch123',
+            'password_confirmation' => 'Different123',
+            'section' => 'accman',
+        ]);
+
+        $response->assertRedirect('/admindashboard?section=accman');
+        $response->assertSessionHasErrors(['password']);
+    }
+
+    public function test_admin_can_update_timestamp_display_format_to_24_hour(): void
     {
         $response = $this->put(route('admin.settings.update'), [
-            'username' => 'admin',
             'date_format' => 'Y-m-d',
             'time_format' => 'H:i',
         ]);
@@ -58,99 +108,83 @@ class AdminSettingsTest extends TestCase
         $this->assertSame('Y-m-d', SystemSetting::get('date_format'));
         $this->assertSame('H:i', SystemSetting::get('time_format'));
 
-        // Verify SystemFormatService uses the newly updated formats
-        $date = Carbon::parse('2026-11-20 15:45:00', 'Asia/Manila');
-        $this->assertSame('2026-11-20', SystemFormatService::formatDate($date));
-        $this->assertSame('15:45', SystemFormatService::formatTime($date));
+        $this->assertTrue(SystemFormatService::is24Hour());
+        $this->assertSame('24-hour', SystemFormatService::timeFormatType());
+
+        // Verify SystemFormatService formats correctly
+        $sample = Carbon::parse('2026-11-22 17:30:00', 'Asia/Manila');
+        $this->assertSame('17:30', SystemFormatService::formatTime($sample));
+        $this->assertSame('2026-11-22', SystemFormatService::formatDate($sample));
+        $this->assertSame('2026-11-22 17:30', SystemFormatService::formatDateTime($sample));
     }
 
-    public function test_admin_can_update_username(): void
+    public function test_admin_can_update_timestamp_display_format_to_12_hour(): void
     {
+        SystemSetting::set('time_format', 'H:i');
+
         $response = $this->put(route('admin.settings.update'), [
-            'username' => 'superadmin',
             'date_format' => 'M d, Y',
             'time_format' => 'h:i A',
         ]);
 
         $response->assertRedirect('/admindashboard?section=settings');
-        $response->assertSessionHas('success');
+        $this->assertFalse(SystemFormatService::is24Hour());
+        $this->assertSame('12-hour', SystemFormatService::timeFormatType());
 
-        $user = User::where('username', 'superadmin')->first();
-        $this->assertNotNull($user);
-        $this->assertSame('superadmin', $user->username);
+        $sample = Carbon::parse('2026-11-22 17:30:00', 'Asia/Manila');
+        $this->assertSame('05:30 PM', SystemFormatService::formatTime($sample));
     }
 
-    public function test_admin_can_update_password_with_secure_laravel_hashing(): void
+    public function test_receptionist_sidebar_contains_settings_navigation_item(): void
     {
-        $newPassword = 'NewSecretPassword123!';
+        $this->actingAsReceptionist();
 
-        $response = $this->put(route('admin.settings.update'), [
-            'username' => 'admin',
-            'password' => $newPassword,
-            'password_confirmation' => $newPassword,
-            'date_format' => 'M d, Y',
-            'time_format' => 'h:i A',
+        $response = $this->get('/dashboardreceptionist');
+        $response->assertStatus(200);
+        $response->assertSee('SETTINGS');
+        $response->assertSee(route('receptionist.settings'));
+    }
+
+    public function test_receptionist_settings_page_renders_with_profile_and_synchronized_timestamp_format(): void
+    {
+        $staff = Staff::create([
+            'first_name' => 'Carla',
+            'last_name' => 'Ramos',
+            'username' => 'carlaramos',
+            'email' => 'carla@hotel.com',
+            'password' => Hash::make('password123'),
+            'contact_number' => '09170001122',
         ]);
 
-        $response->assertRedirect('/admindashboard?section=settings');
-        $response->assertSessionHas('success');
+        $this->actingAsReceptionist($staff);
 
-        $user = User::where('username', 'admin')->first();
-        $this->assertNotNull($user);
-
-        // Raw password must not be stored in plain text
-        $this->assertNotSame($newPassword, $user->getRawOriginal('password'));
-
-        // Verified with Hash::check()
-        $this->assertTrue(Hash::check($newPassword, $user->password));
-        $this->assertFalse(Hash::check('OldPasswordOrWrong', $user->password));
-    }
-
-    public function test_password_update_requires_matching_confirmation(): void
-    {
-        $response = $this->put(route('admin.settings.update'), [
-            'username' => 'admin',
-            'password' => 'ValidPassword123',
-            'password_confirmation' => 'MismatchPassword',
-            'date_format' => 'M d, Y',
-            'time_format' => 'h:i A',
-        ]);
-
-        $response->assertSessionHasErrors(['password']);
-    }
-
-    public function test_password_update_requires_minimum_length_of_six_characters(): void
-    {
-        $response = $this->put(route('admin.settings.update'), [
-            'username' => 'admin',
-            'password' => '12345',
-            'password_confirmation' => '12345',
-            'date_format' => 'M d, Y',
-            'time_format' => 'h:i A',
-        ]);
-
-        $response->assertSessionHasErrors(['password']);
-    }
-
-    public function test_system_settings_api_returns_formats_and_real_time_timestamps(): void
-    {
         SystemSetting::set('date_format', 'F d, Y');
-        SystemSetting::set('time_format', 'h:i:s A');
+        SystemSetting::set('time_format', 'H:i');
 
-        $response = $this->get(route('api.system.settings'));
+        $response = $this->get(route('receptionist.settings'));
 
         $response->assertStatus(200);
-        $response->assertJsonStructure([
-            'date_format',
-            'time_format',
-            'formatted_date',
-            'formatted_time',
-            'server_time',
-        ]);
+        $response->assertSee('System Settings');
+        $response->assertSee('Receptionist Account Profile');
+        $response->assertSee('Carla Ramos');
+        $response->assertSee('@carlaramos');
+        $response->assertSee('carla@hotel.com');
+        $response->assertSee('09170001122');
+        $response->assertSee('Timestamp Display Format');
+        $response->assertSee('24-Hour');
+        $response->assertSee('Synchronized with Administrator');
 
-        $response->assertJson([
-            'date_format' => 'F d, Y',
-            'time_format' => 'h:i:s A',
-        ]);
+        // Administrator Credentials form MUST NOT be accessible on Receptionist page
+        $response->assertDontSee('admin_acc_username');
+        $response->assertDontSee('admin_acc_password');
+        $response->assertDontSee('Save Administrator Credentials');
+    }
+
+    public function test_unauthenticated_user_cannot_access_receptionist_settings(): void
+    {
+        session()->flush();
+
+        $response = $this->get(route('receptionist.settings'));
+        $response->assertRedirect('/login');
     }
 }

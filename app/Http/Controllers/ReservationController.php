@@ -12,6 +12,7 @@ use App\Models\RoomBlock;
 use App\Services\ActivityLogService;
 use App\Services\BookingService;
 use App\Services\RoomAvailabilityService;
+use App\Services\SystemFormatService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -58,7 +59,7 @@ class ReservationController
                 'room_number' => collect($invoice->booking->booked_rooms)
                     ->map(fn ($r) => str_pad($r, 2, '0', STR_PAD_LEFT))
                     ->implode(', '),
-                'checkout_time' => $checkOut->format('h:i A'),
+                'checkout_time' => SystemFormatService::formatTime($checkOut),
                 'is_overdue' => $checkOut->lte($now),
                 'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
             ];

@@ -326,7 +326,7 @@
                             <div class="d-flex justify-content-between align-items-center border-bottom py-2 small">
                                 <div>
                                     <span class="fw-semibold">Room {{ str_pad($block->room_id, 2, '0', STR_PAD_LEFT) }}</span> - {{ $block->reason }}<br>
-                                    <span class="text-muted">{{ $block->start_date->format('M d, h:i A') }} &rarr; {{ $block->end_date->format('M d, h:i A') }}</span>
+                                    <span class="text-muted">{{ \App\Services\SystemFormatService::formatDateTime($block->start_date) }} &rarr; {{ \App\Services\SystemFormatService::formatDateTime($block->end_date) }}</span>
                                 </div>
                                 <button type="button" class="btn btn-sm btn-outline-secondary btn-remove-block"
                                         data-action="{{ route('room-block.destroy', $block->id) }}">Remove</button>
@@ -388,11 +388,11 @@
                                     <div class="row mb-3 px-2">
                                         <div class="col-6">
                                             <label class="form-label text-muted small fw-bold mb-0">Check-in Date</label>
-                                            <div>{{ $selectedInvoice->booking->check_in_datetime ? $selectedInvoice->booking->check_in_datetime->format('M j, Y') : 'N/A' }}</div>
+                                            <div>{{ $selectedInvoice->booking->check_in_datetime ? \App\Services\SystemFormatService::formatDate($selectedInvoice->booking->check_in_datetime) : 'N/A' }}</div>
                                         </div>
                                         <div class="col-6">
                                             <label class="form-label text-muted small fw-bold mb-0">Check-out Date</label>
-                                            <div>{{ $selectedInvoice->booking->check_out_datetime ? $selectedInvoice->booking->check_out_datetime->format('M j, Y') : 'N/A' }}</div>
+                                            <div>{{ $selectedInvoice->booking->check_out_datetime ? \App\Services\SystemFormatService::formatDate($selectedInvoice->booking->check_out_datetime) : 'N/A' }}</div>
                                         </div>
                                     </div>
                                     <div class="mb-3 px-2">

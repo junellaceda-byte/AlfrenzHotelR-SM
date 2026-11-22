@@ -390,3 +390,80 @@
     </div>
 </div>
 <!-- End of Topbar -->
+
+<script>
+    (function () {
+        function formatPhpDate(date, format) {
+            var monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            var monthsFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            var daysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            var daysFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+            var Y = date.getFullYear();
+            var y = String(Y).slice(-2);
+            var n = date.getMonth() + 1;
+            var m = (n < 10 ? '0' : '') + n;
+            var M = monthsShort[date.getMonth()];
+            var F = monthsFull[date.getMonth()];
+            var j = date.getDate();
+            var d = (j < 10 ? '0' : '') + j;
+            var D = daysShort[date.getDay()];
+            var l = daysFull[date.getDay()];
+
+            var G = date.getHours();
+            var H = (G < 10 ? '0' : '') + G;
+            var g = G % 12 || 12;
+            var h = (g < 10 ? '0' : '') + g;
+            var i = (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+            var s = (date.getSeconds() < 10 ? '0' : '') + date.getSeconds();
+            var A = G >= 12 ? 'PM' : 'AM';
+            var a = A.toLowerCase();
+
+            var map = {
+                'Y': Y, 'y': y, 'm': m, 'n': n, 'M': M, 'F': F, 'd': d, 'j': j, 'D': D, 'l': l,
+                'H': H, 'h': h, 'G': G, 'g': g, 'i': i, 's': s, 'A': A, 'a': a
+            };
+
+            var res = '';
+            for (var k = 0; k < format.length; k++) {
+                var ch = format[k];
+                res += (map.hasOwnProperty(ch) ? map[ch] : ch);
+            }
+            return res;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var dateEl = document.getElementById('current-date');
+            var timeEl = document.getElementById('current-time');
+
+            var dateFormat = (dateEl && dateEl.getAttribute('data-format')) || '{{ $dateFormat ?? "M d, Y" }}';
+            var timeFormat = (timeEl && timeEl.getAttribute('data-format')) || '{{ $timeFormat ?? "h:i A" }}';
+
+            function updateDateTime() {
+                var now = new Date();
+                var dateStr = formatPhpDate(now, dateFormat);
+                var timeStr = formatPhpDate(now, timeFormat);
+
+                if (dateEl) dateEl.textContent = dateStr;
+                if (timeEl) timeEl.textContent = timeStr;
+            }
+
+            function syncSettings() {
+                fetch('{{ route("api.system.settings") }}')
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (data && data.date_format) dateFormat = data.date_format;
+                        if (data && data.time_format) timeFormat = data.time_format;
+                        if (dateEl) dateEl.setAttribute('data-format', dateFormat);
+                        if (timeEl) timeEl.setAttribute('data-format', timeFormat);
+                        updateDateTime();
+                    })
+                    .catch(function(e) {});
+            }
+
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            setInterval(syncSettings, 30000);
+        });
+    })();
+</script>

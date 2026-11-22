@@ -50,7 +50,7 @@ class AppServiceProvider extends ServiceProvider
                     'name' => trim(($invoice->booking->guest->fname ?? 'Guest').' '.($invoice->booking->guest->lname ?? '')),
                     'room_number' => collect($invoice->booking->booked_rooms)
                         ->map(fn ($r) => str_pad($r, 2, '0', STR_PAD_LEFT))->implode(', '),
-                    'checkout_time' => $checkOut->format('h:i A'),
+                    'checkout_time' => SystemFormatService::formatTime($checkOut),
                     'is_overdue' => $checkOut->lte($now),
                     'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
                 ];
@@ -106,6 +106,8 @@ class AppServiceProvider extends ServiceProvider
         View::composer('*', function ($view) {
             $view->with('dateFormat', SystemFormatService::dateFormat());
             $view->with('timeFormat', SystemFormatService::timeFormat());
+            $view->with('is24Hour', SystemFormatService::is24Hour());
+            $view->with('timeFormatType', SystemFormatService::timeFormatType());
         });
     }
 }

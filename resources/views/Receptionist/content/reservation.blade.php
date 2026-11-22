@@ -64,7 +64,7 @@
                                     <div class="small text-muted">{{ $reservation->phone_number }}</div>
                                 </td>
                                 <td class="px-3">
-                                    <div>{{ $arrival->format('M d, Y h:i A') }}</div>
+                                    <div>{{ \App\Services\SystemFormatService::formatDateTime($arrival) }}</div>
                                 </td>
                                 <td class="px-3">
                                     <div>{{ $stay }}</div>

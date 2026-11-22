@@ -13,6 +13,7 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomBlock;
 use App\Services\ActivityLogService;
+use App\Services\SystemFormatService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -47,7 +48,7 @@ class DashboardApiController
                 'room_number' => collect($invoice->booking->booked_rooms)
                     ->map(fn ($r) => str_pad($r, 2, '0', STR_PAD_LEFT))
                     ->implode(', '),
-                'checkout_time' => $checkOut->format('h:i A'),
+                'checkout_time' => SystemFormatService::formatTime($checkOut),
                 'is_overdue' => $checkOut->lte($now),
                 'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
             ];
@@ -88,8 +89,8 @@ class DashboardApiController
 
             if ($block) {
                 $status = 'under_maintenance';
-                $startFormatted = $block->start_date->format('n/j/Y, g:i A');
-                $endFormatted = $block->end_date->format('n/j/Y, g:i A');
+                $startFormatted = SystemFormatService::formatDateTime($block->start_date);
+                $endFormatted = SystemFormatService::formatDateTime($block->end_date);
                 $roomBlockingPeriods[$room->id] = "Start: {$startFormatted} and End: {$endFormatted}";
             } elseif ($booking) {
                 $status = 'occupied';
@@ -97,8 +98,8 @@ class DashboardApiController
                 $checkOut = Carbon::parse($booking->check_out_datetime);
                 $roomCheckouts[$room->id] = $checkOut->toIso8601String();
                 $roomTimes[$room->id] = [
-                    'in' => $checkIn->format('g:i A'),
-                    'out' => $checkOut->format('g:i A'),
+                    'in' => SystemFormatService::formatTime($checkIn),
+                    'out' => SystemFormatService::formatTime($checkOut),
                 ];
             } else {
                 $reservation = Reservation::where(function ($q) use ($room) {
@@ -123,10 +124,10 @@ class DashboardApiController
                     $status = 'reserved';
                     if ($reservation) {
                         $arrivalStart = Carbon::parse($reservation->reservation_start_date);
-                        $roomReservationArrivals[$room->id] = $arrivalStart->format('M j, Y g:i A');
+                        $roomReservationArrivals[$room->id] = SystemFormatService::formatDateTime($arrivalStart);
                     } elseif ($reservedBooking) {
                         $arrivalStart = Carbon::parse($reservedBooking->check_in_datetime);
-                        $roomReservationArrivals[$room->id] = $arrivalStart->format('M j, Y g:i A');
+                        $roomReservationArrivals[$room->id] = SystemFormatService::formatDateTime($arrivalStart);
                     }
                 } else {
                     $status = 'available';
@@ -271,7 +272,7 @@ class DashboardApiController
             $name = trim(($b->guest->fname ?? 'Guest').' '.($b->guest->lname ?? ''));
             $rooms = is_array($b->booked_rooms) ? $b->booked_rooms : (json_decode($b->booked_rooms, true) ?? []);
             $roomStr = ! empty($rooms) ? 'Room '.implode(', ', $rooms) : 'Room N/A';
-            $timeStr = $b->check_in_datetime ? Carbon::parse($b->check_in_datetime)->format('g:i A') : '';
+            $timeStr = $b->check_in_datetime ? SystemFormatService::formatTime($b->check_in_datetime) : '';
 
             return [
                 'name' => $name,
@@ -284,7 +285,7 @@ class DashboardApiController
             $rooms = is_array($b->booked_rooms) ? $b->booked_rooms : (json_decode($b->booked_rooms, true) ?? []);
             $roomStr = ! empty($rooms) ? 'Room '.implode(', ', $rooms) : 'Room N/A';
             $time = $b->actual_check_out ?? $b->check_out_datetime;
-            $timeStr = $time ? Carbon::parse($time)->format('g:i A') : '';
+            $timeStr = $time ? SystemFormatService::formatTime($time) : '';
 
             return [
                 'name' => $name,
@@ -1313,8 +1314,8 @@ class DashboardApiController
                 'room_number' => $roomInfo['numbers'],
                 'booked_rooms_details' => $roomInfo['details'],
                 'stay_type' => ucwords(str_replace('_', ' ', $invoice->booking->stay_type ?? 'overnight')),
-                'check_in_time' => $invoice->booking->check_in_datetime ? Carbon::parse($invoice->booking->check_in_datetime)->format('M d, Y h:i A') : 'N/A',
-                'checkout_time' => $checkOut->format('h:i A'),
+                'check_in_time' => $invoice->booking->check_in_datetime ? SystemFormatService::formatDateTime($invoice->booking->check_in_datetime) : 'N/A',
+                'checkout_time' => SystemFormatService::formatTime($checkOut),
                 'is_overdue' => $checkOut->lte($now),
                 'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
                 'total_amount' => (float) ($invoice->grand_total ?? $invoice->booking->total_amount ?? 0),
@@ -1343,7 +1344,7 @@ class DashboardApiController
                     'stay_type' => 'Reserved Stay',
                     'deposit' => $deposit,
                     'deposit_formatted' => '₱'.number_format($deposit, 2),
-                    'cancelled_at' => $res->updated_at ? Carbon::parse($res->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') : 'N/A',
+                    'cancelled_at' => $res->updated_at ? SystemFormatService::formatDateTime($res->updated_at) : 'N/A',
                     'raw_time' => $res->updated_at ? Carbon::parse($res->updated_at)->timestamp : 0,
                 ];
             });
@@ -1370,7 +1371,7 @@ class DashboardApiController
                     'stay_type' => ucwords(str_replace('_', ' ', $b->stay_type ?? 'overnight')),
                     'deposit' => $deposit,
                     'deposit_formatted' => '₱'.number_format($deposit, 2),
-                    'cancelled_at' => $b->updated_at ? Carbon::parse($b->updated_at)->setTimezone('Asia/Manila')->format('M d, Y h:i A') : 'N/A',
+                    'cancelled_at' => $b->updated_at ? SystemFormatService::formatDateTime($b->updated_at) : 'N/A',
                     'raw_time' => $b->updated_at ? Carbon::parse($b->updated_at)->timestamp : 0,
                 ];
             });

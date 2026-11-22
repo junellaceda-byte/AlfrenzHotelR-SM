@@ -24,6 +24,22 @@ class SystemFormatService
     }
 
     /**
+     * Check if the active time format is 24-hour format.
+     */
+    public static function is24Hour(): bool
+    {
+        return str_contains(static::timeFormat(), 'H');
+    }
+
+    /**
+     * Get a human-readable description of the time format mode ('12-hour' or '24-hour').
+     */
+    public static function timeFormatType(): string
+    {
+        return static::is24Hour() ? '24-hour' : '12-hour';
+    }
+
+    /**
      * Format a date string or Carbon instance using system-wide date format.
      */
     public static function formatDate(mixed $date): string
@@ -73,4 +89,3 @@ class SystemFormatService
         }
     }
 }
-

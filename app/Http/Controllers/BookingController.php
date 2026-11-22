@@ -15,6 +15,7 @@ use App\Services\ActivityLogService;
 use App\Services\BookingService;
 use App\Services\InvoiceService;
 use App\Services\RoomAvailabilityService;
+use App\Services\SystemFormatService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -143,7 +144,7 @@ class BookingController
                 'room_number' => collect($invoice->booking->booked_rooms)
                     ->map(fn ($r) => str_pad($r, 2, '0', STR_PAD_LEFT))
                     ->implode(', '),
-                'checkout_time' => $checkOut->format('h:i A'),
+                'checkout_time' => SystemFormatService::formatTime($checkOut),
                 'is_overdue' => $checkOut->lte($now),
                 'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
             ];
@@ -919,9 +920,9 @@ class BookingController
 
                 $paymentDate = 'Not paid yet';
                 if ($log && ($log->paid_at || $log->created_at)) {
-                    $paymentDate = Carbon::parse($log->paid_at ?? $log->created_at)->setTimezone('Asia/Manila')->format('m/d/Y h:i A');
+                    $paymentDate = SystemFormatService::formatDateTime($log->paid_at ?? $log->created_at);
                 } elseif ($isPaid && $invoice->updated_at) {
-                    $paymentDate = Carbon::parse($invoice->updated_at)->setTimezone('Asia/Manila')->format('m/d/Y h:i A');
+                    $paymentDate = SystemFormatService::formatDateTime($invoice->updated_at);
                 }
 
                 $methodRaw = $log?->payment_method ?? $b->payment_method ?? '-';
@@ -956,8 +957,8 @@ class BookingController
                     'phone' => $b->phone ?: '-',
                     'status' => $statusText,
                     'stay_type' => $b->stay_type === 'short_stay' ? 'Short stay ('.$b->short_stay_hours.' hrs)' : '24 hours'.($b->with_breakfast ? ' with breakfast' : ''),
-                    'checkin' => $b->check_in_datetime ? Carbon::parse($b->check_in_datetime)->format('m/d/Y h:i A') : 'N/A',
-                    'checkout' => $b->check_out_datetime ? Carbon::parse($b->check_out_datetime)->format('m/d/Y h:i A') : 'N/A',
+                    'checkin' => $b->check_in_datetime ? SystemFormatService::formatDateTime($b->check_in_datetime) : 'N/A',
+                    'checkout' => $b->check_out_datetime ? SystemFormatService::formatDateTime($b->check_out_datetime) : 'N/A',
                     'room_numbers' => $roomNumbersStr,
                     'room_rate' => $roomRate,
                     'nights' => $nights,

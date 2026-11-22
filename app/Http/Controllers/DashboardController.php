@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomBlock;
+use App\Services\SystemFormatService;
 use Carbon\Carbon;
 
 class DashboardController
@@ -84,17 +85,17 @@ class DashboardController
 
             if ($block) {
                 $room->status = 'under_maintenance';
-                $startFormatted = $block->start_date->format('n/j/Y, g:i A');
-                $endFormatted = $block->end_date->format('n/j/Y, g:i A');
+                $startFormatted = SystemFormatService::formatDateTime($block->start_date);
+                $endFormatted = SystemFormatService::formatDateTime($block->end_date);
                 $blockingPeriod = "Start: {$startFormatted} and End: {$endFormatted}";
-                $timeRange = $block->start_date->format('H:i').'-'.$block->end_date->format('H:i');
+                $timeRange = SystemFormatService::formatTime($block->start_date).'-'.SystemFormatService::formatTime($block->end_date);
             } elseif ($booking) {
                 $room->status = 'occupied';
                 $room->guest_name = $booking->guest ? trim(($booking->guest->fname ?? 'Guest').' '.($booking->guest->lname ?? '')) : 'Guest';
                 $room->booking_id = $booking->id;
                 $checkIn = Carbon::parse($booking->check_in_datetime);
                 $checkOut = Carbon::parse($booking->check_out_datetime);
-                $timeRange = $checkIn->format('g:i A').'-'.$checkOut->format('g:i A');
+                $timeRange = SystemFormatService::formatTime($checkIn).'-'.SystemFormatService::formatTime($checkOut);
                 $checkoutDatetime = $checkOut->toIso8601String();
 
                 if ($checkOut->lt($now)) {
@@ -116,10 +117,10 @@ class DashboardController
                 $timeRange = null;
                 if ($reservation) {
                     $arrivalStart = Carbon::parse($reservation->reservation_start_date);
-                    $room->reservation_arrival = $arrivalStart->format('M j, Y g:i A');
+                    $room->reservation_arrival = SystemFormatService::formatDateTime($arrivalStart);
                 } elseif ($reservedBooking) {
                     $arrivalStart = Carbon::parse($reservedBooking->check_in_datetime);
-                    $room->reservation_arrival = $arrivalStart->format('M j, Y g:i A');
+                    $room->reservation_arrival = SystemFormatService::formatDateTime($arrivalStart);
                 }
             } else {
                 $room->status = 'available';
@@ -235,7 +236,7 @@ class DashboardController
                 'room_number' => collect($invoice->booking->booked_rooms)
                     ->map(fn ($r) => str_pad($r, 2, '0', STR_PAD_LEFT))
                     ->implode(', '),
-                'checkout_time' => $checkOut->format('h:i A'),
+                'checkout_time' => SystemFormatService::formatTime($checkOut),
                 'is_overdue' => $checkOut->lte($now),
                 'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
             ];

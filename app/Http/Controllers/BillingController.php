@@ -12,6 +12,7 @@ use App\Models\Room;
 use App\Models\Staff;
 use App\Services\ActivityLogService;
 use App\Services\InvoiceService;
+use App\Services\SystemFormatService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -69,7 +70,7 @@ class BillingController
                 'room_number' => collect($invoice->booking->booked_rooms)
                     ->map(fn ($r) => str_pad($r, 2, '0', STR_PAD_LEFT))
                     ->implode(', '),
-                'checkout_time' => $checkOut->format('h:i A'),
+                'checkout_time' => SystemFormatService::formatTime($checkOut),
                 'is_overdue' => $checkOut->lte($now),
                 'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
             ];
