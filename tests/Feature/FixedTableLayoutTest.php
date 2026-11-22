@@ -15,6 +15,12 @@ class FixedTableLayoutTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsReceptionist();
+    }
+
     public function test_reservation_table_has_fixed_layout_and_column_widths(): void
     {
         Reservation::create([

@@ -26,6 +26,7 @@ class MultipleAmenitiesToRoomTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->actingAsReceptionist();
 
         $this->room = Room::create([
             'room_number' => '10',

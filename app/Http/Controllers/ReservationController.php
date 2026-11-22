@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomBlock;
+use App\Services\ActivityLogService;
 use App\Services\BookingService;
 use App\Services\RoomAvailabilityService;
 use Carbon\Carbon;
@@ -139,7 +140,7 @@ class ReservationController
             'phone' => $request->phone,
         ]);
         // Create a new reservation record
-        Reservation::create([
+        $reservation = Reservation::create([
             'guest_name' => trim($fname.' '.$lname),
             'guest_id' => $guest->id,
             'phone_number' => $request->phone,
@@ -158,6 +159,9 @@ class ReservationController
             'ewallet_type' => $request->payment_method === 'ewallet' ? $request->ewallet_type : null,
             'reference_number' => $request->payment_method === 'ewallet' ? $request->reference_number : null,
         ]);
+
+        // Record Reservation Activity Log
+        ActivityLogService::logReservation($reservation);
 
         foreach ($request->room_ids as $roomId) {
             $isOccupied = Booking::where(function ($q) use ($roomId) {
@@ -306,6 +310,9 @@ class ReservationController
 
         $reservation->update(['status' => 'checked_in']);
 
+        // Record Check-in Booking Activity Log
+        ActivityLogService::logBooking($booking, null, 'check_in');
+
         return redirect()->route('reservation.index')
             ->with('success', 'Guest checked in. Total: ₱'.number_format($price['total'], 2));
     }
@@ -317,6 +324,9 @@ class ReservationController
 
         if ($reservation->status === 'reserved') {
             $reservation->update(['status' => 'cancelled']);
+
+            // Record Cancellation Activity Log
+            ActivityLogService::logCancellation($reservation);
 
             foreach ($reservation->selected_rooms ?? [] as $roomId) {
                 $hasOtherRes = Reservation::where('status', 'reserved')

@@ -10,6 +10,12 @@ class AccountManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     public function test_account_management_table_shows_email_and_removes_username_column(): void
     {
         $staff = Staff::create([

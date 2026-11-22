@@ -11,6 +11,12 @@ class AdminStaffManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     public function test_admin_can_store_staff_with_securely_stored_password(): void
     {
         $response = $this->post('/staff/store', [

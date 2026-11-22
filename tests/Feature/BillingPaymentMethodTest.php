@@ -15,6 +15,12 @@ class BillingPaymentMethodTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsReceptionist();
+    }
+
     private function createGuestBookingAndInvoice(string $fname = 'Maria', string $lname = 'Santos', ?Carbon $createdAt = null): Invoice
     {
         static $counter = 1;

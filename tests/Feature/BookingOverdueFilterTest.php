@@ -13,6 +13,12 @@ class BookingOverdueFilterTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsReceptionist();
+    }
+
     private function createBookingWithInvoice(
         string $fname,
         string $status,

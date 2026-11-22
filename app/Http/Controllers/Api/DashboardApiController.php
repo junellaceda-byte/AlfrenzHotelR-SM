@@ -12,6 +12,7 @@ use App\Models\PaymentLog;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomBlock;
+use App\Services\ActivityLogService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -24,6 +25,9 @@ class DashboardApiController
     public function notifications()
     {
         $now = now()->setTimezone('Asia/Manila');
+
+        // Automatically detect and log overdue bookings (system-generated)
+        ActivityLogService::syncOverdueBookings();
 
         // Collect guests due within the next 30 minutes or already past due
         $dueInvoices = Invoice::with('booking.guest')

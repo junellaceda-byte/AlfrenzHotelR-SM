@@ -11,10 +11,12 @@ class PaymentLog extends Model
     //
     protected $fillable = [
         'invoice_id',
+        'reference_number',
         'amount_paid',
         'payment_method',
         'status',
         'paid_at',
+        'processed_by',
         'created_at',
     ];
 

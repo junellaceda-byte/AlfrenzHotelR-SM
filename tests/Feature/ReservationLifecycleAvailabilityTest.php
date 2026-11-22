@@ -19,6 +19,7 @@ class ReservationLifecycleAvailabilityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->actingAsReceptionist();
 
         $this->room1 = Room::create([
             'room_number' => '01',

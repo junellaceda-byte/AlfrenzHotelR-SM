@@ -15,6 +15,12 @@ class AdminSalesReportExportTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     public function test_export_route_returns_csv_download_response(): void
     {
         $response = $this->get('/admin/sales-report/export');

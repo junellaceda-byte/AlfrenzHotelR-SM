@@ -13,6 +13,12 @@ class BookingPaginationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsReceptionist();
+    }
+
     private function createGuestAndBooking(string $fname, string $lname, int $index): Booking
     {
         $guest = Guest::create([

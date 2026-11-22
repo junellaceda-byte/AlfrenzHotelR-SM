@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Crypt;
 
 class Staff extends Model
@@ -89,5 +91,21 @@ class Staff extends Model
         }
 
         $this->attributes['password'] = Crypt::encryptString($value);
+    }
+
+    /**
+     * Relationship to the staff member's activity logs.
+     */
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class, 'staff_id');
+    }
+
+    /**
+     * Get the latest recorded activity for this staff member.
+     */
+    public function latestActivity(): HasOne
+    {
+        return $this->hasOne(ActivityLog::class, 'staff_id')->latestOfMany();
     }
 }

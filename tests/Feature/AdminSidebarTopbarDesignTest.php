@@ -10,6 +10,12 @@ class AdminSidebarTopbarDesignTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     public function test_admin_sidebar_uses_same_design_and_structure_as_receptionist(): void
     {
         $response = $this->get('/admindashboard');

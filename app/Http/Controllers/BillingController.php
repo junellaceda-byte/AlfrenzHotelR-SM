@@ -9,6 +9,8 @@ use App\Models\Charge;
 use App\Models\Invoice;
 use App\Models\PaymentLog;
 use App\Models\Room;
+use App\Models\Staff;
+use App\Services\ActivityLogService;
 use App\Services\InvoiceService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
@@ -174,32 +176,44 @@ class BillingController
             ? $request->input('reference_number')
             : null;
 
+        $staffId = ActivityLogService::currentStaffId();
+        $processedBy = null;
+        if ($staffId) {
+            $staff = Staff::find($staffId);
+            $processedBy = $staff ? trim($staff->first_name.' '.$staff->last_name) : null;
+        }
+
         // Record transaction log with fallback for un-migrated legacy databases with CHECK constraints
         try {
-            PaymentLog::create([
+            $paymentLog = PaymentLog::create([
                 'invoice_id' => $invoice->id,
                 'amount_paid' => $invoice->grand_total,
                 'payment_method' => $paymentMethod,
                 'reference_number' => $referenceNumber,
                 'status' => 'successful',
                 'paid_at' => now(),
+                'processed_by' => $processedBy,
                 'created_at' => now(),
             ]);
         } catch (QueryException $e) {
             if (str_contains($e->getMessage(), 'CHECK constraint failed')) {
-                PaymentLog::create([
+                $paymentLog = PaymentLog::create([
                     'invoice_id' => $invoice->id,
                     'amount_paid' => $invoice->grand_total,
                     'payment_method' => 'gcash',
                     'reference_number' => $referenceNumber,
                     'status' => 'successful',
                     'paid_at' => now(),
+                    'processed_by' => $processedBy,
                     'created_at' => now(),
                 ]);
             } else {
                 throw $e;
             }
         }
+
+        // Record Payment Activity Log
+        ActivityLogService::logPayment($paymentLog, $invoice, $staffId);
 
         // Change status to paid (moves it automatically to Confirmed Payment table)
         $invoice->status = 'paid';

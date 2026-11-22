@@ -90,7 +90,15 @@
                                 <span class="badge bg-success rounded-pill">Active</span>
                             </td>
                             <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-muted text-nowrap staff-cell-lastactive">
-                                Just now</td>
+                                @php
+                                    $latestAct = $staff->latestActivity;
+                                @endphp
+                                @if($latestAct)
+                                    <span title="{{ $latestAct->formatted_datetime }}">{{ $latestAct->formatted_date }} {{ $latestAct->formatted_time }}</span>
+                                @else
+                                    <span>Just now</span>
+                                @endif
+                            </td>
                             <!-- Desktop Actions Column (hidden on mobile) -->
                             <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-end text-nowrap d-none d-md-table-cell">
                                 <div class="d-inline-flex align-items-center justify-content-end gap-2">

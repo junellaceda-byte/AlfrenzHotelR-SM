@@ -18,6 +18,7 @@ class AdminRoomManagementTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->actingAsAdmin();
 
         $this->guest = Guest::create([
             'fname' => 'Carlos',

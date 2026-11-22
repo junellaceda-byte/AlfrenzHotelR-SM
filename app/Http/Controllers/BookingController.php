@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomBlock;
+use App\Services\ActivityLogService;
 use App\Services\BookingService;
 use App\Services\InvoiceService;
 use App\Services\RoomAvailabilityService;
@@ -215,7 +216,7 @@ class BookingController
         ]);
 
         if ($request->action_type === 'reserved') {
-            Reservation::create([
+            $reservation = Reservation::create([
                 'guest_name' => trim($request->fname.' '.($request->lname ?? '')),
                 'guest_id' => $guest->id,
                 'phone_number' => $request->phone,
@@ -234,6 +235,9 @@ class BookingController
                 'ewallet_type' => $request->payment_method === 'ewallet' ? $request->ewallet_type : null,
                 'reference_number' => $request->payment_method === 'ewallet' ? $request->reference_number : null,
             ]);
+
+            // Record Reservation Activity Log
+            ActivityLogService::logReservation($reservation);
 
             foreach ($request->room_ids as $roomId) {
                 $isOccupied = Booking::where(function ($q) use ($roomId) {
@@ -272,6 +276,9 @@ class BookingController
             'reference_number' => $request->payment_method === 'ewallet' ? $request->reference_number : null,
         ]);
 
+        // Record Immediate Booking Activity Log
+        ActivityLogService::logBooking($booking, null, 'immediate');
+
         // Generate an invoice for the booking
         return redirect()->back()->with('success', 'Booking saved. Total: ₱'.number_format($price['total'], 2));
         // End of recent edits
@@ -287,6 +294,10 @@ class BookingController
         $booking = Booking::findOrFail($id);
         $newStatus = $request->status;
         $booking->update(['status' => $newStatus]);
+
+        if ($newStatus === 'cancelled') {
+            ActivityLogService::logCancellation($booking);
+        }
 
         if ($newStatus === 'checked_in') {
             Room::whereIn('id', $booking->booked_rooms ?? [])->update(['status' => 'occupied']);

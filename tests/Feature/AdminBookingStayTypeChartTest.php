@@ -11,6 +11,12 @@ class AdminBookingStayTypeChartTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     public function test_overview_page_renders_booking_stay_type_chart_and_timeframe_controls(): void
     {
         $response = $this->get('/admindashboard?section=overview');

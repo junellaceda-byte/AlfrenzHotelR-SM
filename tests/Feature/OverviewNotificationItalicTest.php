@@ -10,6 +10,12 @@ class OverviewNotificationItalicTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsReceptionist();
+    }
+
     public function test_overview_notifications_display_30_minute_alert_and_no_rooms_due_in_italic(): void
     {
         // Seed at least one room so dashboard renders cleanly

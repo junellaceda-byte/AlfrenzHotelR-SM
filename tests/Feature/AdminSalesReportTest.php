@@ -26,6 +26,7 @@ class AdminSalesReportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->actingAsAdmin();
 
         // Establish rooms
         $this->room1 = Room::create([

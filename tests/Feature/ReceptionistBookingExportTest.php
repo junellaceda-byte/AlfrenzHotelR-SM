@@ -15,6 +15,12 @@ class ReceptionistBookingExportTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsReceptionist();
+    }
+
     public function test_booking_history_displays_search_bar_and_export_to_excel_button(): void
     {
         $response = $this->get('/bookings');

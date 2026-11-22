@@ -27,6 +27,7 @@ class AdminOverviewCardsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->actingAsAdmin();
 
         $this->room1 = Room::create([
             'room_number' => '01',

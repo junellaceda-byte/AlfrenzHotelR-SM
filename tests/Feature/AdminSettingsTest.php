@@ -17,6 +17,7 @@ class AdminSettingsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->actingAsAdmin();
 
         SystemSetting::set('date_format', 'M d, Y');
         SystemSetting::set('time_format', 'h:i A');
@@ -153,4 +154,3 @@ class AdminSettingsTest extends TestCase
         ]);
     }
 }
-

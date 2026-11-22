@@ -10,6 +10,12 @@ class AmenityDescriptionTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     public function test_amenity_table_shows_description_and_status_column_headers(): void
     {
         $response = $this->get('/admindashboard?section=amenity');

@@ -26,6 +26,7 @@ class CustomizableAmenitiesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->actingAsAdmin();
 
         $this->room = Room::create([
             'room_number' => '05',

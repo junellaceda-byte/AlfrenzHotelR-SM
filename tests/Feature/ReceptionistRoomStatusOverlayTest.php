@@ -14,6 +14,12 @@ class ReceptionistRoomStatusOverlayTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsReceptionist();
+    }
+
     public function test_reserved_room_displays_visible_reserved_text_overlay(): void
     {
         $room = Room::create([

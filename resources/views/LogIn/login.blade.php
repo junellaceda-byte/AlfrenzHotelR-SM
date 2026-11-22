@@ -32,6 +32,12 @@
             @csrf
 
             <!-- Display Login Errors -->
+            @if(session('error'))
+                <div class="alert alert-danger py-2">{{ session('error') }}</div>
+            @endif
+            @if(session('success'))
+                <div class="alert alert-success py-2">{{ session('success') }}</div>
+            @endif
             @error('username')
                 <div class="alert alert-danger py-2">{{ $message }}</div>
             @enderror

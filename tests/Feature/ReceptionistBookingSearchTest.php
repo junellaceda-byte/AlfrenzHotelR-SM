@@ -13,6 +13,12 @@ class ReceptionistBookingSearchTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsReceptionist();
+    }
+
     public function test_search_finds_record_from_any_pagination_page_and_adjusts_pagination(): void
     {
         // 8 records per page. Create 12 bookings.
