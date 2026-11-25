@@ -8,4 +8,8 @@
     </title>
     <!-- Include local Bootstrap CSS -->
     <link href="{{ asset('bootstrap-5.3.8-dist/css/bootstrap.min.css') }}" rel="stylesheet">
+    <!-- Component-Specific Border Radius Design System -->
+    <link href="{{ asset('css/global-radius.css') }}" rel="stylesheet">
+    <!-- Receptionist Modal Custom Theme -->
+    <link href="{{ asset('css/receptionist-modal-theme.css') }}" rel="stylesheet">
 </head>

@@ -20,6 +20,23 @@ class ReceptionistRoomStatusOverlayTest extends TestCase
         $this->actingAsReceptionist();
     }
 
+    public function test_available_room_displays_visible_available_text_overlay(): void
+    {
+        $room = Room::create([
+            'room_number' => '100',
+            'short_stay_rate' => 500,
+            'overnight_rate' => 2000,
+            'status' => 'available',
+        ]);
+
+        $response = $this->get('/dashboardreceptionist');
+        $response->assertOk();
+
+        // Available: Display a visible AVAILABLE text overlay on room tile
+        $response->assertSee('overlay-available', false);
+        $response->assertSee('AVAILABLE', false);
+    }
+
     public function test_reserved_room_displays_visible_reserved_text_overlay(): void
     {
         $room = Room::create([
@@ -159,6 +176,7 @@ class ReceptionistRoomStatusOverlayTest extends TestCase
         $cssContent = file_get_contents(public_path('css/grid-overlay.css'));
 
         // Typography and alignment for overlays
+        $this->assertStringContainsString('.overlay-available', $cssContent);
         $this->assertStringContainsString('.overlay-occupied', $cssContent);
         $this->assertStringContainsString('.overlay-reserved', $cssContent);
         $this->assertStringContainsString('.overlay-maintenance', $cssContent);
@@ -178,6 +196,8 @@ class ReceptionistRoomStatusOverlayTest extends TestCase
     {
         $scriptsContent = file_get_contents(resource_path('views/Receptionist/partials/scripts.blade.php'));
 
+        $this->assertStringContainsString("'AVAILABLE'", $scriptsContent);
+        $this->assertStringContainsString("'overlay-available'", $scriptsContent);
         $this->assertStringContainsString("'OCCUPIED'", $scriptsContent);
         $this->assertStringContainsString("'RESERVED'", $scriptsContent);
         $this->assertStringContainsString("'UNDER MAINTENANCE'", $scriptsContent);

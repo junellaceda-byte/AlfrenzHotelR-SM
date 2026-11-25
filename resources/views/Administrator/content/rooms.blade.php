@@ -2,7 +2,7 @@
 <link href="{{ asset('css/grid-overlay.css') }}" rel="stylesheet">
 <link href="{{ asset('css/Administrator/rooms.css') }}" rel="stylesheet">
 
-<div class="card p-3 p-sm-4 border rounded shadow-sm">
+<div class="card p-3 p-sm-4 border rounded shadow-sm" style="background-color: #F5F7DF;">
     <!-- Header with Action Buttons -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
@@ -21,54 +21,54 @@
 
     <!-- 4 Status Summary Cards (Available, Occupied, Reserved, Under Maintenance) -->
     <div class="row g-3 mb-4">
-        <!-- Available -->
+        <!-- Available (Green #2BAB2B background with white text and icon) -->
         <div class="col-6 col-xl-3">
-            <div class="kpi-card p-3 d-flex justify-content-between align-items-center h-100 shadow-sm">
+            <div class="kpi-card kpi-card-available p-3 d-flex justify-content-between align-items-center h-100 shadow-sm border-0 text-white" style="background-color: #2BAB2B !important; background: #2BAB2B !important;">
                 <div>
-                    <div class="kpi-card-title text-uppercase mb-2">Available</div>
-                    <div class="kpi-card-number text-success" id="admin-kpi-available">{{ $availableRooms ?? 0 }}</div>
+                    <div class="kpi-card-title text-uppercase mb-2 text-white" style="color: #ffffff; opacity: 0.95;">Available</div>
+                    <div class="kpi-card-number text-white fw-bold" id="admin-kpi-available" style="color: #ffffff;">{{ $availableRooms ?? 0 }}</div>
                 </div>
-                <div class="kpi-icon-box rounded-circle border border-2 border-success text-success bg-light">
-                    <img src="{{ asset('icons/check.svg') }}" alt="Available" width="28" height="28">
+                <div class="kpi-icon-box rounded-circle border border-2 border-white text-white" style="background-color: rgba(255, 255, 255, 0.18); border-color: #ffffff !important;">
+                    <img src="{{ asset('icons/check.svg') }}" alt="Available" width="28" height="28" style="filter: brightness(0) invert(1);">
                 </div>
             </div>
         </div>
 
-        <!-- Occupied -->
+        <!-- Occupied (Orange #E87B2C background with white text and icon) -->
         <div class="col-6 col-xl-3">
-            <div class="kpi-card p-3 d-flex justify-content-between align-items-center h-100 shadow-sm">
+            <div class="kpi-card kpi-card-occupied p-3 d-flex justify-content-between align-items-center h-100 shadow-sm border-0 text-white" style="background-color: #E87B2C !important; background: #E87B2C !important;">
                 <div>
-                    <div class="kpi-card-title text-uppercase mb-2">Occupied</div>
-                    <div class="kpi-card-number text-danger" id="admin-kpi-occupied">{{ $occupiedRooms ?? 0 }}</div>
+                    <div class="kpi-card-title text-uppercase mb-2 text-white" style="color: #ffffff; opacity: 0.95;">Occupied</div>
+                    <div class="kpi-card-number text-white fw-bold" id="admin-kpi-occupied" style="color: #ffffff;">{{ $occupiedRooms ?? 0 }}</div>
                 </div>
-                <div class="kpi-icon-box rounded-circle border border-2 border-danger text-danger bg-light">
-                    <img src="{{ asset('icons/person.svg') }}" alt="Occupied" width="28" height="28">
+                <div class="kpi-icon-box rounded-circle border border-2 border-white text-white" style="background-color: rgba(255, 255, 255, 0.18); border-color: #ffffff !important;">
+                    <img src="{{ asset('icons/person.svg') }}" alt="Occupied" width="28" height="28" style="filter: brightness(0) invert(1);">
                 </div>
             </div>
         </div>
 
-        <!-- Reserved -->
+        <!-- Reserved (Lime Green #A8E036 background with dark contrasting text and icon) -->
         <div class="col-6 col-xl-3">
-            <div class="kpi-card p-3 d-flex justify-content-between align-items-center h-100 shadow-sm">
+            <div class="kpi-card kpi-card-reserved p-3 d-flex justify-content-between align-items-center h-100 shadow-sm border-0" style="background-color: #A8E036 !important; background: #A8E036 !important; color: #1c2a08;">
                 <div>
-                    <div class="kpi-card-title text-uppercase mb-2">Reserved</div>
-                    <div class="kpi-card-number text-warning" id="admin-kpi-reserved">{{ $reservedRooms ?? 0 }}</div>
+                    <div class="kpi-card-title text-uppercase mb-2 fw-bold" style="color: #1c2a08; opacity: 0.9;">Reserved</div>
+                    <div class="kpi-card-number fw-bold" id="admin-kpi-reserved" style="color: #1c2a08;">{{ $reservedRooms ?? 0 }}</div>
                 </div>
-                <div class="kpi-icon-box rounded-circle border border-2 border-warning text-warning bg-light">
-                    <img src="{{ asset('icons/bookmark.svg') }}" alt="Reserved" width="24" height="24">
+                <div class="kpi-icon-box rounded-circle border border-2" style="background-color: rgba(28, 42, 8, 0.12); border-color: #1c2a08 !important;">
+                    <img src="{{ asset('icons/bookmark.svg') }}" alt="Reserved" width="24" height="24" style="filter: brightness(0) saturate(100%) invert(13%) sepia(28%) saturate(1478%) hue-rotate(42deg) brightness(96%) contrast(97%);">
                 </div>
             </div>
         </div>
 
-        <!-- Under Maintenance -->
+        <!-- Under Maintenance (Muted Rose #A34665 background with white text and icon) -->
         <div class="col-6 col-xl-3">
-            <div class="kpi-card p-3 d-flex justify-content-between align-items-center h-100 shadow-sm">
+            <div class="kpi-card kpi-card-maintenance p-3 d-flex justify-content-between align-items-center h-100 shadow-sm border-0 text-white" style="background-color: #A34665 !important; background: #A34665 !important;">
                 <div>
-                    <div class="kpi-card-title text-uppercase mb-2">Under Maintenance</div>
-                    <div class="kpi-card-number text-secondary" id="admin-kpi-maintenance">{{ $underMaintenanceRooms ?? 0 }}</div>
+                    <div class="kpi-card-title text-uppercase mb-2 text-white" style="color: #ffffff; opacity: 0.95;">Under Maintenance</div>
+                    <div class="kpi-card-number text-white fw-bold" id="admin-kpi-maintenance" style="color: #ffffff;">{{ $underMaintenanceRooms ?? 0 }}</div>
                 </div>
-                <div class="kpi-icon-box rounded-circle border border-2 border-secondary text-secondary bg-light">
-                    <img src="{{ asset('icons/cone.svg') }}" alt="Under Maintenance" width="26" height="26">
+                <div class="kpi-icon-box rounded-circle border border-2 border-white text-white" style="background-color: rgba(255, 255, 255, 0.18); border-color: #ffffff !important;">
+                    <img src="{{ asset('icons/cone.svg') }}" alt="Under Maintenance" width="26" height="26" style="filter: brightness(0) invert(1);">
                 </div>
             </div>
         </div>
@@ -103,7 +103,7 @@
                 $cardStatus = ($room->status === 'maintenance' || $room->status === 'under_maintenance') ? 'under_maintenance' : $room->status;
             @endphp
 
-            <div class="hotel-room-card {{ $room->status === 'occupied' ? 'is-occupied' : '' }}" 
+            <div class="hotel-room-card {{ $room->status === 'occupied' ? 'is-occupied' : '' }} {{ $isOverdue ? 'is-overdue' : '' }}" 
                  data-status="{{ $cardStatus }}" 
                  data-room-id="{{ $room->id }}"
                  data-checkout="{{ $checkoutDatetime }}"
@@ -117,12 +117,12 @@
                         @if($isOverdue)
                             <div class="position-absolute top-0 start-0 w-100 h-100 overlay-overdue">OVERDUE</div>
                         @else
-                            <div class="position-absolute top-0 start-0 w-100 h-100 overlay-occupied"></div>
+                            <div class="position-absolute top-0 start-0 w-100 h-100 overlay-occupied">OCCUPIED</div>
                         @endif
                     @elseif($room->status == 'reserved')
-                        <div class="position-absolute top-0 start-0 w-100 h-100 overlay-reserved"></div>
+                        <div class="position-absolute top-0 start-0 w-100 h-100 overlay-reserved">RESERVED</div>
                     @elseif($room->status == 'maintenance' || $room->status == 'under_maintenance')
-                        <div class="position-absolute top-0 start-0 w-100 h-100 overlay-maintenance"></div>
+                        <div class="position-absolute top-0 start-0 w-100 h-100 overlay-maintenance">UNDER MAINTENANCE</div>
                     @endif
 
                     <!-- Admin Action Buttons (Edit / Delete) -->

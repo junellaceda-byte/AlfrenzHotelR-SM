@@ -488,25 +488,6 @@
                         }
                     }
                 });
-
-                const trendFilterBtns = document.querySelectorAll('.occupancy-trend-btn');
-                trendFilterBtns.forEach(btn => {
-                    btn.addEventListener('click', function () {
-                        activeOccupancyPeriod = this.getAttribute('data-period');
-                        trendFilterBtns.forEach(b => {
-                            b.classList.remove('active');
-                            b.style.backgroundColor = 'transparent';
-                            b.style.borderColor = '#734F46';
-                            b.style.color = '#734F46';
-                        });
-                        this.classList.add('active');
-                        this.style.backgroundColor = '#443627';
-                        this.style.borderColor = '#443627';
-                        this.style.color = '#ffffff';
-
-                        updateOccupancyChart();
-                    });
-                });
             }
 
             // Initialize Revenue Target Gauge Chart (ApexCharts)
@@ -515,13 +496,19 @@
                     series: [0],
                     chart: {
                         type: 'radialBar',
-                        height: 280,
-                        offsetY: -10
+                        height: 320,
+                        offsetY: 0,
+                        sparkline: {
+                            enabled: false
+                        }
                     },
                     plotOptions: {
                         radialBar: {
                             startAngle: -135,
                             endAngle: 135,
+                            hollow: {
+                                size: '68%'
+                            },
                             track: {
                                 background: "#f2f2f2",
                                 strokeWidth: '97%',
@@ -529,16 +516,18 @@
                             },
                             dataLabels: {
                                 name: {
-                                    fontSize: '14px',
+                                    show: true,
+                                    fontSize: '13px',
+                                    fontWeight: '600',
                                     color: '#443627',
-                                    offsetY: 120
+                                    offsetY: 78
                                 },
                                 value: {
                                     offsetSum: 0,
-                                    fontSize: '22px',
+                                    fontSize: '24px',
                                     fontWeight: 'bold',
                                     color: '#212529',
-                                    offsetY: 60,
+                                    offsetY: 28,
                                     formatter: function (val) {
                                         return val + "%";
                                     }
@@ -553,7 +542,7 @@
                     stroke: {
                         dashArray: 4
                     },
-                    labels: ['Achieved of ₱150k Goal'],
+                    labels: ['Achieved of ₱150,000.00 Goal'],
                 };
                 gaugeChart = new ApexCharts(gaugeElement, gaugeOptions);
                 gaugeChart.render();
@@ -647,7 +636,8 @@
             const amenitiesFilterBtns = document.querySelectorAll('.amenities-filter-btn');
             amenitiesFilterBtns.forEach(btn => {
                 btn.addEventListener('click', function () {
-                    activeAmenitiesPeriod = this.getAttribute('data-period');
+                    const period = this.getAttribute('data-period');
+                    activeAmenitiesPeriod = period;
                     amenitiesFilterBtns.forEach(b => {
                         b.classList.remove('active');
                         b.style.backgroundColor = 'transparent';
@@ -659,18 +649,82 @@
                     this.style.borderColor = '#443627';
                     this.style.color = '#ffffff';
 
-                    renderAmenitiesComparison();
+                    fetchAmenitiesComparison(period);
                 });
             });
+
+            // Independent fetcher for Amenities Comparison timeframe
+            let isFetchingAmenities = false;
+            let cachedAmenitiesData = {};
+
+            function fetchAmenitiesComparison(period) {
+                period = period || activeAmenitiesPeriod || 'weekly';
+
+                // Check precomputed cached data from sales report or previous fetch
+                if (cachedAmenitiesData[period]) {
+                    renderAmenitiesComparison(cachedAmenitiesData[period]);
+                    return;
+                }
+
+                if (cachedSalesData && cachedSalesData.amenities_comparison && cachedSalesData.amenities_comparison[period]) {
+                    cachedAmenitiesData[period] = cachedSalesData.amenities_comparison[period];
+                    renderAmenitiesComparison(cachedAmenitiesData[period]);
+                    return;
+                }
+
+                if (isFetchingAmenities) return;
+                isFetchingAmenities = true;
+
+                const yearSelect = document.getElementById('salesFilterYear');
+                const monthSelect = document.getElementById('salesFilterMonth');
+                const yearVal = yearSelect ? yearSelect.value : new Date().getFullYear();
+                const monthVal = monthSelect ? monthSelect.value : (new Date().getMonth() + 1);
+
+                const params = new URLSearchParams();
+                params.append('period', period);
+                if (yearVal) params.append('year', yearVal);
+                if (monthVal) params.append('month', monthVal);
+
+                fetch('/api/admin/sales-report/amenities-comparison?' + params.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Failed to fetch amenities comparison');
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data && data.status === 'success') {
+                            cachedAmenitiesData[period] = data;
+                            renderAmenitiesComparison(data);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Amenities comparison fetch error:', err);
+                    })
+                    .finally(() => {
+                        isFetchingAmenities = false;
+                    });
+            }
 
             // Helpers to update UI from cachedSalesData
             function updateOccupancyChart() {
                 if (!occupancyTrendChart || !cachedSalesData || !cachedSalesData.occupancy_trend) return;
-                const dataset = cachedSalesData.occupancy_trend[activeOccupancyPeriod];
-                if (dataset) {
-                    occupancyTrendChart.data.labels = dataset.labels;
-                    occupancyTrendChart.data.datasets[0].data = dataset.data;
+                const trend = cachedSalesData.occupancy_trend;
+                const labels = trend.labels || (trend[activeOccupancyPeriod] ? trend[activeOccupancyPeriod].labels : []);
+                const data = trend.data || (trend[activeOccupancyPeriod] ? trend[activeOccupancyPeriod].data : []);
+
+                if (labels && labels.length > 0) {
+                    occupancyTrendChart.data.labels = labels;
+                    occupancyTrendChart.data.datasets[0].data = data;
                     occupancyTrendChart.update('none');
+                }
+
+                const scopeBadge = document.getElementById('occupancyTrendScopeBadge');
+                if (scopeBadge && (trend.scope || cachedSalesData.period_title)) {
+                    scopeBadge.textContent = trend.scope || cachedSalesData.period_title;
                 }
             }
 
@@ -685,16 +739,29 @@
                 }
             }
 
-            function renderAmenitiesComparison() {
-                if (!amenitiesListEl || !cachedSalesData) return;
-                const amenitiesSubtitleEl = document.getElementById('amenitiesDateSubtitle');
-                if (amenitiesSubtitleEl) {
-                    amenitiesSubtitleEl.textContent = cachedSalesData.period_title || '';
+            function renderAmenitiesComparison(amenitiesData) {
+                if (!amenitiesListEl) return;
+
+                // If specific amenitiesData is not passed, resolve based on activeAmenitiesPeriod
+                let dataToRender = amenitiesData;
+                if (!dataToRender) {
+                    if (cachedAmenitiesData[activeAmenitiesPeriod]) {
+                        dataToRender = cachedAmenitiesData[activeAmenitiesPeriod];
+                    } else if (cachedSalesData && cachedSalesData.amenities_comparison && cachedSalesData.amenities_comparison[activeAmenitiesPeriod]) {
+                        dataToRender = cachedSalesData.amenities_comparison[activeAmenitiesPeriod];
+                    } else if (cachedSalesData && cachedSalesData.amenities_comparison) {
+                        dataToRender = cachedSalesData.amenities_comparison;
+                    }
                 }
 
-                const items = (cachedSalesData.amenities_comparison && cachedSalesData.amenities_comparison.items)
-                    ? cachedSalesData.amenities_comparison.items
-                    : [];
+                if (!dataToRender) return;
+
+                const amenitiesSubtitleEl = document.getElementById('amenitiesDateSubtitle');
+                if (amenitiesSubtitleEl && dataToRender.subtitle) {
+                    amenitiesSubtitleEl.textContent = dataToRender.subtitle;
+                }
+
+                const items = dataToRender.items || [];
 
                 if (items.length === 0) {
                     amenitiesListEl.innerHTML = '<div class="text-center text-muted py-4 small">No amenities recorded for this period.</div>';
@@ -711,7 +778,7 @@
                     const sharePercent = totalPurchases > 0 ? ((item.count / totalPurchases) * 100).toFixed(1) : '0.0';
 
                     return `
-                        <div class="p-2 p-sm-3 rounded" style="background-color: rgba(115, 79, 70, 0.05); border: 1px solid rgba(115, 79, 70, 0.15);">
+                        <div class="p-2 p-sm-3 rounded" style="background-color: #F5F7DF; border: 1px solid rgba(115, 79, 70, 0.15);">
                             <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
                                 <div class="d-flex align-items-center gap-2 text-truncate">
                                     <span class="badge rounded-pill fw-bold" style="background-color: #734F46; color: #ffffff; min-width: 34px;">
@@ -736,6 +803,8 @@
             }
 
             let isFetchingSalesReport = false;
+            let activeSalesFilter = 'today';
+            let customSelectedDate = '';
 
             // Main Data Fetcher
             function fetchSalesReport() {
@@ -744,17 +813,25 @@
 
                 const yearSelect = document.getElementById('salesFilterYear');
                 const monthSelect = document.getElementById('salesFilterMonth');
-                const dateInput = document.getElementById('salesFilterDate');
                 const subtitleEl = document.getElementById('salesFilterSubtitle');
 
                 const yearVal = yearSelect ? yearSelect.value : new Date().getFullYear();
                 const monthVal = monthSelect ? monthSelect.value : (new Date().getMonth() + 1);
-                const dateVal = dateInput ? dateInput.value : '';
 
                 const params = new URLSearchParams();
+                params.append('timeframe', activeSalesFilter);
                 if (yearVal) params.append('year', yearVal);
                 if (monthVal) params.append('month', monthVal);
-                if (dateVal) params.append('date', dateVal);
+
+                if (activeSalesFilter === 'custom' && customSelectedDate) {
+                    params.append('date', customSelectedDate);
+                } else if (activeSalesFilter === 'today') {
+                    const now = new Date();
+                    const y = now.getFullYear();
+                    const m = String(now.getMonth() + 1).padStart(2, '0');
+                    const d = String(now.getDate()).padStart(2, '0');
+                    params.append('date', `${y}-${m}-${d}`);
+                }
 
                 fetch('/api/admin/sales-report?' + params.toString(), {
                     headers: {
@@ -771,7 +848,9 @@
 
                         // Subtitle
                         if (subtitleEl) {
-                            subtitleEl.textContent = 'Showing live sales data for: ' + (data.period_title || 'Selected Period');
+                            const subtitleText = 'Showing live sales data for: ' + (data.period_title || 'Selected Period');
+                            subtitleEl.textContent = subtitleText;
+                            subtitleEl.setAttribute('title', subtitleText);
                         }
 
                         // Top Metric Cards
@@ -790,9 +869,10 @@
                         // Gauge Chart Update
                         if (gaugeChart) {
                             const progress = data.monthly_target_progress || 0;
+                            const targetText = data.monthly_target_formatted || '₱150,000.00';
                             gaugeChart.updateSeries([progress], false);
                             gaugeChart.updateOptions({
-                                labels: ['Achieved of ' + (data.monthly_target_formatted || '₱150k') + ' Goal']
+                                labels: ['Achieved of ' + targetText + ' Goal']
                             }, false, false);
                         }
 
@@ -829,70 +909,352 @@
                     });
             }
 
-            // Filter Event Listeners
+            // Filter Controls (This Month, Today, Yearly, Monthly, Weekly, Custom M/D/Y)
+            const salesFilterGroup = document.getElementById('salesFilterGroup');
+            const salesFilterSlider = document.getElementById('salesFilterSlider');
+            const salesFilterBtns = document.querySelectorAll('.sales-filter-btn');
+            const customDateInput = document.getElementById('salesCustomDateInput');
+            const nativeDatePicker = document.getElementById('salesFilterDate');
+            const customCalIcon = document.getElementById('salesCustomCalIcon');
+            const clearDateBtn = document.getElementById('salesFilterClearDateBtn');
             const yearSelect = document.getElementById('salesFilterYear');
             const monthSelect = document.getElementById('salesFilterMonth');
-            const dateInput = document.getElementById('salesFilterDate');
-            const clearDateBtn = document.getElementById('salesFilterClearDateBtn');
-            const thisMonthBtn = document.getElementById('salesFilterThisMonthBtn');
-            const todayBtn = document.getElementById('salesFilterTodayBtn');
 
-            if (yearSelect) yearSelect.addEventListener('change', () => {
-                if (dateInput) { dateInput.value = ''; }
-                if (clearDateBtn) { clearDateBtn.classList.add('d-none'); }
-                fetchSalesReport();
-            });
+            // Individual distinct filter colors
+            const salesFilterColors = {
+                'this_month': '#1B4D3E', // Deep Forest Pine
+                'today':      '#443627', // Signature Warm Espresso
+                'yearly':     '#1A365D', // Classic Royal Navy
+                'monthly':    '#4A2E70', // Regal Plum Purple
+                'weekly':     '#734F46', // Refined Terracotta Amber
+                'custom':     '#8C2D19'  // Rust Sienna Coral
+            };
 
-            if (monthSelect) monthSelect.addEventListener('change', () => {
-                if (dateInput) { dateInput.value = ''; }
-                if (clearDateBtn) { clearDateBtn.classList.add('d-none'); }
-                fetchSalesReport();
-            });
+            function updateSalesFilterSlider(animate = true) {
+                if (!salesFilterGroup || !salesFilterSlider) return;
 
-            if (dateInput) {
-                dateInput.addEventListener('change', () => {
-                    if (dateInput.value) {
+                const activeBtn = salesFilterGroup.querySelector('.sales-filter-btn.active');
+                if (!activeBtn) {
+                    salesFilterSlider.style.width = '0px';
+                    return;
+                }
+
+                // If immediate (e.g. initial load or resize), disable transition temporarily
+                if (!animate) {
+                    salesFilterSlider.style.transition = 'none';
+                }
+
+                const groupRect = salesFilterGroup.getBoundingClientRect();
+                const btnRect = activeBtn.getBoundingClientRect();
+
+                const leftPos = btnRect.left - groupRect.left;
+                const width = btnRect.width;
+                const filterKey = activeBtn.getAttribute('data-filter') || 'today';
+                const activeColor = salesFilterColors[filterKey] || '#443627';
+
+                salesFilterSlider.style.transform = `translateX(${leftPos}px)`;
+                salesFilterSlider.style.width = `${width}px`;
+                salesFilterSlider.style.backgroundColor = activeColor;
+
+                if (!animate) {
+                    // Force reflow and re-enable transition
+                    salesFilterSlider.offsetHeight;
+                    salesFilterSlider.style.transition = '';
+                }
+            }
+
+            function setActiveFilterBtn(filterName) {
+                activeSalesFilter = filterName;
+                salesFilterBtns.forEach(btn => {
+                    const btnFilter = btn.getAttribute('data-filter');
+                    if (btnFilter === filterName) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                updateSalesFilterSlider(true);
+            }
+
+            // Sync slider position on load & window resize
+            setTimeout(() => updateSalesFilterSlider(false), 50);
+            window.addEventListener('resize', () => updateSalesFilterSlider(false));
+
+            salesFilterBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const filter = this.getAttribute('data-filter');
+                    setActiveFilterBtn(filter);
+
+                    if (filter === 'custom') {
+                        if (!customDateInput.value) {
+                            const now = new Date();
+                            const mdy = (now.getMonth() + 1) + '/' + now.getDate() + '/' + now.getFullYear();
+                            customDateInput.value = mdy;
+                            customSelectedDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+                            if (nativeDatePicker) nativeDatePicker.value = customSelectedDate;
+                        }
                         if (clearDateBtn) clearDateBtn.classList.remove('d-none');
+                        if (nativeDatePicker && typeof nativeDatePicker.showPicker === 'function') {
+                            try { nativeDatePicker.showPicker(); } catch (e) {}
+                        } else if (customDateInput) {
+                            customDateInput.focus();
+                        }
                     } else {
                         if (clearDateBtn) clearDateBtn.classList.add('d-none');
+                        if (customDateInput) customDateInput.value = '';
+                        customSelectedDate = '';
+                        if (nativeDatePicker) nativeDatePicker.value = '';
+
+                        if (filter === 'this_month' || filter === 'today') {
+                            const now = new Date();
+                            if (yearSelect) yearSelect.value = now.getFullYear();
+                            if (monthSelect) monthSelect.value = (now.getMonth() + 1);
+                        }
                     }
+
                     fetchSalesReport();
+                });
+            });
+
+            // Calendar icon triggers date picker
+            if (customCalIcon && nativeDatePicker) {
+                customCalIcon.addEventListener('click', function () {
+                    setActiveFilterBtn('custom');
+                    if (typeof nativeDatePicker.showPicker === 'function') {
+                        try { nativeDatePicker.showPicker(); } catch (e) {}
+                    } else if (customDateInput) {
+                        customDateInput.focus();
+                    }
+                });
+            }
+
+            // Native date picker selection updates M/D/Y display & triggers fetch
+            if (nativeDatePicker) {
+                nativeDatePicker.addEventListener('change', function () {
+                    if (this.value) {
+                        const parts = this.value.split('-');
+                        if (parts.length === 3) {
+                            const y = parseInt(parts[0], 10);
+                            const m = parseInt(parts[1], 10);
+                            const d = parseInt(parts[2], 10);
+                            const mdy = m + '/' + d + '/' + y;
+                            if (customDateInput) customDateInput.value = mdy;
+                            customSelectedDate = this.value;
+                            setActiveFilterBtn('custom');
+                            if (clearDateBtn) clearDateBtn.classList.remove('d-none');
+                            fetchSalesReport();
+                        }
+                    }
+                });
+            }
+
+            // Direct input in M/D/Y format
+            if (customDateInput) {
+                customDateInput.addEventListener('change', function () {
+                    const val = this.value.trim();
+                    if (!val) {
+                        customSelectedDate = '';
+                        if (clearDateBtn) clearDateBtn.classList.add('d-none');
+                        setActiveFilterBtn('this_month');
+                        fetchSalesReport();
+                        return;
+                    }
+
+                    const mdyMatch = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                    if (mdyMatch) {
+                        const m = String(parseInt(mdyMatch[1], 10)).padStart(2, '0');
+                        const d = String(parseInt(mdyMatch[2], 10)).padStart(2, '0');
+                        const y = mdyMatch[3];
+                        customSelectedDate = `${y}-${m}-${d}`;
+                        if (nativeDatePicker) nativeDatePicker.value = customSelectedDate;
+                        setActiveFilterBtn('custom');
+                        if (clearDateBtn) clearDateBtn.classList.remove('d-none');
+                        fetchSalesReport();
+                    } else {
+                        const parsed = Date.parse(val);
+                        if (!isNaN(parsed)) {
+                            const dObj = new Date(parsed);
+                            customSelectedDate = dObj.getFullYear() + '-' + String(dObj.getMonth() + 1).padStart(2, '0') + '-' + String(dObj.getDate()).padStart(2, '0');
+                            this.value = (dObj.getMonth() + 1) + '/' + dObj.getDate() + '/' + dObj.getFullYear();
+                            if (nativeDatePicker) nativeDatePicker.value = customSelectedDate;
+                            setActiveFilterBtn('custom');
+                            if (clearDateBtn) clearDateBtn.classList.remove('d-none');
+                            fetchSalesReport();
+                        }
+                    }
                 });
             }
 
             if (clearDateBtn) {
                 clearDateBtn.addEventListener('click', () => {
-                    if (dateInput) dateInput.value = '';
+                    if (customDateInput) customDateInput.value = '';
+                    if (nativeDatePicker) nativeDatePicker.value = '';
+                    customSelectedDate = '';
                     clearDateBtn.classList.add('d-none');
+                    setActiveFilterBtn('this_month');
                     fetchSalesReport();
                 });
             }
 
-            if (thisMonthBtn) {
-                thisMonthBtn.addEventListener('click', () => {
-                    const now = new Date();
-                    if (yearSelect) yearSelect.value = now.getFullYear();
-                    if (monthSelect) monthSelect.value = (now.getMonth() + 1);
-                    if (dateInput) dateInput.value = '';
-                    if (clearDateBtn) clearDateBtn.classList.add('d-none');
-                    fetchSalesReport();
-                });
-            }
+            if (yearSelect) yearSelect.addEventListener('change', () => {
+                fetchSalesReport();
+            });
 
-            if (todayBtn) {
-                todayBtn.addEventListener('click', () => {
-                    const now = new Date();
-                    const y = now.getFullYear();
-                    const m = String(now.getMonth() + 1).padStart(2, '0');
-                    const d = String(now.getDate()).padStart(2, '0');
-                    const dateStr = `${y}-${m}-${d}`;
-                    if (yearSelect) yearSelect.value = y;
-                    if (monthSelect) monthSelect.value = (now.getMonth() + 1);
-                    if (dateInput) {
-                        dateInput.value = dateStr;
-                        if (clearDateBtn) clearDateBtn.classList.remove('d-none');
+            if (monthSelect) monthSelect.addEventListener('change', () => {
+                fetchSalesReport();
+            });
+
+            // ==========================================
+            // Excel Export Modal & Live Preview
+            // ==========================================
+            const exportModalEl = document.getElementById('salesExportExcelModal');
+            const exportTimeframeInput = document.getElementById('exportTimeframeInput');
+            const exportYearInput = document.getElementById('exportYearInput');
+            const exportMonthInput = document.getElementById('exportMonthInput');
+            const exportDateInput = document.getElementById('exportDateInput');
+            const exportModalScopeText = document.getElementById('exportModalScopeText');
+            const exportModalFilterBadge = document.getElementById('exportModalFilterBadge');
+
+            const headerBgInput = document.getElementById('excelHeaderBg');
+            const headerBgPicker = document.getElementById('excelHeaderBgPicker');
+            const headerTextInput = document.getElementById('excelHeaderText');
+            const headerTextPicker = document.getElementById('excelHeaderTextPicker');
+            const bodyTextInput = document.getElementById('excelBodyText');
+            const bodyTextPicker = document.getElementById('excelBodyTextPicker');
+            const accentColorInput = document.getElementById('excelAccentColor');
+            const accentColorPicker = document.getElementById('excelAccentColorPicker');
+            const rowBgInput = document.getElementById('excelRowBg');
+            const rowBgPicker = document.getElementById('excelRowBgPicker');
+            const summaryColorInput = document.getElementById('excelSummaryColor');
+            const summaryColorPicker = document.getElementById('excelSummaryColorPicker');
+
+            function syncColorPair(textInput, pickerInput) {
+                if (!textInput || !pickerInput) return;
+                pickerInput.addEventListener('input', function () {
+                    textInput.value = this.value.toUpperCase();
+                    updateExcelPreview();
+                });
+                textInput.addEventListener('input', function () {
+                    let val = this.value.trim();
+                    if (!val.startsWith('#')) val = '#' + val;
+                    if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                        pickerInput.value = val;
+                        updateExcelPreview();
                     }
-                    fetchSalesReport();
+                });
+            }
+
+            syncColorPair(headerBgInput, headerBgPicker);
+            syncColorPair(headerTextInput, headerTextPicker);
+            syncColorPair(bodyTextInput, bodyTextPicker);
+            syncColorPair(accentColorInput, accentColorPicker);
+            syncColorPair(rowBgInput, rowBgPicker);
+            syncColorPair(summaryColorInput, summaryColorPicker);
+
+            function updateExcelPreview() {
+                const hBg = headerBgInput ? headerBgInput.value : '#443627';
+                const hText = headerTextInput ? headerTextInput.value : '#FFFFFF';
+                const bText = bodyTextInput ? bodyTextInput.value : '#212529';
+                const accent = accentColorInput ? accentColorInput.value : '#6A4435';
+                const rBg = rowBgInput ? rowBgInput.value : '#F8F9FA';
+                const sColor = summaryColorInput ? summaryColorInput.value : '#2E7D32';
+
+                const secHeader = document.getElementById('prevSectionHeader');
+                if (secHeader) {
+                    secHeader.style.color = accent;
+                    secHeader.style.borderBottomColor = accent;
+                }
+
+                const prevHdrRow = document.getElementById('prevHeaderRow');
+                if (prevHdrRow) {
+                    prevHdrRow.style.backgroundColor = hBg;
+                    prevHdrRow.style.color = hText;
+                }
+
+                const prevRow1 = document.getElementById('prevRow1');
+                if (prevRow1) {
+                    prevRow1.style.color = bText;
+                    prevRow1.style.backgroundColor = '#FFFFFF';
+                }
+
+                const prevRow2 = document.getElementById('prevRow2');
+                if (prevRow2) {
+                    prevRow2.style.color = bText;
+                    prevRow2.style.backgroundColor = rBg;
+                }
+
+                const prevTotalRow = document.getElementById('prevTotalRow');
+                if (prevTotalRow) {
+                    prevTotalRow.style.borderTopColor = sColor;
+                    prevTotalRow.style.backgroundColor = rBg;
+                }
+
+                const prevTotalLabel = document.getElementById('prevTotalLabel');
+                const prevTotalValue = document.getElementById('prevTotalValue');
+                if (prevTotalLabel) prevTotalLabel.style.color = sColor;
+                if (prevTotalValue) prevTotalValue.style.color = sColor;
+            }
+
+            const presetBtns = document.querySelectorAll('.excel-preset-btn');
+            presetBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    presetBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const hBg = this.getAttribute('data-header-bg');
+                    const hText = this.getAttribute('data-header-text');
+                    const bText = this.getAttribute('data-body-text');
+                    const accent = this.getAttribute('data-accent');
+                    const rBg = this.getAttribute('data-row-bg');
+                    const summary = this.getAttribute('data-summary');
+
+                    if (headerBgInput) headerBgInput.value = hBg;
+                    if (headerBgPicker) headerBgPicker.value = hBg;
+                    if (headerTextInput) headerTextInput.value = hText;
+                    if (headerTextPicker) headerTextPicker.value = hText;
+                    if (bodyTextInput) bodyTextInput.value = bText;
+                    if (bodyTextPicker) bodyTextPicker.value = bText;
+                    if (accentColorInput) accentColorInput.value = accent;
+                    if (accentColorPicker) accentColorPicker.value = accent;
+                    if (rowBgInput) rowBgInput.value = rBg;
+                    if (rowBgPicker) rowBgPicker.value = rBg;
+                    if (summaryColorInput) summaryColorInput.value = summary;
+                    if (summaryColorPicker) summaryColorPicker.value = summary;
+
+                    updateExcelPreview();
+                });
+            });
+
+            if (exportModalEl) {
+                exportModalEl.addEventListener('show.bs.modal', function () {
+                    const yVal = yearSelect ? yearSelect.value : new Date().getFullYear();
+                    const mVal = monthSelect ? monthSelect.value : (new Date().getMonth() + 1);
+
+                    if (exportTimeframeInput) exportTimeframeInput.value = activeSalesFilter;
+                    if (exportYearInput) exportYearInput.value = yVal;
+                    if (exportMonthInput) exportMonthInput.value = mVal;
+
+                    let dateToExport = '';
+                    if (activeSalesFilter === 'custom' && customSelectedDate) {
+                        dateToExport = customSelectedDate;
+                    } else if (activeSalesFilter === 'today') {
+                        const now = new Date();
+                        dateToExport = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+                    }
+                    if (exportDateInput) exportDateInput.value = dateToExport;
+
+                    if (exportModalScopeText) {
+                        exportModalScopeText.textContent = (cachedSalesData && cachedSalesData.period_title)
+                            ? cachedSalesData.period_title
+                            : 'Selected Reporting Period';
+                    }
+
+                    if (exportModalFilterBadge) {
+                        exportModalFilterBadge.textContent = activeSalesFilter.replace('_', ' ').toUpperCase();
+                    }
+
+                    updateExcelPreview();
                 });
             }
 
@@ -955,7 +1317,8 @@
                 });
             }
 
-            // Initial fetch
+            // Initial fetch defaulting to Today
+            setActiveFilterBtn('today');
             fetchSalesReport();
 
             // Real-time synchronization every 5 seconds with Receptionist billing and transactions
@@ -1466,6 +1829,12 @@
                                         overlay.className = 'position-absolute top-0 start-0 w-100 h-100 ' + targetOverlayClass;
                                         if (targetOverlayClass === 'overlay-overdue') {
                                             overlay.textContent = 'OVERDUE';
+                                        } else if (targetOverlayClass === 'overlay-occupied') {
+                                            overlay.textContent = 'OCCUPIED';
+                                        } else if (targetOverlayClass === 'overlay-reserved') {
+                                            overlay.textContent = 'RESERVED';
+                                        } else if (targetOverlayClass === 'overlay-maintenance') {
+                                            overlay.textContent = 'UNDER MAINTENANCE';
                                         }
                                         wrapper.appendChild(overlay);
                                     }

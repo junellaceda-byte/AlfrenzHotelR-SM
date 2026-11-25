@@ -1,26 +1,33 @@
 /* Gray overlay for Occupied rooms */
 .overlay-occupied {
-    background-color: rgba(100, 100, 100, 0.6);
+    background-color: rgba(100, 100, 100, 0.65);
 }
 
-/* Red diagonal stripe overlay for Maintenance rooms */
+/* Transparent orange overlay for Overdue Occupied rooms */
+.overlay-overdue {
+    background-color: rgba(232, 123, 44, 0.78);
+}
+
+/* Muted Rose diagonal stripe overlay for Maintenance rooms */
 .overlay-maintenance {
     background: repeating-linear-gradient(
         45deg,
-        rgba(220, 53, 69, 0.5),
-        rgba(220, 53, 69, 0.5) 10px,
-        rgba(220, 53, 69, 0.2) 10px,
-        rgba(220, 53, 69, 0.2) 20px
+        rgba(163, 70, 101, 0.75),
+        rgba(163, 70, 101, 0.75) 10px,
+        rgba(163, 70, 101, 0.4) 10px,
+        rgba(163, 70, 101, 0.4) 20px
     );
 }
 
-/* Dark Charcoal overlay with low opacity for Reserved rooms */
+/* Blue overlay for Reserved rooms */
 .overlay-reserved {
-    background-color: rgba(37, 40, 189, 0.6); /* 54, 69, 79 is Dark Charcoal */
+    background-color: rgba(33, 115, 237, 0.7);
 }
 
 /* Text overlay typography and centering for room tiles */
+.overlay-available,
 .overlay-occupied,
+.overlay-overdue,
 .overlay-reserved,
 .overlay-maintenance {
     display: flex;
@@ -31,7 +38,7 @@
     font-weight: 800;
     letter-spacing: 0.08em;
     color: #ffffff;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 3px 4px rgba(0, 0, 0, 0.6);
     line-height: 1.25;
     padding: 0.5rem;
     box-sizing: border-box;
@@ -45,15 +52,20 @@
 }
 
 /* If the room is Overdue, ensure hover does not show Add Amenities and overdue overlay stays visible */
+.hotel-room-card.is-overdue .card-hover-action,
 .hotel-room-card.is-overdue:hover .card-hover-action,
+.hotel-room-card:has(.overlay-overdue) .card-hover-action,
 .hotel-room-card:has(.overlay-overdue):hover .card-hover-action {
     opacity: 0 !important;
     pointer-events: none !important;
     display: none !important;
 }
 
+.hotel-room-card.is-overdue .overlay-overdue,
 .hotel-room-card.is-overdue:hover .overlay-overdue,
+.hotel-room-card:has(.overlay-overdue) .overlay-overdue,
 .hotel-room-card:has(.overlay-overdue):hover .overlay-overdue {
     opacity: 1 !important;
     display: flex !important;
+    pointer-events: auto !important;
 }

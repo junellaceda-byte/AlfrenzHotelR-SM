@@ -19,6 +19,7 @@ use App\Models\Staff;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\ActivityLogService;
+use App\Services\SalesReportExcelExportService;
 use App\Services\SystemFormatService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -36,7 +37,10 @@ Route::get('/', function () {
 
 // GET Route to view the Login Page
 Route::get('/login', function (Request $request) {
-    if ($request->has('logout')) {
+    if ($request->has('logout') || session('staff_id')) {
+        if ($staffId = session('staff_id')) {
+            Staff::where('id', $staffId)->update(['is_online' => false, 'last_seen_at' => now()]);
+        }
         session()->forget(['staff_id', 'staff_name', 'staff_username', 'admin_id', 'role', 'user_id']);
         session()->flush();
     }
@@ -108,6 +112,12 @@ Route::post('/login', function (Request $request) {
                 'staff_name' => trim($staff->first_name.' '.$staff->last_name),
                 'staff_username' => $staff->username,
                 'role' => 'receptionist',
+                'receptionist_last_activity' => now()->timestamp,
+            ]);
+
+            $staff->update([
+                'is_online' => true,
+                'last_seen_at' => now(),
             ]);
 
             // Record Receptionist Login activity exclusively
@@ -122,6 +132,13 @@ Route::post('/login', function (Request $request) {
 
 // Route to Logout
 Route::match(['get', 'post'], '/logout', function () {
+    if ($staffId = session('staff_id')) {
+        Staff::where('id', $staffId)->update([
+            'is_online' => false,
+            'last_seen_at' => now(),
+        ]);
+    }
+
     session()->forget(['staff_id', 'staff_name', 'staff_username', 'admin_id', 'role', 'user_id']);
     session()->flush();
 
@@ -232,7 +249,7 @@ Route::get('/admindashboard', function (Request $request) {
         ->orderByDesc('created_at')
         ->orderByDesc('id')
         ->paginate(15)
-        ->withQueryString();
+        ->appends(array_merge($request->query(), ['section' => 'activities']));
 
     // Pass the variables to the admindash layout
     return view('Administrator.layout.admindash', compact(
@@ -340,7 +357,7 @@ Route::put('/admin/settings', function (Request $request) {
 
     // Update Administrator credentials if provided (for backwards compatibility)
     if (! empty($validated['username'])) {
-        $admin = User::first() ?? new User;
+        $admin = (session('admin_id') ? User::find(session('admin_id')) : null) ?? User::first() ?? new User;
         $admin->username = $validated['username'];
         $admin->user_id = $validated['username'];
 
@@ -351,6 +368,13 @@ Route::put('/admin/settings', function (Request $request) {
         }
 
         $admin->save();
+
+        if (session('role') === 'admin') {
+            session([
+                'admin_id' => $admin->id,
+                'user_id' => $admin->username,
+            ]);
+        }
     }
 
     return redirect('/admindashboard?section=settings')->with('success', 'System timestamp format settings updated successfully.');
@@ -360,23 +384,20 @@ Route::put('/admin/settings', function (Request $request) {
 Route::put('/admin/credentials', function (Request $request) {
     $validated = $request->validate([
         'username' => ['required', 'string', 'max:255'],
-        'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+        'password' => ['required', 'string', 'min:6', 'confirmed'],
     ]);
 
-    $admin = User::first() ?? new User;
+    $admin = (session('admin_id') ? User::find(session('admin_id')) : null) ?? User::first() ?? new User;
     $admin->username = $validated['username'];
     $admin->user_id = $validated['username'];
-
-    if (! empty($validated['password'])) {
-        $admin->password = Hash::make($validated['password']);
-    } elseif (! $admin->exists) {
-        $admin->password = Hash::make('admin123');
-    }
-
+    $admin->password = Hash::make($validated['password']);
     $admin->save();
 
     if (session('role') === 'admin') {
-        session(['user_id' => $admin->username]);
+        session([
+            'admin_id' => $admin->id,
+            'user_id' => $admin->username,
+        ]);
     }
 
     $redirectSection = $request->input('section', 'accman');
@@ -404,12 +425,25 @@ Route::post('/amenities/store', function (Request $request) {
         'name' => 'required|string|max:255',
         'price' => 'required|numeric',
         'charged' => 'required|string|max:255',
+        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
     ]);
 
-    // 2. Set default offered status to true
+    // 2. Process image upload if provided
+    if ($request->hasFile('image') && $request->file('image')->isValid()) {
+        $file = $request->file('image');
+        $filename = 'amenity_'.time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+        $destinationPath = public_path('images/amenities');
+        if (! file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+        $file->move($destinationPath, $filename);
+        $validated['image'] = 'images/amenities/'.$filename;
+    }
+
+    // 3. Set default offered status to true
     $validated['offered'] = true;
 
-    // 3. Save the new amenity into the database
+    // 4. Save the new amenity into the database
     $amenity = Amenity::create($validated);
 
     if ($request->wantsJson()) {
@@ -420,7 +454,7 @@ Route::post('/amenities/store', function (Request $request) {
         ]);
     }
 
-    // 4. Redirect the user straight back to the Amenities tab
+    // 5. Redirect the user straight back to the Amenities tab
     return redirect('/admindashboard?section=amenity')->with('success', 'Amenity created successfully.');
 });
 
@@ -431,9 +465,30 @@ Route::put('/amenities/{id}/update', function (Request $request, $id) {
         'price' => 'required|numeric',
         'charged' => 'required|string|max:255',
         'offered' => 'required|boolean',
+        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
     ]);
 
     $amenity = Amenity::findOrFail($id);
+
+    // Process replacement image if uploaded; otherwise retain existing image
+    if ($request->hasFile('image') && $request->file('image')->isValid()) {
+        $file = $request->file('image');
+        $filename = 'amenity_'.time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+        $destinationPath = public_path('images/amenities');
+        if (! file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+        $file->move($destinationPath, $filename);
+
+        if (! empty($amenity->image) && file_exists(public_path($amenity->image)) && ! str_contains($amenity->image, 'default-amenity')) {
+            @unlink(public_path($amenity->image));
+        }
+
+        $validated['image'] = 'images/amenities/'.$filename;
+    } else {
+        unset($validated['image']);
+    }
+
     $amenity->update($validated);
 
     if ($request->wantsJson()) {
@@ -468,6 +523,11 @@ Route::post('/amenities/{id}/toggle', function (Request $request, $id) {
 // Route to Delete an Amenity
 Route::delete('/amenities/{id}/delete', function (Request $request, $id) {
     $amenity = Amenity::findOrFail($id);
+
+    if (! empty($amenity->image) && file_exists(public_path($amenity->image)) && ! str_contains($amenity->image, 'default-amenity')) {
+        @unlink(public_path($amenity->image));
+    }
+
     $amenity->delete();
 
     if ($request->wantsJson()) {
@@ -525,6 +585,13 @@ Route::put('/staff/{id}/update', function (Request $request, $id) {
 
     $staff = Staff::findOrFail($id);
     $staff->update($validated);
+
+    if (session('staff_id') == $staff->id) {
+        session([
+            'staff_username' => $staff->username,
+            'staff_name' => trim($staff->first_name.' '.$staff->last_name),
+        ]);
+    }
 
     $redirectSection = $request->input('section');
     if (! $redirectSection) {
@@ -614,8 +681,38 @@ Route::get('/api/admin/revenue-stats', [DashboardApiController::class, 'revenueS
 Route::get('/api/admin/stay-type-stats', [DashboardApiController::class, 'stayTypeStats'])->name('api.admin.stay-type-stats');
 Route::get('/api/admin/notifications', [DashboardApiController::class, 'adminNotifications'])->name('api.admin.notifications');
 Route::get('/api/admin/sales-report', [DashboardApiController::class, 'salesReport'])->name('api.admin.sales-report');
+Route::get('/api/admin/sales-report/amenities-comparison', [DashboardApiController::class, 'amenitiesComparison'])->name('api.admin.sales-report.amenities-comparison');
 Route::post('/api/admin/monthly-target', [DashboardApiController::class, 'saveMonthlyTarget'])->name('api.admin.monthly-target');
 Route::get('/api/amenities', [DashboardApiController::class, 'amenities'])->name('api.amenities');
+
+// Real-time Staff Statuses API (Online / Offline status tracking for Account Management)
+Route::get('/api/admin/staff/statuses', function () {
+    $staffs = Staff::select(['id', 'first_name', 'last_name', 'username', 'is_online', 'last_seen_at'])
+        ->with('latestActivity')
+        ->get()
+        ->map(function ($staff) {
+            $isOnline = $staff->is_online;
+            $latestAct = $staff->latestActivity;
+
+            return [
+                'id' => $staff->id,
+                'name' => trim($staff->first_name.' '.$staff->last_name),
+                'username' => $staff->username,
+                'is_online' => $isOnline,
+                'status' => $isOnline ? 'Online' : 'Offline',
+                'badge_class' => $isOnline ? 'bg-success' : 'bg-secondary',
+                'last_active' => $latestAct
+                    ? ($latestAct->formatted_date.' '.$latestAct->formatted_time)
+                    : 'Just now',
+                'last_active_title' => $latestAct?->formatted_datetime ?? 'Just now',
+            ];
+        });
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $staffs,
+    ]);
+})->name('api.admin.staff.statuses');
 
 // Real-time Activity Logs API
 Route::get('/api/admin/activities', function (Request $request) {
@@ -669,11 +766,35 @@ Route::get('/api/admin/activities', function (Request $request) {
         'last_page' => $logs->lastPage(),
         'per_page' => $logs->perPage(),
         'total' => $logs->total(),
+        'from' => $logs->firstItem(),
+        'to' => $logs->lastItem(),
     ]);
 })->name('api.admin.activities');
 
-// Sales Report CSV Export
+// Sales Report CSV & Customizable Excel (.xlsx) Export
 Route::get('/admin/sales-report/export', function (Request $request) {
+    $format = strtolower((string) $request->input('format', ''));
+
+    if ($format === 'xlsx' || $request->has('header_bg')) {
+        $filterParams = [
+            'timeframe' => $request->input('timeframe'),
+            'year' => $request->input('year'),
+            'month' => $request->input('month'),
+            'date' => $request->input('date'),
+        ];
+
+        $colors = [
+            'header_bg' => (string) $request->input('header_bg', '#443627'),
+            'header_text' => (string) $request->input('header_text', '#FFFFFF'),
+            'body_text' => (string) $request->input('body_text', '#212529'),
+            'accent_color' => (string) $request->input('accent_color', '#6A4435'),
+            'row_bg' => (string) $request->input('row_bg', '#F8F9FA'),
+            'summary_color' => (string) $request->input('summary_color', '#2E7D32'),
+        ];
+
+        return app(SalesReportExcelExportService::class)->export($filterParams, $colors);
+    }
+
     $now = now()->setTimezone('Asia/Manila');
     $currentYear = (int) $now->format('Y');
     $currentMonth = (int) $now->format('n');

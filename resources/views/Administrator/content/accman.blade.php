@@ -1,6 +1,6 @@
 <link rel="stylesheet" href="{{ asset('CSS/Administrator/staff.css') }}">
 
-<div class="card border rounded p-3 p-sm-4 h-100 shadow-sm">
+<div class="card border rounded p-3 p-sm-4 h-100 shadow-sm" style="background-color: #F5F7DF;">
 
     <!-- Top Header Area -->
     <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start align-items-sm-center mb-3 mb-sm-4">
@@ -55,8 +55,8 @@
     </div>
 
     <!-- Accounts Box Container -->
-    <div class="border rounded overflow-hidden flex-grow-1 bg-white staff-table-wrapper">
-        <div class="table-responsive w-100">
+    <div class="border rounded overflow-hidden flex-grow-1 staff-table-wrapper" style="background-color: #F5F7DF;">
+        <div class="table-responsive w-100" style="background-color: #F5F7DF;">
             <table class="table table-hover mb-0 align-middle staff-table">
                 <colgroup>
                     <col class="col-staff-employee">
@@ -66,15 +66,15 @@
                     <col class="col-staff-lastactive">
                     <col class="col-staff-actions d-none d-md-table-cell">
                 </colgroup>
-                <thead class="table-light border-bottom">
+                <thead class="border-bottom" style="background-color: #443627; color: #ffffff;">
                     <tr>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4">Employee</th>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4">Email</th>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4">Contact Number</th>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4">Status</th>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4">Last active</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-white" style="background-color: #443627; color: #ffffff;">Employee</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-white" style="background-color: #443627; color: #ffffff;">Email</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-white" style="background-color: #443627; color: #ffffff;">Contact Number</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-white" style="background-color: #443627; color: #ffffff;">Status</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-white" style="background-color: #443627; color: #ffffff;">Last active</th>
                         <!-- Desktop Actions Header (hidden on mobile) -->
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-end d-none d-md-table-cell">Actions</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-end d-none d-md-table-cell text-white" style="background-color: #443627; color: #ffffff;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -87,7 +87,11 @@
                             <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 staff-cell-contact">{{ $staff->contact_number }}
                             </td>
                             <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 staff-cell-status">
-                                <span class="badge bg-success rounded-pill">Active</span>
+                                @if($staff->is_online)
+                                    <span class="badge bg-success rounded-pill px-2.5 py-1.5 fw-semibold staff-status-badge" data-staff-id="{{ $staff->id }}">Online</span>
+                                @else
+                                    <span class="badge bg-secondary rounded-pill px-2.5 py-1.5 fw-semibold staff-status-badge" data-staff-id="{{ $staff->id }}">Offline</span>
+                                @endif
                             </td>
                             <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-muted text-nowrap staff-cell-lastactive">
                                 @php
@@ -150,7 +154,7 @@
     </div>
 
     <!-- Administrator Credentials Section (Immediately after Receptionist Credentials) -->
-    <div class="card p-4 border rounded shadow-sm mt-4 bg-white" id="adminCredentialsSection">
+    <div class="card p-4 border rounded shadow-sm mt-4" style="background-color: #F5F7DF;" id="adminCredentialsSection">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h5 class="fw-bold mb-1" style="color: #443627;">Administrator Credentials</h5>
@@ -176,7 +180,7 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.credentials.update') }}" method="POST">
+        <form id="adminCredentialsForm" action="{{ route('admin.credentials.update') }}" method="POST">
             @csrf
             @method('PUT')
             <input type="hidden" name="section" value="accman">
@@ -194,28 +198,32 @@
                 </div>
 
                 <div class="col-md-4">
-                    <label for="admin_acc_password" class="form-label fw-semibold text-secondary small text-uppercase">New Password</label>
+                    <label for="admin_acc_password" class="form-label fw-semibold text-secondary small text-uppercase">New Password <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <input type="password"
                                class="form-control"
                                id="admin_acc_password"
                                name="password"
-                               placeholder="Leave blank to keep current">
+                               placeholder="Enter new password"
+                               minlength="6"
+                               required>
                         <button class="btn btn-outline-secondary toggle-admin-password" type="button" data-target="admin_acc_password" title="Toggle password visibility">
                             <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/></svg>
                         </button>
                     </div>
-                    <small class="text-muted">Minimum 6 characters. Leave empty to preserve current password.</small>
+                    <small class="text-muted">Minimum 6 characters. Password is required to save credentials.</small>
                 </div>
 
                 <div class="col-md-4">
-                    <label for="admin_acc_password_confirmation" class="form-label fw-semibold text-secondary small text-uppercase">Confirm New Password</label>
+                    <label for="admin_acc_password_confirmation" class="form-label fw-semibold text-secondary small text-uppercase">Confirm New Password <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <input type="password"
                                class="form-control"
                                id="admin_acc_password_confirmation"
                                name="password_confirmation"
-                               placeholder="Re-enter new password">
+                               placeholder="Re-enter new password"
+                               minlength="6"
+                               required>
                         <button class="btn btn-outline-secondary toggle-admin-password" type="button" data-target="admin_acc_password_confirmation" title="Toggle password visibility">
                             <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/></svg>
                         </button>
@@ -225,7 +233,11 @@
             </div>
 
             <div class="d-flex justify-content-end">
-                <button type="submit" class="btn text-white fw-semibold px-4 py-2" style="background-color: #443627; border-color: #443627;">
+                <button type="submit"
+                        id="saveAdminCredentialsBtn"
+                        class="btn text-white fw-semibold px-4 py-2 opacity-50"
+                        style="background-color: #443627; border-color: #443627; cursor: not-allowed;"
+                        disabled>
                     Save Administrator Credentials
                 </button>
             </div>
@@ -250,6 +262,106 @@
                 }
             });
         });
+
+        // Administrator Credentials Save Button State Handling
+        var adminPasswordInput = document.getElementById('admin_acc_password');
+        var adminPasswordConfirm = document.getElementById('admin_acc_password_confirmation');
+        var adminUsernameInput = document.getElementById('admin_acc_username');
+        var saveAdminBtn = document.getElementById('saveAdminCredentialsBtn');
+        var adminForm = document.getElementById('adminCredentialsForm');
+
+        function updateAdminSaveButtonState() {
+            if (!saveAdminBtn) return;
+
+            var passwordVal = adminPasswordInput ? adminPasswordInput.value : '';
+            var usernameVal = adminUsernameInput ? adminUsernameInput.value.trim() : '';
+
+            // Ensure Save button remains disabled/locked whenever Password field is empty.
+            // Only enable when a valid password (minimum 6 characters) has been entered and username is non-empty.
+            var isPasswordValid = passwordVal.trim().length >= 6;
+            var isUsernameValid = usernameVal.length > 0;
+
+            if (isPasswordValid && isUsernameValid) {
+                saveAdminBtn.disabled = false;
+                saveAdminBtn.removeAttribute('disabled');
+                saveAdminBtn.classList.remove('opacity-50');
+                saveAdminBtn.style.cursor = 'pointer';
+            } else {
+                saveAdminBtn.disabled = true;
+                saveAdminBtn.setAttribute('disabled', 'disabled');
+                saveAdminBtn.classList.add('opacity-50');
+                saveAdminBtn.style.cursor = 'not-allowed';
+            }
+        }
+
+        if (adminPasswordInput) {
+            adminPasswordInput.addEventListener('input', updateAdminSaveButtonState);
+            adminPasswordInput.addEventListener('change', updateAdminSaveButtonState);
+            adminPasswordInput.addEventListener('keyup', updateAdminSaveButtonState);
+        }
+
+        if (adminUsernameInput) {
+            adminUsernameInput.addEventListener('input', updateAdminSaveButtonState);
+            adminUsernameInput.addEventListener('change', updateAdminSaveButtonState);
+            adminUsernameInput.addEventListener('keyup', updateAdminSaveButtonState);
+        }
+
+        if (adminPasswordConfirm) {
+            adminPasswordConfirm.addEventListener('input', updateAdminSaveButtonState);
+            adminPasswordConfirm.addEventListener('change', updateAdminSaveButtonState);
+            adminPasswordConfirm.addEventListener('keyup', updateAdminSaveButtonState);
+        }
+
+        if (adminForm) {
+            adminForm.addEventListener('submit', function (e) {
+                var passwordVal = adminPasswordInput ? adminPasswordInput.value : '';
+                if (!passwordVal || passwordVal.trim().length < 6) {
+                    e.preventDefault();
+                    if (adminPasswordInput) adminPasswordInput.focus();
+                    updateAdminSaveButtonState();
+                    return false;
+                }
+            });
+        }
+
+        updateAdminSaveButtonState();
+
+        // Real-time Staff Status Polling (Online / Offline status tracking)
+        function syncStaffStatuses() {
+            fetch('/api/admin/staff/statuses')
+                .then(function (res) { return res.json(); })
+                .then(function (res) {
+                    if (res && res.status === 'success' && Array.isArray(res.data)) {
+                        res.data.forEach(function (staff) {
+                            var badge = document.querySelector('.staff-status-badge[data-staff-id="' + staff.id + '"]');
+                            if (badge) {
+                                if (staff.is_online) {
+                                    badge.className = 'badge bg-success rounded-pill px-2.5 py-1.5 fw-semibold staff-status-badge';
+                                    badge.textContent = 'Online';
+                                } else {
+                                    badge.className = 'badge bg-secondary rounded-pill px-2.5 py-1.5 fw-semibold staff-status-badge';
+                                    badge.textContent = 'Offline';
+                                }
+                            }
+
+                            var row = document.querySelector('tr.staff-row[data-id="' + staff.id + '"]');
+                            if (row) {
+                                var lastActiveCell = row.querySelector('.staff-cell-lastactive');
+                                if (lastActiveCell && staff.last_active) {
+                                    lastActiveCell.innerHTML = '<span title="' + staff.last_active_title + '">' + staff.last_active + '</span>';
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Error syncing staff statuses:', err);
+                });
+        }
+
+        // Initial real-time sync, then poll staff online/offline status every 2 seconds
+        syncStaffStatuses();
+        setInterval(syncStaffStatuses, 2000);
     });
 </script>
 

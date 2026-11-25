@@ -8,6 +8,7 @@ class Amenity extends Model
 {
     protected $fillable = [
         'name',
+        'image',
         'price',
         'charged',
         'offered',
@@ -17,6 +18,30 @@ class Amenity extends Model
         'price' => 'decimal:2',
         'offered' => 'boolean',
     ];
+
+    /**
+     * Get the resolved URL for the amenity image, with fallback to default cube placeholder.
+     */
+    public function getImageUrlAttribute(): string
+    {
+        if (! empty($this->image)) {
+            if (str_starts_with($this->image, 'http://') || str_starts_with($this->image, 'https://')) {
+                return $this->image;
+            }
+
+            if (file_exists(public_path($this->image))) {
+                return asset($this->image);
+            }
+
+            if (file_exists(public_path('images/amenities/'.$this->image))) {
+                return asset('images/amenities/'.$this->image);
+            }
+
+            return asset($this->image);
+        }
+
+        return asset('images/amenities/default-amenity.svg');
+    }
 
     /**
      * Compatibility accessor for item_name (used in billing & receptionist templates)

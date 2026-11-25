@@ -303,11 +303,15 @@ class ReservationController
             'room_ids' => $reservation->selected_rooms,
             'guests' => $reservation->guests ?? 1,
             'status' => 'checked_in',
-            'deposit' => $reservation->deposit ?? 0,
+            'deposit' => (float) ($reservation->deposit ?? 0),
             'payment_method' => $reservation->payment_method ?? 'cash',
             'ewallet_type' => $reservation->ewallet_type,
             'reference_number' => $reservation->reference_number,
         ]);
+
+        if ((float) ($reservation->deposit ?? 0) > 0 && (! $booking->deposit || (float) $booking->deposit <= 0)) {
+            $booking->update(['deposit' => (float) $reservation->deposit]);
+        }
 
         $reservation->update(['status' => 'checked_in']);
 

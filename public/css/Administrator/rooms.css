@@ -30,6 +30,35 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* Room Summary Cards background color classes filling entire container surfaces */
+.kpi-card-available {
+    background-color: #2BAB2B !important;
+    background: #2BAB2B !important;
+    border: none !important;
+    color: #ffffff !important;
+}
+
+.kpi-card-occupied {
+    background-color: #E87B2C !important;
+    background: #E87B2C !important;
+    border: none !important;
+    color: #ffffff !important;
+}
+
+.kpi-card-reserved {
+    background-color: #A8E036 !important;
+    background: #A8E036 !important;
+    border: none !important;
+    color: #1c2a08 !important;
+}
+
+.kpi-card-maintenance {
+    background-color: #A34665 !important;
+    background: #A34665 !important;
+    border: none !important;
+    color: #ffffff !important;
+}
+
 .hotel-room-card {
     position: relative;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -37,4 +66,51 @@
 
 .hotel-room-card:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Room Status Grid Tile Colors:
+   - Occupied: Gray background
+   - Available: Clear / transparent background
+   - Reserved: Blue overlay
+   - Under Maintenance: Preserved distinct status color (repeating diagonal stripes)
+*/
+.hotel-room-card[data-status="occupied"] .room-image-wrapper {
+    background-color: #646464;
+}
+
+.hotel-room-card[data-status="available"] .room-image-wrapper {
+    background-color: transparent;
+}
+
+/* Occupied Room Hover Interaction:
+   - On Administrator side, keep OCCUPIED text overlay visible on hover
+   - Do NOT display or replace status overlay with Add Amenities button (exclusive to Receptionist side)
+   - Keep the room tile's original gray background color unchanged
+*/
+.hotel-room-card.is-occupied .overlay-occupied,
+.hotel-room-card.is-occupied:hover .overlay-occupied {
+    background-color: rgba(100, 100, 100, 0.65);
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+.hotel-room-card.is-occupied:hover .room-image-wrapper {
+    background-color: #646464 !important;
+}
+
+/* Disable Add Amenities hover button on Administrator side */
+.hotel-room-card .card-hover-action,
+.hotel-room-card:hover .card-hover-action,
+.hotel-room-card.is-occupied .card-hover-action,
+.hotel-room-card.is-occupied:hover .card-hover-action,
+.hotel-room-card.is-overdue .card-hover-action,
+.hotel-room-card.is-overdue:hover .card-hover-action {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    display: none !important;
+}
+
+.hotel-room-card.is-overdue:hover .overlay-overdue {
+    opacity: 1 !important;
+    display: flex !important;
 }

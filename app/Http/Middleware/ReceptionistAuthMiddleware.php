@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Staff;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,10 +31,20 @@ class ReceptionistAuthMiddleware
         $now = now()->timestamp;
 
         if ($lastActivity && ($now - $lastActivity) > (30 * 60)) {
+            Staff::where('id', $staffId)->update([
+                'is_online' => false,
+                'last_seen_at' => now(),
+            ]);
             session()->flush();
 
             return redirect('/login')->with('timeout', 'Your session has expired due to 30 minutes of inactivity. Please log in again.');
         }
+
+        // Keep staff online status and activity timestamp updated
+        Staff::where('id', $staffId)->update([
+            'is_online' => true,
+            'last_seen_at' => now(),
+        ]);
 
         session([
             'receptionist_last_activity' => $now,

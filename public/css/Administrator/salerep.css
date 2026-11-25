@@ -1,4 +1,3 @@
-/* Liquid Glass & Amenities Comparison Styles */
 .liquid-glass-card {
     background: rgba(255, 255, 255, 0.72);
     backdrop-filter: blur(12px);
@@ -28,8 +27,8 @@
 }
 
 .amenity-row {
-    background: rgba(255, 255, 255, 0.55);
-    border: 1px solid rgba(115, 79, 70, 0.12);
+    background: #F5F7DF !important;
+    border: 1px solid rgba(115, 79, 70, 0.15);
     border-radius: 10px;
     padding: 0.75rem 1rem;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -43,7 +42,7 @@
 .amenity-rank-badge {
     min-width: 34px;
     height: 28px;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 700;
     display: inline-flex;
@@ -89,4 +88,145 @@
     background-color: #1b9ce8;
     border-color: #1b9ce8;
     color: #ffffff;
+}
+
+/* ==========================================
+ * Sales Reports Filter Bar & Layout Stability
+ * ========================================== */
+.sales-reports-filter-bar {
+    contain: layout paint;
+}
+
+.sales-filter-title-wrapper {
+    flex: 0 1 320px;
+    min-width: 0;
+}
+
+#salesFilterSubtitle {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================
+ * Sales Reports Filter Buttons & Sliding Highlight
+ * ========================================== */
+.sales-filter-nav-group {
+    display: inline-flex;
+    align-items: center;
+    background-color: #F5F7DF;
+    border: 1px solid rgba(115, 79, 70, 0.3);
+    border-radius: var(--radius-card, 10px);
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+    padding: 3px;
+    gap: 2px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    height: 38px;
+}
+
+/* Smooth sliding highlight element */
+.sales-filter-slider {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 0;
+    width: 0;
+    height: calc(100% - 6px);
+    border-radius: var(--radius-btn, 6px);
+    background-color: #443627;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    pointer-events: none;
+    z-index: 1;
+    box-sizing: border-box;
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+                width 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+                background-color 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Individual Filter Buttons - Fixed, consistent geometry */
+.sales-filter-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none !important;
+    background: transparent !important;
+    color: #443627;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0 14px;
+    height: 30px;
+    border-radius: var(--radius-btn, 6px);
+    z-index: 2;
+    white-space: nowrap;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    cursor: pointer;
+    box-shadow: none !important;
+    outline: none;
+    margin: 0;
+    transition: color 0.25s ease;
+}
+
+.sales-filter-btn:hover {
+    color: #000000;
+}
+
+.sales-filter-btn.active {
+    color: #ffffff !important;
+    font-weight: 600; /* Preserve identical font weight */
+}
+
+.sales-filter-btn:focus,
+.sales-filter-btn:focus-within {
+    box-shadow: none !important;
+    border: none !important;
+    outline: none;
+}
+
+/* Fallback / focus outlines */
+.sales-filter-btn:focus-visible {
+    outline: 2px solid #443627;
+    outline-offset: 1px;
+}
+
+/* ==========================================
+ * Monthly Target Progress Gauge Styling
+ * ========================================== */
+#revenueGaugeChart {
+    width: 100%;
+    min-height: 320px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible !important;
+}
+
+#revenueGaugeChart svg {
+    overflow: visible !important;
+}
+
+#revenueGaugeChart .apexcharts-canvas {
+    margin: 0 auto;
+    overflow: visible !important;
+}
+
+#revenueGaugeChart .apexcharts-datalabel-label {
+    fill: #443627 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+}
+
+#revenueGaugeChart .apexcharts-datalabel-value {
+    fill: #212529 !important;
+    font-size: 24px !important;
+    font-weight: 700 !important;
 }

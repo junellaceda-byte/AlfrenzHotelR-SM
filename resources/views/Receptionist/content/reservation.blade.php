@@ -28,15 +28,15 @@
                         <col style="width: 10%;">
                         <col style="width: 11%;">
                     </colgroup>
-                    <thead class="table-light">
-                        <tr>
-                            <th class="py-3 px-3">Guest</th>
-                            <th class="py-3 px-3">Arrival</th>
-                            <th class="py-3 px-3">Stay</th>
-                            <th class="py-3 px-3">Rooms</th>
-                            <th class="py-3 px-3">Deposit</th>
-                            <th class="py-3 px-3">Status</th>
-                            <th class="py-3 px-3 text-end">Action</th>
+                    <thead style="background-color: #6A4435; color: #ffffff;">
+                        <tr style="background-color: #6A4435; color: #ffffff;">
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Guest</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Arrival</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Stay</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Rooms</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Deposit</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Status</th>
+                            <th class="py-3 px-3 text-end text-white border-0" style="background-color: #6A4435; color: #ffffff;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -58,21 +58,21 @@
                                     }
                                 }
                             @endphp
-                            <tr>
-                                <td class="px-3">
+                            <tr style="background-color: #F2F6D0;">
+                                <td class="px-3" style="background-color: #F2F6D0;">
                                     <div class="fw-semibold">{{ $reservation->guest_name }}</div>
                                     <div class="small text-muted">{{ $reservation->phone_number }}</div>
                                 </td>
-                                <td class="px-3">
+                                <td class="px-3" style="background-color: #F2F6D0;">
                                     <div>{{ \App\Services\SystemFormatService::formatDateTime($arrival) }}</div>
                                 </td>
-                                <td class="px-3">
+                                <td class="px-3" style="background-color: #F2F6D0;">
                                     <div>{{ $stay }}</div>
                                 </td>
-                                <td class="px-3">
+                                <td class="px-3" style="background-color: #F2F6D0;">
                                     <div>{{ $rooms }}</div>
                                 </td>
-                                <td class="px-3">
+                                <td class="px-3" style="background-color: #F2F6D0;">
                                     @if($reservation->deposit > 0)
                                         <div>₱{{ number_format($reservation->deposit, 2) }}</div>
                                         @if($reservation->payment_method === 'ewallet')
@@ -86,7 +86,7 @@
                                         <span class="text-muted">None</span>
                                     @endif
                                 </td>
-                                <td class="px-3">
+                                <td class="px-3" style="background-color: #F2F6D0;">
                                     <div>
                                         @if($reservation->status === 'cancelled')
                                             <span class="text-danger fw-bold">Cancelled</span>
@@ -99,10 +99,10 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="px-3 text-end">
+                                <td class="px-3 text-end" style="background-color: #F2F6D0;">
                                     <div class="d-inline-flex gap-1 justify-content-end text-nowrap">
                                         @if($reservation->status === 'reserved')
-                                            <button type="button" class="btn btn-sm text-white btn-checkin-reservation" style="background-color: #6A4435;"
+                                            <button type="button" class="btn btn-sm text-white btn-checkin-reservation" style="background-color: #000000;"
                                                     data-bs-toggle="modal" data-bs-target="#checkinReservationModal"
                                                     data-action="{{ route('reservation.checkIn', $reservation->id) }}"
                                                     data-name="{{ $reservation->guest_name }}"
@@ -121,8 +121,8 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-4 text-muted" style="height: 180px; vertical-align: middle;">No reservations found</td>
+                            <tr style="background-color: #F2F6D0;">
+                                <td colspan="7" class="text-center py-4 text-muted" style="height: 180px; vertical-align: middle; background-color: #F2F6D0;">No reservations found</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -131,8 +131,8 @@
         </div>
         
         <!-- Footer with Pagination -->
-        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
-            <span class="text-muted small">
+        <div class="card-footer d-flex justify-content-between align-items-center py-3 flex-wrap gap-2 border-0" style="background-color: #6A4435; color: #F5F7DF;">
+            <span class="small" style="color: #F5F7DF;">
                 @if($reservations->total() > 0)
                     Showing {{ $reservations->firstItem() }} to {{ $reservations->lastItem() }} of {{ $reservations->total() }} reservation(s)
                 @else
@@ -173,7 +173,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn text-white" style="background-color: #6A4435;">Confirm check-in</button>
+                    <button type="submit" class="btn text-white" style="background-color: #000000;">Confirm check-in</button>
                 </div>
             </form>
         </div>
@@ -205,6 +205,15 @@
     .reservation-table thead th {
         vertical-align: middle;
         white-space: nowrap;
+    }
+    .reservation-table tbody tr,
+    .reservation-table tbody td {
+        background-color: #F2F6D0 !important;
+        --bs-table-bg: #F2F6D0 !important;
+    }
+    .reservation-table.table-hover > tbody > tr:hover > * {
+        background-color: #E7EBC4 !important;
+        --bs-table-hover-bg: #E7EBC4 !important;
     }
     .reservation-table tbody td {
         vertical-align: middle;

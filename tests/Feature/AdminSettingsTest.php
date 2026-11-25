@@ -56,6 +56,34 @@ class AdminSettingsTest extends TestCase
         $response->assertSee('admin_acc_password', false);
         $response->assertSee('admin_acc_password_confirmation', false);
         $response->assertSee('Save Administrator Credentials');
+        $response->assertSee('id="saveAdminCredentialsBtn"', false);
+        $response->assertSee('disabled', false);
+    }
+
+    public function test_admin_credentials_update_requires_password_and_fails_when_empty(): void
+    {
+        $response = $this->from('/admindashboard?section=accman')->put(route('admin.credentials.update'), [
+            'username' => 'admin_attempt',
+            'password' => '',
+            'password_confirmation' => '',
+            'section' => 'accman',
+        ]);
+
+        $response->assertRedirect('/admindashboard?section=accman');
+        $response->assertSessionHasErrors(['password']);
+    }
+
+    public function test_admin_credentials_update_fails_when_password_is_less_than_six_characters(): void
+    {
+        $response = $this->from('/admindashboard?section=accman')->put(route('admin.credentials.update'), [
+            'username' => 'admin_attempt',
+            'password' => '12345',
+            'password_confirmation' => '12345',
+            'section' => 'accman',
+        ]);
+
+        $response->assertRedirect('/admindashboard?section=accman');
+        $response->assertSessionHasErrors(['password']);
     }
 
     public function test_admin_can_update_credentials_from_account_management(): void

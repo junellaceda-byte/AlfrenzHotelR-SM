@@ -254,4 +254,26 @@ class AdminSalesReportTest extends TestCase
         $response->assertStatus(200);
         $this->assertStringContainsString('Nov 19, 2026', $response->json('period_title'));
     }
+
+    public function test_monthly_target_progress_component_layout_and_typography(): void
+    {
+        $response = $this->get('/admindashboard?section=salerep');
+        $response->assertOk();
+
+        // 1. Container structure and height
+        $response->assertSee('Monthly Target Progress');
+        $response->assertSee('id="revenueGaugeChart"', false);
+        $response->assertSee('min-height: 320px;', false);
+
+        // 2. Initial and dynamic full target text in scripts
+        $response->assertSee("labels: ['Achieved of ₱150,000.00 Goal']", false);
+        $response->assertSee("'Achieved of ' + targetText + ' Goal'", false);
+
+        // 3. CSS styling prevents clipping and ensures readability
+        $salerepCss = file_get_contents(public_path('css/Administrator/salerep.css'));
+        $this->assertStringContainsString('#revenueGaugeChart svg', $salerepCss);
+        $this->assertStringContainsString('overflow: visible !important', $salerepCss);
+        $this->assertStringContainsString('.apexcharts-datalabel-label', $salerepCss);
+        $this->assertStringContainsString('white-space: nowrap !important', $salerepCss);
+    }
 }

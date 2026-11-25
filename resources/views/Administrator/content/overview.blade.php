@@ -11,10 +11,7 @@
                     <div class="d-flex justify-content-between align-items-center h-100">
                         <div class="overflow-hidden">
                             <h4 class="text-dark mt-0 mb-1 mb-sm-2 fs-6 text-truncate">Today's Occupancy</h4>
-                            <div class="fs-4 fs-sm-3 fw-bold text-dark"><span
-                                    id="admin-occupancy-count">{{ $occupancyToday }}</span> <small
-                                    class="fs-6 fw-normal text-dark d-block d-sm-inline">of <span
-                                        id="admin-total-rooms">{{ $totalRooms }}</span> rooms</small></div>
+                            <div class="fs-4 fs-sm-3 fw-bold text-dark"><span id="admin-occupancy-count">{{ $occupancyToday }}</span> <small class="fs-6 fw-normal text-dark d-block d-sm-inline">of <span id="admin-total-rooms">{{ $totalRooms }}</span> rooms</small></div>
                         </div>
                         <img src="{{ asset('images/occupancy.png') }}" alt="Occupancy" class="ms-2 flex-shrink-0"
                             style="width: 55px; height: 55px; object-fit: contain;">
@@ -40,7 +37,7 @@
             <!-- Card 3: Check-ins Today (Blue, 3D Button) -->
             <div class="col-6">
                 <div class="card h-100 rounded p-2 p-sm-3 highlight-blue-3d clickable" data-bs-toggle="modal"
-                    data-bs-target="#checkinsModal" role="button">
+                    data-bs-target="#checkinsModal" role="button" style="background-color: #558eb1;">
                     <div class="d-flex justify-content-between align-items-center h-100">
                         <div class="overflow-hidden">
                             <h4 class="text-white mt-0 mb-1 mb-sm-2 fs-6 text-truncate">Check-ins Today</h4>
@@ -56,7 +53,7 @@
             <!-- Card 4: Check-outs Today (Blue, 3D Button) -->
             <div class="col-6">
                 <div class="card h-100 rounded p-2 p-sm-3 highlight-blue-3d clickable" data-bs-toggle="modal"
-                    data-bs-target="#checkoutsModal" role="button">
+                    data-bs-target="#checkoutsModal" role="button" style="background-color: #558eb1;">
                     <div class="d-flex justify-content-between align-items-center h-100">
                         <div class="overflow-hidden">
                             <h4 class="text-white mt-0 mb-1 mb-sm-2 fs-6 text-truncate">Check-outs Today</h4>
@@ -73,17 +70,17 @@
 
     <!-- Right Side: Notifications Box -->
     <div class="col-12 col-lg-4">
-        <div class="card h-100 border rounded d-flex flex-column">
+        <div class="card h-100 border rounded d-flex flex-column overflow-hidden">
             <!-- Box Header -->
-            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-start p-2 p-sm-3">
-                <h5 class="fw-bold m-0 fs-6 text-dark">NOTIFICATIONS</h5>
-                <small class="text-muted text-end fw-bold" style="font-size: 0.7rem; max-width: 60%; line-height: 1.2;">
+            <div class="card-header border-0 d-flex justify-content-between align-items-start p-2 p-sm-3" style="background-color: #6A4435; color: #ffffff;">
+                <h5 class="fw-bold m-0 fs-6 text-white">NOTIFICATIONS</h5>
+                <small class="text-white-50 text-end fw-bold" style="font-size: 0.7rem; max-width: 60%; line-height: 1.2;">
                     (30 minute alert due of guests check-out time)
                 </small>
             </div>
 
             <!-- Box Body (Scrollable if notifications overflow) -->
-            <div class="card-body flex-grow-1 overflow-auto p-3" style="min-height: 150px; max-height: 300px;">
+            <div class="card-body flex-grow-1 overflow-auto p-3" style="background-color: #F5F7DF; min-height: 150px; max-height: 300px;">
                 <!-- Populated dynamically via /api/admin/notifications -->
                 <div id="admin-notification-list">
                     <div class="text-center text-muted mt-4">
@@ -93,8 +90,8 @@
             </div>
 
             <!-- Box Footer -->
-            <div class="card-footer bg-white border-top text-end p-2 px-3">
-                <a href="#" class="text-decoration-none fw-bold" style="color: #443627; font-size: 0.85rem;"
+            <div class="card-footer border-0 text-end p-2 px-3" style="background-color: #6A4435;">
+                <a href="#" class="text-decoration-none fw-bold" style="color: #F5F7DF; font-size: 0.85rem;"
                     data-bs-toggle="modal" data-bs-target="#adminNotificationsModal">
                     SEE MORE &raquo;
                 </a>
@@ -109,14 +106,14 @@
     <!-- Left Side: Revenue Statistics (Takes up 8 columns to match cards above) -->
     <div class="col-12 col-lg-8">
         <!-- Added h-100 so both cards stretch to equal height -->
-        <div class="card border rounded p-3 p-sm-4 h-100">
+        <div class="card border rounded p-3 p-sm-4 h-100" style="background-color: #cbd09b;">
 
             <div class="d-flex flex-row justify-content-between align-items-center mb-4 gap-3">
-                <h5 class="fw-bold m-0">Revenue Statistics</h5>
+                <h5 class="fw-bold m-0" style="color: #443627;">Revenue Statistics</h5>
 
                 <!-- Responsive Dropdown Filter -->
                 <select id="revenueFilter" class="form-select border-dark fw-bold shadow-sm"
-                    style="width: auto; min-width: 120px; cursor: pointer;">
+                    style="width: auto; min-width: 120px; cursor: pointer; background-color: #a33f3f; color: #e6dacd;">
                     <option value="today" selected>Today</option>
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
@@ -132,11 +129,11 @@
 
     <!-- Right Side: Booking Stay Type (Takes up 4 columns to match Notifications above) -->
     <div class="col-12 col-lg-4">
-        <div class="card border rounded p-3 p-sm-4 h-100 d-flex flex-column">
+        <div class="card border rounded p-3 p-sm-4 h-100 d-flex flex-column" style="background-color: #dbdccc;">
             <!-- Header with Title and Timeframe Filter Options -->
             <div class="d-flex flex-column gap-2 mb-3">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h5 class="fw-bold m-0 fs-6 text-dark">Booking Stay Type</h5>
+                    <h5 class="fw-bold m-0 fs-6" style="color: #443627;">Booking Stay Type</h5>
                     <!-- Timeframe Pill Buttons: Weekly, Monthly, Yearly -->
                     <div class="btn-group btn-group-sm" role="group" aria-label="Booking Stay Type Timeframe"
                         id="stayTypeTimeframeButtons">

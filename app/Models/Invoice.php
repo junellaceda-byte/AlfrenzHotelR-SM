@@ -51,4 +51,23 @@ class Invoice extends Model
     {
         return $this->hasMany(PaymentLog::class);
     }
+
+    /**
+     * Retrieves the advance deposit carried over to this invoice's booking.
+     */
+    public function getAdvanceDepositAttribute(): float
+    {
+        return (float) ($this->booking?->advance_deposit ?? $this->booking?->deposit ?? 0);
+    }
+
+    /**
+     * Calculates the remaining balance due after crediting the advance deposit.
+     */
+    public function getRemainingBalanceAttribute(): float
+    {
+        $deposit = $this->advance_deposit;
+        $grandTotal = (float) $this->grand_total;
+
+        return max(0.0, round($grandTotal - $deposit, 2));
+    }
 }

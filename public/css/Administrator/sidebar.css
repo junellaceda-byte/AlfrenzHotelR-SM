@@ -12,6 +12,6 @@
 
 .hover-box:hover:not(.active-box) {
     background-color: rgba(255, 255, 255, 0.15); /* Subtle white highlight */
-    border-radius: 0.375rem; /* Matches Bootstrap's 'rounded' corners */
+    border-radius: 8px; /* Standardized 6px-8px navigation radius */
     color: #ffffff !important;
 }

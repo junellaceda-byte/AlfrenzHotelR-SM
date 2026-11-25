@@ -1,0 +1,82 @@
+/* ========================================================
+   RECEPTIONIST POPUP MODALS THEME
+   Vintage Brown (#443627) Header & Footer
+   Beige (#F5F7DF) Body
+   Secondary Content (#C5A08A)
+   Cancel Action: Normal clickable text without background
+   ======================================================== */
+
+.modal-content {
+    background-color: #F5F7DF;
+    overflow: hidden;
+    border: none !important;
+}
+
+.modal-header {
+    background-color: #443627 !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(245, 247, 223, 0.15) !important;
+}
+
+.modal-header .modal-title {
+    color: #ffffff !important;
+}
+
+.modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    opacity: 0.85;
+}
+
+.modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+.modal-header .text-muted,
+.modal-header small {
+    color: rgba(245, 247, 223, 0.75) !important;
+}
+
+.modal-body {
+    background-color: #F5F7DF !important;
+    color: #2b2219 !important;
+}
+
+/* Secondary / Grayed text in modals */
+.modal-body .text-muted,
+.modal-body .text-secondary,
+.modal-secondary-text {
+    color: #C5A08A !important;
+}
+
+.modal-footer {
+    background-color: #443627 !important;
+    color: #ffffff !important;
+    border-top: 1px solid rgba(245, 247, 223, 0.15) !important;
+}
+
+/* Cancel Action: Normal clickable text instead of a button with background */
+.modal-footer .btn-secondary,
+.modal-footer .btn-cancel-text {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #F5F7DF !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    padding: 0.375rem 0.75rem !important;
+    font-weight: 600 !important;
+    transition: color 0.15s ease-in-out, opacity 0.15s ease-in-out !important;
+}
+
+.modal-footer .btn-secondary:hover,
+.modal-footer .btn-secondary:focus,
+.modal-footer .btn-cancel-text:hover,
+.modal-footer .btn-cancel-text:focus {
+    color: #ffffff !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    opacity: 0.9 !important;
+}

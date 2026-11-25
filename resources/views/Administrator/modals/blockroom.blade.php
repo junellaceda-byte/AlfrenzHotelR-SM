@@ -1,14 +1,14 @@
 <!-- Admin Block Room (Maintenance) Modal -->
 <div class="modal fade" id="adminBlockRoomModal" tabindex="-1" aria-labelledby="adminBlockRoomModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold text-dark" id="adminBlockRoomModalLabel">Block Room for Maintenance</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow overflow-hidden">
+            <div class="modal-header border-0 pb-2 text-white" style="background-color: #443627;">
+                <h5 class="modal-title fw-bold text-white" id="adminBlockRoomModalLabel">Block Room for Maintenance</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="adminBlockRoomForm" method="POST" action="{{ route('room-block.store') }}" novalidate>
                 @csrf
-                <div class="modal-body p-4">
+                <div class="modal-body p-4" style="background-color: #F5F7DF;">
                     <p class="small text-muted mb-3">Choose the start and end dates/times for room maintenance.</p>
 
                     <div class="row g-2 mb-3">
@@ -60,9 +60,9 @@
                         @endforelse
                     </div>
                 </div>
-                <div class="modal-footer border-0 pt-0">
+                <div class="modal-footer border-0" style="background-color: #443627;">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-brown fw-bold px-3">Block Room</button>
+                    <button type="submit" class="btn fw-bold px-3" style="background-color: #F5F7DF; color: #443627;">Block Room</button>
                 </div>
             </form>
         </div>

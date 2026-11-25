@@ -171,8 +171,8 @@
                     hiddenHtml += '<input type="hidden" name="amenities[' + index + '][notes]" value="' + escapeHtmlLocal(item.notes || '') + '">';
 
                     html += '<div class="list-group-item bg-white rounded border p-2 mb-1 d-flex align-items-center justify-content-between" data-index="' + index + '">' +
-                        '<div class="me-2 text-truncate" style="max-width: 175px;">' +
-                            '<div class="fw-bold text-dark small text-truncate" title="' + escapeHtmlLocal(item.name) + '">' + escapeHtmlLocal(item.name) + '</div>' +
+                        '<div class="me-2 overflow-hidden text-nowrap" style="max-width: 175px;">' +
+                            '<div class="fw-bold text-dark small overflow-hidden text-nowrap" title="' + escapeHtmlLocal(item.name) + '">' + escapeHtmlLocal(item.name) + '</div>' +
                             '<div class="text-muted" style="font-size: 0.72rem;">' +
                                 '₱' + formatMoneyLocal(item.price) + ' / ' + escapeHtmlLocal(item.charged) +
                                 (item.notes ? ' <span class="badge bg-light text-secondary border ms-1">' + escapeHtmlLocal(item.notes) + '</span>' : '') +
@@ -1351,6 +1351,7 @@
             if (!roomStatuses) return;
 
             var overlayMap = {
+                available:         'overlay-available',
                 occupied:          'overlay-occupied',
                 reserved:          'overlay-reserved',
                 under_maintenance: 'overlay-maintenance',
@@ -1358,11 +1359,11 @@
             };
 
             var labelMap = {
-                occupied:          '<span class="room-status-badge text-danger">Occupied</span>',
-                available:         '<span class="room-status-badge text-success">Available</span>',
-                reserved:          '<span class="room-status-badge text-warning">Reserved</span>',
-                under_maintenance: '<span class="room-status-badge text-secondary">Under Maintenance</span>',
-                maintenance:       '<span class="room-status-badge text-secondary">Under Maintenance</span>',
+                occupied:          '<span class="room-status-badge fw-bold" style="color: #E87B2C;">Occupied</span>',
+                available:         '<span class="room-status-badge fw-bold" style="color: #2BAB2B;">Available</span>',
+                reserved:          '<span class="room-status-badge fw-bold" style="color: #A8E036;">Reserved</span>',
+                under_maintenance: '<span class="room-status-badge fw-bold" style="color: #A34665;">Under Maintenance</span>',
+                maintenance:       '<span class="room-status-badge fw-bold" style="color: #A34665;">Under Maintenance</span>',
             };
 
             document.querySelectorAll('[data-room-id]').forEach(function (card) {
@@ -1384,14 +1385,24 @@
 
                 // If not occupied, ensure overdue counter is hidden
                 if (newStatus !== 'occupied') {
+                    card.classList.remove('is-overdue');
                     var overdueEl = card.querySelector('.room-overdue-counter');
                     if (overdueEl) {
                         overdueEl.classList.add('d-none');
                     }
                 }
 
-                // No change — skip DOM work
-                if (dataStatus === oldStatus) return;
+                // No change — skip DOM work (ensure available room has overlay if absent)
+                if (dataStatus === oldStatus) {
+                    var wrapper = card.querySelector('.room-image-wrapper');
+                    if (wrapper && (newStatus === 'available' || (!['occupied', 'reserved', 'under_maintenance', 'maintenance'].includes(newStatus))) && !wrapper.querySelector('.overlay-available')) {
+                        var overlay = document.createElement('div');
+                        overlay.className = 'position-absolute top-0 start-0 w-100 h-100 overlay-available';
+                        overlay.textContent = 'AVAILABLE';
+                        wrapper.appendChild(overlay);
+                    }
+                    return;
+                }
 
                 // 1. Update data-status and is-occupied class
                 card.setAttribute('data-status', dataStatus);
@@ -1401,7 +1412,7 @@
                 var wrapper = card.querySelector('.room-image-wrapper');
                 if (wrapper) {
                     // Remove any existing overlay div
-                    ['overlay-occupied', 'overlay-reserved', 'overlay-maintenance', 'overlay-overdue'].forEach(function (cls) {
+                    ['overlay-available', 'overlay-occupied', 'overlay-reserved', 'overlay-maintenance', 'overlay-overdue'].forEach(function (cls) {
                         var existing = wrapper.querySelector('.' + cls);
                         if (existing) { existing.remove(); }
                     });
@@ -1410,10 +1421,15 @@
                     var hoverBtn = wrapper.querySelector('.card-hover-action');
                     if (hoverBtn) { hoverBtn.remove(); }
 
-                    if (overlayMap[newStatus]) {
+                    var targetOverlayClass = overlayMap[newStatus];
+                    if (!targetOverlayClass && newStatus !== 'occupied' && newStatus !== 'reserved' && newStatus !== 'under_maintenance' && newStatus !== 'maintenance') {
+                        targetOverlayClass = 'overlay-available';
+                    }
+
+                    if (targetOverlayClass) {
                         var overlay = document.createElement('div');
                         // Overdue check: if newly occupied and already past checkout, show overdue overlay instead
-                        var overlayClass = overlayMap[newStatus];
+                        var overlayClass = targetOverlayClass;
                         if (newStatus === 'occupied') {
                             var coStrCheck = (roomCheckouts && roomCheckouts.hasOwnProperty(roomId))
                                 ? roomCheckouts[roomId]
@@ -1426,7 +1442,9 @@
                             }
                         }
                         overlay.className = 'position-absolute top-0 start-0 w-100 h-100 ' + overlayClass;
-                        if (overlayClass === 'overlay-overdue') {
+                        if (overlayClass === 'overlay-available') {
+                            overlay.textContent = 'AVAILABLE';
+                        } else if (overlayClass === 'overlay-overdue') {
                             overlay.textContent = 'OVERDUE';
                         } else if (overlayClass === 'overlay-occupied') {
                             overlay.textContent = 'OCCUPIED';
@@ -1532,6 +1550,10 @@
                             arrivalEl.innerHTML = '<div><span class="text-muted">Arrival:</span></div><div>' + arrivalText + '</div>';
                             footerEl.appendChild(arrivalEl);
                         }
+                    }
+                } else if (newStatus === 'available') {
+                    if (timesEl) {
+                        timesEl.remove();
                     }
                 } else if (timesEl && timesEl.classList.contains('room-blocking-period')) {
                     timesEl.remove();
@@ -1663,45 +1685,7 @@
                 selectEl.innerHTML = html;
             }
 
-            // 2. Update the Quick Add Amenities list in the billing modal (if present)
-            var quickAddList = document.getElementById('quickAddAmenitiesList');
-            if (quickAddList) {
-                var invoiceId = quickAddList.getAttribute('data-invoice-id') || '';
-                var csrfMeta = document.querySelector('meta[name="csrf-token"]');
-                var csrfInput = document.querySelector('input[name="_token"]');
-                var csrfToken = csrfMeta ? csrfMeta.content : (csrfInput ? csrfInput.value : '');
-
-                if (amenities.length === 0) {
-                    quickAddList.innerHTML = '<li class="list-group-item px-2 py-2 border-0 bg-transparent text-muted small">No amenities available.</li>';
-                } else {
-                    var listHtml = '';
-                    amenities.forEach(function (item) {
-                        var price = Number(item.price);
-                        listHtml += '<li class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 bg-transparent" data-amenity-id="' + item.id + '">' +
-                            '<span class="small">' + escapeHtml(item.name) + '</span>' +
-                            '<div class="d-flex align-items-center">' +
-                                '<span class="text-muted small me-3">₱ ' + formatMoney(price) + '</span>' +
-                                '<div class="d-flex gap-1">' +
-                                    '<form action="/billing/' + invoiceId + '/remove-amenity" method="POST" class="m-0">' +
-                                        '<input type="hidden" name="_token" value="' + csrfToken + '">' +
-                                        '<input type="hidden" name="item_name" value="' + escapeHtml(item.name) + '">' +
-                                        '<button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" style="border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" title="Remove 1">-</button>' +
-                                    '</form>' +
-                                    '<form action="/billing/' + invoiceId + '/add-amenity" method="POST" class="m-0">' +
-                                        '<input type="hidden" name="_token" value="' + csrfToken + '">' +
-                                        '<input type="hidden" name="item_name" value="' + escapeHtml(item.name) + '">' +
-                                        '<input type="hidden" name="price" value="' + price + '">' +
-                                        '<button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" style="border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" title="Add 1">+</button>' +
-                                    '</form>' +
-                                '</div>' +
-                            '</div>' +
-                        '</li>';
-                    });
-                    quickAddList.innerHTML = listHtml;
-                }
-            }
-
-            // 3. Update the Add Amenities to booking modal list (if present)
+            // 2. Update the Add Amenities to booking modal list (if present)
             var bookingAddList = document.getElementById('bookingAddAmenitiesList');
             if (bookingAddList) {
                 var currentQtys = {};
@@ -1836,6 +1820,48 @@
             document.getElementById('pd_method').textContent     = btn.dataset.method || '—';
             document.getElementById('pd_grand_total').textContent = '₱ ' + (btn.dataset.grandTotal || '0.00');
 
+            // Advance Deposit & Remaining Payment handling
+            var depositVal = parseFloat((btn.dataset.advanceDeposit || '0').replace(/,/g, '')) || 0;
+            var remainingVal = parseFloat((btn.dataset.remainingPayment || '0').replace(/,/g, '')) || 0;
+            var depositRow = document.getElementById('pd_deposit_row');
+            var depositEl = document.getElementById('pd_advance_deposit');
+            var remainingRow = document.getElementById('pd_remaining_row');
+            var remainingEl = document.getElementById('pd_remaining_payment');
+            var depositInfoCol = document.getElementById('pd_deposit_info_col');
+            var depositInfoVal = document.getElementById('pd_deposit_info_val');
+            var remainingInfoCol = document.getElementById('pd_remaining_info_col');
+            var remainingInfoVal = document.getElementById('pd_remaining_info_val');
+            var totalLabel = document.getElementById('pd_total_label');
+
+            if (depositVal > 0) {
+                var depositFormatted = '₱ ' + depositVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                var remainingFormatted = '₱ ' + remainingVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                if (totalLabel) totalLabel.textContent = 'Total Charges';
+                if (depositRow) {
+                    depositRow.classList.remove('d-none');
+                    if (depositEl) depositEl.textContent = '- ' + depositFormatted;
+                }
+                if (remainingRow) {
+                    remainingRow.classList.remove('d-none');
+                    if (remainingEl) remainingEl.textContent = remainingFormatted;
+                }
+                if (depositInfoCol) {
+                    depositInfoCol.classList.remove('d-none');
+                    if (depositInfoVal) depositInfoVal.textContent = depositFormatted;
+                }
+                if (remainingInfoCol) {
+                    remainingInfoCol.classList.remove('d-none');
+                    if (remainingInfoVal) remainingInfoVal.textContent = remainingFormatted;
+                }
+            } else {
+                if (totalLabel) totalLabel.textContent = 'Grand Total';
+                if (depositRow) depositRow.classList.add('d-none');
+                if (remainingRow) remainingRow.classList.add('d-none');
+                if (depositInfoCol) depositInfoCol.classList.add('d-none');
+                if (remainingInfoCol) remainingInfoCol.classList.add('d-none');
+            }
+
             // E-Wallet reference number
             var refRow = document.getElementById('pd_ref_wrap');
             var refEl  = document.getElementById('pd_reference_number');
@@ -1859,8 +1885,10 @@
                     var tr = document.createElement('tr');
                     var amtNum = Number(charge.amount);
                     var amtFormatted = (amtNum < 0 ? '- \u20b1 ' : '\u20b1 ') + Math.abs(amtNum).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    tr.innerHTML = '<td class="small">' + (charge.description || '\u2014') + '</td>' +
-                                   '<td class="text-end small">' + amtFormatted + '</td>';
+                    var isDeposit = charge.type === 'deposit';
+                    var valClass = isDeposit ? ' text-success fw-semibold' : (amtNum < 0 ? ' text-danger' : '');
+                    tr.innerHTML = '<td class="small' + (isDeposit ? ' text-success fw-semibold' : '') + '">' + (charge.description || '\u2014') + '</td>' +
+                                   '<td class="text-end small' + valClass + '">' + amtFormatted + '</td>';
                     tbody.appendChild(tr);
                 });
             }

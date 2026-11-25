@@ -60,17 +60,17 @@
                         <col style="width: 9%;">
                         <col style="width: 6%;">
                     </colgroup>
-                    <thead class="table-light">
-                        <tr>
-                            <th class="py-3 px-3">Booking</th>
-                            <th class="py-3 px-3">Guest Name</th>
-                            <th class="py-3 px-3">Last Name</th>
-                            <th class="py-3 px-3">Rooms</th>
-                            <th class="py-3 px-3">Check-in</th>
-                            <th class="py-3 px-3">Check-out</th>
-                            <th class="py-3 px-3">Total</th>
-                            <th class="py-3 px-3">Status</th>
-                            <th class="py-3 px-3 text-center">Actions</th>
+                    <thead style="background-color: #6A4435; color: #ffffff;">
+                        <tr style="background-color: #6A4435; color: #ffffff;">
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Booking</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Guest Name</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Last Name</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Rooms</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Check-in</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Check-out</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Total</th>
+                            <th class="py-3 px-3 text-white border-0" style="background-color: #6A4435; color: #ffffff;">Status</th>
+                            <th class="py-3 px-3 text-center text-white border-0" style="background-color: #6A4435; color: #ffffff;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -118,15 +118,15 @@
                                     ])->values()->all(),
                                 ];
                             @endphp
-                            <tr>
-                                <td class="px-3 fw-semibold">{{ $details['no'] }}</td>
-                                <td class="px-3">{{ $guestName }}</td>
-                                <td class="px-3">{{ $lastName }}</td>
-                                <td class="px-3">{{ $rooms }}</td>
-                                <td class="px-3">{{ $details['checkin'] }}</td>
-                                <td class="px-3">{{ $details['checkout'] }}</td>
-                                <td class="px-3">{{ $details['total'] }}</td>
-                                <td class="px-3">
+                            <tr style="background-color: #F2F6D0;">
+                                <td class="px-3 fw-semibold" style="background-color: #F2F6D0;">{{ $details['no'] }}</td>
+                                <td class="px-3" style="background-color: #F2F6D0;">{{ $guestName }}</td>
+                                <td class="px-3" style="background-color: #F2F6D0;">{{ $lastName }}</td>
+                                <td class="px-3" style="background-color: #F2F6D0;">{{ $rooms }}</td>
+                                <td class="px-3" style="background-color: #F2F6D0;">{{ $details['checkin'] }}</td>
+                                <td class="px-3" style="background-color: #F2F6D0;">{{ $details['checkout'] }}</td>
+                                <td class="px-3" style="background-color: #F2F6D0;">{{ $details['total'] }}</td>
+                                <td class="px-3" style="background-color: #F2F6D0;">
                                     @if($cancelled)
                                         <span class="badge border border-danger text-danger bg-white">{{ $statusText }}</span>
                                     @elseif($statusText === 'Completed')
@@ -137,7 +137,7 @@
                                         <span class="text-black fw-bold">{{ $statusText }}</span>
                                     @endif
                                 </td>
-                                <td class="px-3 text-center">
+                                <td class="px-3 text-center" style="background-color: #F2F6D0;">
                                     <div class="d-flex align-items-center justify-content-center gap-1">
                                         <!-- View: eye icon -->
                                         <button type="button" class="btn btn-sm btn-outline-secondary btn-view-booking" title="View details"
@@ -159,16 +159,16 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="9" class="text-center py-4 text-muted" style="height: 180px; vertical-align: middle;">No bookings found</td>
+                            <tr style="background-color: #F2F6D0;">
+                                <td colspan="9" class="text-center py-4 text-muted" style="height: 180px; vertical-align: middle; background-color: #F2F6D0;">No bookings found</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
-        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
-            <span class="text-muted small">
+        <div class="card-footer d-flex justify-content-between align-items-center py-3 flex-wrap gap-2 border-0" style="background-color: #6A4435; color: #F5F7DF;">
+            <span class="small" style="color: #F5F7DF;">
                 @if($bookings->total() > 0)
                     Showing {{ $bookings->firstItem() }} to {{ $bookings->lastItem() }} of {{ $bookings->total() }} booking(s)
                 @else
@@ -362,6 +362,15 @@
     .booking-history-table thead th {
         vertical-align: middle;
         white-space: nowrap;
+    }
+    .booking-history-table tbody tr,
+    .booking-history-table tbody td {
+        background-color: #F2F6D0 !important;
+        --bs-table-bg: #F2F6D0 !important;
+    }
+    .booking-history-table.table-hover > tbody > tr:hover > * {
+        background-color: #E7EBC4 !important;
+        --bs-table-hover-bg: #E7EBC4 !important;
     }
     .booking-history-table tbody td {
         vertical-align: middle;

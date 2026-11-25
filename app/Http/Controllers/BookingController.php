@@ -272,6 +272,7 @@ class BookingController
             'room_ids' => $request->room_ids,
             'guests' => $request->guests ?? 1,
             'status' => 'checked_in',
+            'deposit' => (float) $request->input('deposit', 0),
             'payment_method' => $request->input('payment_method', 'cash'),
             'ewallet_type' => $request->payment_method === 'ewallet' ? $request->ewallet_type : null,
             'reference_number' => $request->payment_method === 'ewallet' ? $request->reference_number : null,

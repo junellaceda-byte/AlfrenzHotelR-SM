@@ -4,7 +4,7 @@
 .kpi-card {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
+    border-radius: 12px;
     transition:
         transform 0.2s ease,
         box-shadow 0.2s ease;
@@ -39,7 +39,7 @@
 .notifications-panel {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
 }
@@ -67,7 +67,7 @@
     border: 1.5px solid #cbd5e1;
     color: #475569;
     background-color: #ffffff;
-    border-radius: 0.375rem;
+    border-radius: 6px;
     transition: all 0.2s ease;
 }
 
@@ -98,7 +98,7 @@
 .hotel-room-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
+    border-radius: 12px;
     overflow: hidden;
     position: relative;
     display: flex;
@@ -140,10 +140,17 @@
     z-index: 5;
 }
 
-.hotel-room-card.is-occupied:hover .card-hover-action {
+.hotel-room-card.is-occupied:not(.is-overdue):hover .card-hover-action {
     opacity: 1;
     pointer-events: auto;
     transform: translate(-50%, -50%) scale(1);
+}
+
+.hotel-room-card.is-overdue .card-hover-action,
+.hotel-room-card.is-overdue:hover .card-hover-action {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 .btn-card-amenities {
@@ -156,7 +163,7 @@
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
     padding: 0.45rem 0.9rem;
     white-space: nowrap;
-    border-radius: 0.375rem;
+    border-radius: 6px;
     transition: all 0.15s ease;
 }
 
@@ -239,7 +246,7 @@
     font-weight: 700;
     letter-spacing: 0;
     padding: 0.2em 0.5em;
-    border-radius: 999px;
+    border-radius: 9999px;
     line-height: 1.4;
     vertical-align: middle;
 }

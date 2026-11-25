@@ -257,9 +257,15 @@ class MultipleAmenitiesToRoomTest extends TestCase
         // Beside it: Selected Amenities List and related elements
         $response->assertSee('SELECTED AMENITIES LIST');
         $response->assertSee('id="selectedAmenitiesList"', false);
-        $response->assertSee('id="btnAddAmenityToList"', false);
         $response->assertSee('id="selectedAmenitiesTotal"', false);
         $response->assertSee('id="selectedAmenitiesBadge"', false);
+
+        // Removed elements must not be present in the modal
+        $response->assertDontSee('id="btnAddAmenityToList"', false);
+        $response->assertDontSee('id="amenityQuantity"', false);
+        $response->assertDontSee('id="amenitySpecialReq"', false);
+        $response->assertDontSee('QUANTITY (beds or hours)', false);
+        $response->assertDontSee('NOTES / TIME', false);
     }
 
     public function test_adding_multiple_amenities_fails_atomically_if_any_is_not_offered(): void

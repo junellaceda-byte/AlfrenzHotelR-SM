@@ -10,6 +10,8 @@
     
     <!-- Custom Login CSS -->
     <link href="{{ asset('css/LogIn/login.css') }}" rel="stylesheet">
+    <!-- Component-Specific Border Radius Design System -->
+    <link href="{{ asset('css/global-radius.css') }}" rel="stylesheet">
 </head>
 <body>
 

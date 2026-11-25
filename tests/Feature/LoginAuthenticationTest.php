@@ -105,7 +105,7 @@ class LoginAuthenticationTest extends TestCase
         $this->actingAsReceptionist();
 
         $response = $this->get('/admindashboard');
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/dashboardreceptionist');
     }
 
     public function test_administrator_cannot_access_receptionist_dashboard(): void
@@ -113,7 +113,7 @@ class LoginAuthenticationTest extends TestCase
         $this->actingAsAdmin();
 
         $response = $this->get('/dashboardreceptionist');
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/admindashboard');
     }
 
     public function test_user_can_logout_and_session_is_cleared(): void

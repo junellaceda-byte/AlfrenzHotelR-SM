@@ -116,6 +116,7 @@ class AdminRoomManagementTest extends TestCase
         ]);
 
         // Receptionist dashboard loads rooms from database
+        $this->actingAsReceptionist();
         $receptionistResponse = $this->get('/dashboardreceptionist');
         $receptionistResponse->assertOk();
         $receptionistResponse->assertSee('Room 30');

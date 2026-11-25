@@ -7,21 +7,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- End of Head -->
-    <body class="m-0 p-0 overflow-hidden" style="background-color: #f8f9fa; font-family: 'Inter', system-ui, -apple-system, sans-serif; height: 100vh;">
-        <div class="container-fluid p-0 vh-100 overflow-hidden">
+    <body class="m-0 p-0 overflow-hidden" style="background-color: #F5F7DF; font-family: 'Inter', system-ui, -apple-system, sans-serif; height: 100vh;">
+        <div class="container-fluid p-0 vh-100 overflow-hidden" style="background-color: #F5F7DF;">
             <div class="row g-0 flex-nowrap h-100 w-100 m-0">
                 <!-- Sidebar -->
                 @include('Receptionist.partials.sidebar')
                 <!-- End of sidebar -->
 
                 <!-- Main Content Area -->
-                <div class="col d-flex flex-column h-100 overflow-hidden" id="content" style="min-width: 0;">
+                <div class="col d-flex flex-column h-100 overflow-hidden" id="content" style="min-width: 0; background-color: #fbedfb;">
                     <!-- Topbar -->
                     @include('Receptionist.partials.topbar')
-                    <!-- End of Topbar -->
 
                     <!-- Page Content -->
-                    <main class="p-3 p-xl-4 flex-grow-1 overflow-y-auto overflow-x-hidden" style="background-color: #f8f9fa;">
+                <main class="p-3 p-xl-4 flex-grow-1 overflow-y-auto overflow-x-hidden" style="background-color: ##F2E9D8;">
+                    <main class="p-3 p-xl-4 flex-grow-1 overflow-y-auto overflow-x-hidden" style="background-color: #;">
                         <!-- Success Message -->
                         @if(session('success'))
                             <div class="alert alert-success alert-dismissible fade show m-3" role="alert">

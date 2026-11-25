@@ -821,18 +821,57 @@ class DashboardApiController
 
         $selectedYear = (int) $request->input('year', $currentYear);
         $monthInput = $request->input('month', (string) $currentMonth);
-        $selectedDate = $request->input('date'); // 'YYYY-MM-DD' or null
+        $selectedDate = $request->input('date'); // 'YYYY-MM-DD' or 'M/D/Y' or null
+        $timeframe = $request->input('timeframe'); // 'this_month', 'today', 'yearly', 'monthly', 'weekly', 'custom'
+
+        // If no explicit filter parameter is supplied, default to 'today'
+        if (! $request->has('timeframe') && ! $request->has('date') && ! $request->has('month') && ! $request->has('year')) {
+            $timeframe = 'today';
+        }
+
+        // Normalize M/D/Y to Y-m-d if needed
+        if ($selectedDate && str_contains($selectedDate, '/')) {
+            try {
+                $selectedDate = Carbon::createFromFormat('n/j/Y', $selectedDate, 'Asia/Manila')->toDateString();
+            } catch (\Throwable $e) {
+                try {
+                    $selectedDate = Carbon::parse($selectedDate, 'Asia/Manila')->toDateString();
+                } catch (\Throwable $e) {
+                }
+            }
+        }
 
         // Date range resolution
         $isSpecificDate = ! empty($selectedDate) && strtotime((string) $selectedDate) !== false;
         $isAllMonths = ($monthInput === 'all');
         $selectedMonth = $isAllMonths ? null : (int) $monthInput;
 
-        if ($isSpecificDate) {
-            $rangeStart = Carbon::parse($selectedDate, 'Asia/Manila')->startOfDay();
-            $rangeEnd = Carbon::parse($selectedDate, 'Asia/Manila')->endOfDay();
+        if ($timeframe === 'today') {
+            $rangeStart = $now->copy()->startOfDay();
+            $rangeEnd = $now->copy()->endOfDay();
+            $periodTitle = $rangeStart->format('M j, Y');
+            $revenueCardTitle = 'Total Revenue (Today)';
+        } elseif ($timeframe === 'custom' || $isSpecificDate) {
+            $targetDate = $selectedDate ?: $now->toDateString();
+            $rangeStart = Carbon::parse($targetDate, 'Asia/Manila')->startOfDay();
+            $rangeEnd = Carbon::parse($targetDate, 'Asia/Manila')->endOfDay();
             $periodTitle = $rangeStart->format('M j, Y');
             $revenueCardTitle = 'Total Revenue ('.$rangeStart->format('M j').')';
+        } elseif ($timeframe === 'weekly') {
+            $rangeStart = $now->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
+            $rangeEnd = $now->copy()->endOfWeek(Carbon::SUNDAY)->endOfDay();
+            $periodTitle = $rangeStart->format('M j').' – '.$rangeEnd->format('M j, Y');
+            $revenueCardTitle = 'Total Revenue (This Week)';
+        } elseif ($timeframe === 'yearly' || $isAllMonths) {
+            $rangeStart = Carbon::create($selectedYear, 1, 1, 0, 0, 0, 'Asia/Manila')->startOfYear();
+            $rangeEnd = $rangeStart->copy()->endOfYear();
+            $periodTitle = 'Year '.$selectedYear;
+            $revenueCardTitle = 'Total Revenue ('.$selectedYear.')';
+        } elseif ($timeframe === 'monthly') {
+            $rangeStart = Carbon::create($selectedYear, 1, 1, 0, 0, 0, 'Asia/Manila')->startOfYear();
+            $rangeEnd = $rangeStart->copy()->endOfYear();
+            $periodTitle = 'Year '.$selectedYear.' (Monthly)';
+            $revenueCardTitle = 'Total Revenue ('.$selectedYear.')';
         } elseif (! $isAllMonths && $selectedMonth) {
             $rangeStart = Carbon::create($selectedYear, $selectedMonth, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
             $rangeEnd = $rangeStart->copy()->endOfMonth();
@@ -1095,7 +1134,239 @@ class DashboardApiController
             $yearlyOccupancy[] = $yOcc;
         }
 
+        // Daily breakdown (hourly intervals for single date: Today or Custom)
+        $dailyLabels = ['12 AM - 4 AM', '4 AM - 8 AM', '8 AM - 12 PM', '12 PM - 4 PM', '4 PM - 8 PM', '8 PM - 12 AM'];
+        $dailyOccupancy = [];
+        $dailyRevenue = [];
+        $dayHours = [[0, 4], [4, 8], [8, 12], [12, 16], [16, 20], [20, 24]];
+        foreach ($dayHours as [$sh, $eh]) {
+            $blockStart = $rangeStart->copy()->setTime($sh, 0, 0);
+            $blockEnd = ($eh === 24) ? $rangeStart->copy()->endOfDay() : $rangeStart->copy()->setTime($eh, 0, 0);
+            $bRev = (float) PaymentLog::where('status', 'successful')
+                ->where(function ($q) use ($blockStart, $blockEnd) {
+                    $q->whereBetween('paid_at', [$blockStart, $blockEnd])
+                        ->orWhere(function ($sub) use ($blockStart, $blockEnd) {
+                            $sub->whereNull('paid_at')->whereBetween('created_at', [$blockStart, $blockEnd]);
+                        });
+                })->sum('amount_paid');
+            $bOccCount = Booking::where('status', '!=', 'cancelled')
+                ->where('check_in_datetime', '<=', $blockEnd)
+                ->where(function ($q) use ($blockStart) {
+                    $q->where('check_out_datetime', '>=', $blockStart)
+                        ->orWhere('status', 'checked_in');
+                })->count();
+            $dailyOccupancy[] = $totalHotelRooms > 0 ? min(100, round(($bOccCount / $totalHotelRooms) * 100)) : 0;
+            $dailyRevenue[] = round($bRev, 2);
+        }
+
+        // Days of current week breakdown (for Weekly filter)
+        $weekDayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        $weekDayOccupancy = [];
+        $weekDayRevenue = [];
+        for ($d = 0; $d < 7; $d++) {
+            $dStart = $rangeStart->copy()->addDays($d)->startOfDay();
+            $dEnd = $dStart->copy()->endOfDay();
+            $dRev = (float) PaymentLog::where('status', 'successful')
+                ->where(function ($q) use ($dStart, $dEnd) {
+                    $q->whereBetween('paid_at', [$dStart, $dEnd])
+                        ->orWhere(function ($sub) use ($dStart, $dEnd) {
+                            $sub->whereNull('paid_at')->whereBetween('created_at', [$dStart, $dEnd]);
+                        });
+                })->sum('amount_paid');
+            $dOcc = Booking::where('status', '!=', 'cancelled')
+                ->where('check_in_datetime', '<=', $dEnd)
+                ->where(function ($q) use ($dStart) {
+                    $q->where('check_out_datetime', '>=', $dStart)
+                        ->orWhere('status', 'checked_in');
+                })->count();
+            $weekDayOccupancy[] = $totalHotelRooms > 0 ? min(100, round(($dOcc / $totalHotelRooms) * 100)) : 0;
+            $weekDayRevenue[] = round($dRev, 2);
+        }
+
+        // Active trend dataset selection connected to the main Sales Reports filter
+        if ($timeframe === 'today' || $timeframe === 'custom' || $isSpecificDate) {
+            $activeTrendLabels = $dailyLabels;
+            $activeTrendOccupancy = $dailyOccupancy;
+            $activeTrendRevenue = $dailyRevenue;
+            $activeTrendScope = ($timeframe === 'today') ? 'Today (Hourly Intervals)' : 'Selected Date ('.$periodTitle.')';
+        } elseif ($timeframe === 'weekly') {
+            $activeTrendLabels = $weekDayLabels;
+            $activeTrendOccupancy = $weekDayOccupancy;
+            $activeTrendRevenue = $weekDayRevenue;
+            $activeTrendScope = 'Weekly (Mon – Sun)';
+        } elseif ($timeframe === 'yearly') {
+            $activeTrendLabels = $yearlyLabels;
+            $activeTrendOccupancy = $yearlyOccupancy;
+            $activeTrendRevenue = $yearlyRevenue;
+            $activeTrendScope = 'Yearly (5-Year Trend)';
+        } elseif ($timeframe === 'monthly') {
+            $activeTrendLabels = $monthlyLabels;
+            $activeTrendOccupancy = $monthlyOccupancy;
+            $activeTrendRevenue = $monthlyRevenue;
+            $activeTrendScope = 'Monthly (Jan – Dec)';
+        } else {
+            $activeTrendLabels = $weeklyLabels;
+            $activeTrendOccupancy = $weeklyOccupancy;
+            $activeTrendRevenue = $weeklyRevenue;
+            $activeTrendScope = 'This Month (Weeks 1 – 5)';
+        }
+
         // 8. Amenities Comparison (Ranked Horizontal Bar Chart)
+        $weeklyAmenitiesData = $this->calculateAmenitiesComparisonForRange(
+            $now->copy()->startOfWeek(),
+            $now->copy()->endOfWeek(),
+            $now->copy()->startOfWeek()->format('M d').' – '.$now->copy()->endOfWeek()->format('M d, Y')
+        );
+
+        $monthlyAmenitiesData = $this->calculateAmenitiesComparisonForRange(
+            $now->copy()->startOfMonth(),
+            $now->copy()->endOfMonth(),
+            $now->copy()->format('F Y')
+        );
+
+        $yearlyAmenitiesData = $this->calculateAmenitiesComparisonForRange(
+            $now->copy()->startOfYear(),
+            $now->copy()->endOfYear(),
+            'Year '.$now->copy()->format('Y')
+        );
+
+        // Period-specific calculation matching the main report filter for backward compatibility
+        $currentFilterAmenities = $this->calculateAmenitiesComparisonForInvoices($paidInvoices, $periodTitle);
+
+        return response()->json([
+            'period_title' => $periodTitle,
+            'revenue_card_title' => $revenueCardTitle,
+            'selected_year' => $selectedYear,
+            'selected_month' => $monthInput,
+            'selected_date' => $selectedDate,
+            'total_revenue' => $totalRevenue,
+            'total_revenue_formatted' => '₱'.number_format($totalRevenue, 2),
+            'adr' => $adr,
+            'adr_formatted' => '₱'.number_format($adr, 2),
+            'total_bookings' => $totalBookings,
+            'monthly_target' => $monthlyTargetAmount,
+            'monthly_target_formatted' => '₱'.number_format($monthlyTargetAmount, 2),
+            'monthly_target_progress' => $monthlyTargetProgress,
+            'lost_revenue' => $lostRevenue,
+            'lost_revenue_formatted' => '-₱'.number_format($lostRevenue, 2),
+            'cancellations_count' => $cancellationsCount,
+            'pending_amount' => $pendingAmount,
+            'pending_amount_formatted' => '₱'.number_format($pendingAmount, 2),
+            'pending_guests_count' => $pendingGuestsCount,
+            'occupancy_trend' => [
+                'active_timeframe' => $timeframe ?: ($isSpecificDate ? 'custom' : 'this_month'),
+                'scope' => $activeTrendScope,
+                'labels' => $activeTrendLabels,
+                'data' => $activeTrendOccupancy,
+                'revenue' => $activeTrendRevenue,
+                'daily' => [
+                    'labels' => $dailyLabels,
+                    'data' => $dailyOccupancy,
+                    'revenue' => $dailyRevenue,
+                ],
+                'weekly' => [
+                    'labels' => $weeklyLabels,
+                    'data' => $weeklyOccupancy,
+                    'revenue' => $weeklyRevenue,
+                ],
+                'monthly' => [
+                    'labels' => $monthlyLabels,
+                    'data' => $monthlyOccupancy,
+                    'revenue' => $monthlyRevenue,
+                ],
+                'yearly' => [
+                    'labels' => $yearlyLabels,
+                    'data' => $yearlyOccupancy,
+                    'revenue' => $yearlyRevenue,
+                ],
+            ],
+            'revenue_breakdown' => [
+                'weekly' => [
+                    'labels' => $weeklyLabels,
+                    'roomRate' => $weeklyRoomRate,
+                    'extraCharges' => $weeklyExtraCharges,
+                ],
+                'monthly' => [
+                    'labels' => $monthlyLabels,
+                    'roomRate' => $monthlyRoomRate,
+                    'extraCharges' => $monthlyExtraCharges,
+                ],
+            ],
+            'amenities_comparison' => [
+                'subtitle' => $weeklyAmenitiesData['subtitle'],
+                'items' => $weeklyAmenitiesData['items'],
+                'weekly' => $weeklyAmenitiesData,
+                'monthly' => $monthlyAmenitiesData,
+                'yearly' => $yearlyAmenitiesData,
+                'current_filter' => $currentFilterAmenities,
+            ],
+        ]);
+    }
+
+    /**
+     * Independent endpoint for Amenities Comparison timeframe filter (weekly, monthly, yearly).
+     */
+    public function amenitiesComparison(Request $request)
+    {
+        $now = now()->setTimezone('Asia/Manila');
+        $period = strtolower((string) $request->input('period', 'weekly'));
+        $yearInput = $request->input('year');
+        $year = $yearInput ? (int) $yearInput : (int) $now->format('Y');
+
+        if ($period === 'yearly') {
+            $start = Carbon::create($year, 1, 1, 0, 0, 0, 'Asia/Manila')->startOfYear();
+            $end = $start->copy()->endOfYear();
+            $subtitle = 'Year '.$year;
+        } elseif ($period === 'monthly') {
+            $monthInput = $request->input('month');
+            $month = $monthInput ? (int) $monthInput : (int) $now->format('n');
+            $start = Carbon::create($year, $month, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
+            $end = $start->copy()->endOfMonth();
+            $subtitle = $start->format('F Y');
+        } else {
+            // weekly
+            $period = 'weekly';
+            $start = $now->copy()->startOfWeek();
+            $end = $now->copy()->endOfWeek();
+            $subtitle = $start->format('M d').' – '.$end->format('M d, Y');
+        }
+
+        $data = $this->calculateAmenitiesComparisonForRange($start, $end, $subtitle);
+
+        return response()->json([
+            'status' => 'success',
+            'period' => $period,
+            'subtitle' => $data['subtitle'],
+            'items' => $data['items'],
+        ]);
+    }
+
+    /**
+     * Helper to compute amenities comparison given a date range.
+     */
+    private function calculateAmenitiesComparisonForRange(Carbon $start, Carbon $end, string $subtitle): array
+    {
+        $invoices = Invoice::where('status', 'paid')
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('updated_at', [$start, $end])
+                    ->orWhereHas('paymentLogs', function ($plQ) use ($start, $end) {
+                        $plQ->where('status', 'successful')
+                            ->where(function ($inner) use ($start, $end) {
+                                $inner->whereBetween('paid_at', [$start, $end])
+                                    ->orWhereBetween('created_at', [$start, $end]);
+                            });
+                    });
+            })
+            ->get();
+
+        return $this->calculateAmenitiesComparisonForInvoices($invoices, $subtitle);
+    }
+
+    /**
+     * Helper to compute amenities comparison given a collection of invoices.
+     */
+    private function calculateAmenitiesComparisonForInvoices($paidInvoices, string $subtitle): array
+    {
         $paidInvoiceIds = $paidInvoices->pluck('id');
         $paidBookingIds = $paidInvoices->pluck('booking_id')->filter();
 
@@ -1147,60 +1418,10 @@ class DashboardApiController
 
         $amenitiesRanked = $amenitiesGrouped->sortByDesc('count')->values();
 
-        return response()->json([
-            'period_title' => $periodTitle,
-            'revenue_card_title' => $revenueCardTitle,
-            'selected_year' => $selectedYear,
-            'selected_month' => $monthInput,
-            'selected_date' => $selectedDate,
-            'total_revenue' => $totalRevenue,
-            'total_revenue_formatted' => '₱'.number_format($totalRevenue, 2),
-            'adr' => $adr,
-            'adr_formatted' => '₱'.number_format($adr, 2),
-            'total_bookings' => $totalBookings,
-            'monthly_target' => $monthlyTargetAmount,
-            'monthly_target_formatted' => '₱'.number_format($monthlyTargetAmount, 2),
-            'monthly_target_progress' => $monthlyTargetProgress,
-            'lost_revenue' => $lostRevenue,
-            'lost_revenue_formatted' => '-₱'.number_format($lostRevenue, 2),
-            'cancellations_count' => $cancellationsCount,
-            'pending_amount' => $pendingAmount,
-            'pending_amount_formatted' => '₱'.number_format($pendingAmount, 2),
-            'pending_guests_count' => $pendingGuestsCount,
-            'occupancy_trend' => [
-                'weekly' => [
-                    'labels' => $weeklyLabels,
-                    'data' => $weeklyOccupancy,
-                    'revenue' => $weeklyRevenue,
-                ],
-                'monthly' => [
-                    'labels' => $monthlyLabels,
-                    'data' => $monthlyOccupancy,
-                    'revenue' => $monthlyRevenue,
-                ],
-                'yearly' => [
-                    'labels' => $yearlyLabels,
-                    'data' => $yearlyOccupancy,
-                    'revenue' => $yearlyRevenue,
-                ],
-            ],
-            'revenue_breakdown' => [
-                'weekly' => [
-                    'labels' => $weeklyLabels,
-                    'roomRate' => $weeklyRoomRate,
-                    'extraCharges' => $weeklyExtraCharges,
-                ],
-                'monthly' => [
-                    'labels' => $monthlyLabels,
-                    'roomRate' => $monthlyRoomRate,
-                    'extraCharges' => $monthlyExtraCharges,
-                ],
-            ],
-            'amenities_comparison' => [
-                'subtitle' => $periodTitle,
-                'items' => $amenitiesRanked,
-            ],
-        ]);
+        return [
+            'subtitle' => $subtitle,
+            'items' => $amenitiesRanked,
+        ];
     }
 
     /**

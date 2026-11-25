@@ -62,8 +62,8 @@
                 </div>
 
                 <!-- 3. Export Button at bottom -->
-                <div class="modal-footer border-top px-4 py-3 bg-light d-flex justify-content-between align-items-center">
-                    <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">Cancel</button>
+                <div class="modal-footer border-top px-4 py-3 d-flex justify-content-between align-items-center" style="background-color: #443627;">
+                    <button type="button" class="btn btn-link text-decoration-none p-0 fw-semibold" style="color: #F5F7DF;" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1.5 fw-semibold px-3" id="confirmExportBookingBtn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>

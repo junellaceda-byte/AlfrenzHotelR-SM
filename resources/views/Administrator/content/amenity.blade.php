@@ -1,6 +1,6 @@
 <link rel="stylesheet" href="{{ asset('CSS/Administrator/amenity.css') }}">
 
-<div class="card border rounded p-3 p-sm-4 h-100 shadow-sm">
+<div class="card border rounded p-3 p-sm-4 h-100 shadow-sm d-flex flex-column" style="background-color: #F5F7DF;">
     
     <!-- Top Header Area -->
     <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start align-items-sm-center mb-3 mb-sm-4">
@@ -43,8 +43,8 @@
     </div>
 
     <!-- The Box Container for the Amenities -->
-    <div class="border rounded overflow-hidden flex-grow-1 bg-white amenities-table-wrapper">
-        <div class="table-responsive w-100">
+    <div class="border rounded overflow-hidden flex-grow-1 amenities-table-wrapper" style="background-color: #F5F7DF;">
+        <div class="table-responsive w-100" style="background-color: #F5F7DF;">
             <table class="table table-hover mb-0 align-middle amenities-table">
                 <colgroup>
                     <col class="col-amenity">
@@ -53,29 +53,31 @@
                     <col class="col-offered">
                     <col class="col-actions">
                 </colgroup>
-                <thead class="table-light border-bottom">
+                <thead class="border-bottom" style="background-color: #443627; color: #ffffff;">
                     <tr>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start">Amenity</th>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start">Price</th>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start">Description</th>
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-center">Status</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start text-white" style="background-color: #443627; color: #ffffff;">Amenity</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start text-white" style="background-color: #443627; color: #ffffff;">Price</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start text-white" style="background-color: #443627; color: #ffffff;">Description</th>
+                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-center text-white" style="background-color: #443627; color: #ffffff;">Status</th>
                         <!-- Desktop Actions Header (hidden on mobile, visible on desktop) -->
-                        <th class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-end d-none d-md-table-cell">Actions</th>
+                        <th style="background-color: #443627; color: #ffffff;" class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-end text-white d-none d-md-table-cell">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($amenities as $amenity)
-                        <tr class="amenity-row" data-id="{{ $amenity->id }}" data-name="{{ $amenity->name }}">
-                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start">
-                                <span class="amenity-name fw-semibold text-dark">{{ $amenity->name }}</span>
+                        <tr class="amenity-row" data-id="{{ $amenity->id }}" data-name="{{ $amenity->name }}" style="background-color: #F5F7DF;">
+                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start" style="background-color: #F5F7DF;">
+                                <div class="d-inline-flex align-items-center" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $amenity->name }}">
+                                    <img src="{{ $amenity->image_url }}" alt="{{ $amenity->name }}" class="amenity-cube-thumb" loading="lazy">
+                                </div>
                             </td>
-                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start text-nowrap">
+                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start text-nowrap" style="background-color: #F5F7DF;">
                                 <span class="amenity-price fw-semibold" style="color: #6A4435;">₱{{ number_format($amenity->price, 2) }}</span>
                             </td>
-                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start text-nowrap">
+                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-start text-nowrap" style="background-color: #F5F7DF;">
                                 <span class="amenity-charged text-secondary">{{ $amenity->charged }}</span>
                             </td>
-                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-center text-nowrap">
+                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-center text-nowrap" style="background-color: #F5F7DF;">
                                 <div class="d-flex justify-content-center align-items-center">
                                     <div class="form-check form-switch mb-0 d-inline-block">
                                         <input class="form-check-input amenity-toggle-switch" type="checkbox" role="switch" data-id="{{ $amenity->id }}" {{ $amenity->offered ? 'checked' : '' }} disabled tabindex="-1" aria-disabled="true" style="cursor: default;" title="{{ $amenity->offered ? 'Offered' : 'Not Offered' }}">
@@ -83,7 +85,7 @@
                                 </div>
                             </td>
                             <!-- Desktop Actions Column (hidden on mobile, visible on desktop) -->
-                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-end text-nowrap d-none d-md-table-cell">
+                            <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-end text-nowrap d-none d-md-table-cell" style="background-color: #F5F7DF;">
                                 <div class="d-inline-flex align-items-center justify-content-end gap-1 gap-sm-2">
                                     <button type="button" class="btn btn-sm btn-outline-dark" title="Edit" data-bs-toggle="modal" data-bs-target="#editAmenityModal{{ $amenity->id }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
@@ -104,9 +106,9 @@
                         @include('Administrator.modals.editamenity', ['amenity' => $amenity])
                         
                     @empty
-                        <tr>
+                        <tr style="background-color: #F5F7DF;">
                             <!-- Colspan for empty message -->
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="5" class="text-center py-5 text-muted" style="background-color: #F5F7DF;">
                                 There is no Amenity here Add Now
                             </td>
                         </tr>
@@ -121,7 +123,29 @@
 @include('Administrator.modals.addamenity')
 
 <script>
+window.previewEditAmenityImage = function(event, id) {
+    const input = event.target;
+    const preview = document.getElementById('editAmenityPreview' + id);
+    if (input.files && input.files[0] && preview) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
 (function() {
+    // Initialize tooltips for amenity cube images
+    try {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            if (window.bootstrap && bootstrap.Tooltip) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            }
+        });
+    } catch (e) {}
+
     function broadcastAmenitiesSync() {
         if (typeof BroadcastChannel !== 'undefined') {
             try {

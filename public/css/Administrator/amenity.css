@@ -1,8 +1,35 @@
+/* ========================================================
+ * AMENITY CUBE CONFIGURATION
+ * Change these values freely in the code to resize the cubes:
+ * ======================================================== */
+:root {
+    --amenity-cube-size: 70px;       /* Table cube size (width & height) */
+    --amenity-cube-radius: 10px;     /* Cube corner roundness (8px–12px) */
+    --amenity-preview-size: 64px;    /* Add & Edit modal preview size */
+    --amenity-preview-radius: 10px;  /* Modal preview corner roundness (8px–12px) */
+}
+
 .amenities-table {
     width: 100%;
     min-width: 540px;
     font-size: 0.92rem;
     table-layout: auto;
+    background-color: #F5F7DF;
+}
+
+.amenities-table thead,
+.amenities-table thead tr,
+.amenities-table thead th,
+.amenities-table th {
+    background-color: #443627 !important;
+    color: #ffffff !important;
+    border-color: rgba(245, 247, 223, 0.2) !important;
+}
+
+.amenities-table tbody tr,
+.amenities-table tbody td {
+    background-color: #eeefe1 !important;
+    --bs-table-bg: #F5F7DF !important;
 }
 
 .amenities-table .col-amenity {
@@ -35,11 +62,89 @@
     line-height: 1.35;
 }
 
-.amenities-table th {
+/* Amenity Cube Image Styling */
+.amenity-cube-thumb {
+    width: var(--amenity-cube-size, 95px);
+    height: var(--amenity-cube-size, 95px);
+    object-fit: cover;
+    border-radius: var(--amenity-cube-radius, 8px);
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: block;
+    cursor: pointer;
+}
+
+.amenity-cube-thumb:hover {
+    transform: scale(1.06);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.amenity-cube-preview {
+    width: var(--amenity-preview-size, 64px);
+    height: var(--amenity-preview-size, 64px);
+    object-fit: cover;
+    border-radius: var(--amenity-preview-radius, 8px);
+    flex-shrink: 0;
+}
+
+/* Scrollable Amenities Table Container */
+.amenities-table-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: calc(100vh - 220px);
+    overflow: hidden;
+    position: relative;
+}
+
+.amenities-table-wrapper .table-responsive {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: auto;
+    max-height: inherit;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f8f9fa;
+}
+
+/* Custom Scrollbar for Webkit */
+.amenities-table-wrapper .table-responsive::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.amenities-table-wrapper .table-responsive::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.amenities-table-wrapper .table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.amenities-table-wrapper .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Sticky Header so column titles stay visible when scrolling */
+.amenities-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.amenities-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     font-weight: 600;
     color: #495057;
     background-color: #f8f9fa;
     white-space: nowrap;
+    border-bottom: 2px solid #dee2e6;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .amenity-row {

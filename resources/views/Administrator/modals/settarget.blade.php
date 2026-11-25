@@ -59,9 +59,9 @@
                         This sets the monthly revenue goal for the selected month to track real-time progress on the target gauge.
                     </small>
                 </div>
-                <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                <div class="modal-footer border-0 px-4 py-3" style="background-color: #443627;">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" id="saveTargetSubmitBtn" class="btn text-white fw-semibold" style="background-color: #443627;">
+                    <button type="submit" id="saveTargetSubmitBtn" class="btn fw-semibold" style="background-color: #F5F7DF; color: #443627;">
                         Save Target
                     </button>
                 </div>

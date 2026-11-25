@@ -6,6 +6,8 @@ use App\Models\Amenity;
 use App\Models\Booking;
 use App\Models\Invoice;
 use App\Models\Room;
+use App\Models\Staff;
+use App\Models\User;
 use App\Services\SystemFormatService;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
@@ -100,6 +102,24 @@ class AppServiceProvider extends ServiceProvider
             'modals.quickresmodal',
         ], function ($view) {
             $view->with('availableAmenities', Amenity::where('offered', true)->get());
+        });
+
+        // Personalized Greeting for Receptionist: retrieve username from the authenticated Receptionist account's database record
+        View::composer(['Receptionist.partials.topbar', 'partials.topbar'], function ($view) {
+            $staffId = session('staff_id');
+            $staff = $staffId ? Staff::find($staffId) : null;
+            $receptionistUsername = $staff?->username ?? session('staff_username') ?? 'Receptionist';
+
+            $view->with('receptionistUsername', $receptionistUsername);
+        });
+
+        // Personalized Greeting for Administrator: retrieve username from the authenticated Administrator account's database record
+        View::composer(['Administrator.partials.topbar', 'Administrator.layout.admindash'], function ($view) {
+            $adminId = session('admin_id');
+            $adminUser = $adminId ? User::find($adminId) : (session('user_id') ? User::where('username', session('user_id'))->orWhere('user_id', session('user_id'))->first() : User::first());
+            $adminUsername = $adminUser?->username ?? session('user_id') ?? 'Administrator';
+
+            $view->with('adminUsername', $adminUsername);
         });
 
         // System-wide timestamp formatting settings shared with all views

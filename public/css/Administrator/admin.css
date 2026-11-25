@@ -1,0 +1,109 @@
+/* ========================================================
+   ADMINISTRATOR GLOBAL THEME & POPUP MODALS
+   Vintage Brown (#443627) Headers & Footers
+   Beige (#F5F7DF) Bodies & Content Areas
+   ======================================================== */
+
+/* --- Popup Modals Theme --- */
+.modal-content {
+    background-color: #F5F7DF !important;
+    overflow: hidden;
+    border: none !important;
+}
+
+.modal-header {
+    background-color: #443627 !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(245, 247, 223, 0.15) !important;
+}
+
+.modal-header .modal-title,
+.modal-header h5,
+.modal-header h6 {
+    color: #ffffff !important;
+}
+
+.modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    opacity: 0.85;
+}
+
+.modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+.modal-header .text-muted,
+.modal-header small,
+.modal-header .text-white-50 {
+    color: rgba(245, 247, 223, 0.75) !important;
+}
+
+.modal-body {
+    background-color: #F5F7DF !important;
+    color: #2b2219 !important;
+}
+
+.modal-body label,
+.modal-body .form-label {
+    color: #443627 !important;
+}
+
+.modal-footer {
+    background-color: #443627 !important;
+    color: #ffffff !important;
+    border-top: 1px solid rgba(245, 247, 223, 0.15) !important;
+}
+
+.modal-footer .btn-secondary,
+.modal-footer .btn-outline-secondary,
+.modal-footer .btn-outline-dark,
+.modal-footer .btn-cancel-text {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #F5F7DF !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    padding: 0.375rem 0.75rem !important;
+    font-weight: 600 !important;
+    transition: color 0.15s ease-in-out, opacity 0.15s ease-in-out !important;
+}
+
+.modal-footer .btn-secondary:hover,
+.modal-footer .btn-outline-secondary:hover,
+.modal-footer .btn-outline-dark:hover,
+.modal-footer .btn-cancel-text:hover {
+    color: #ffffff !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    opacity: 0.9 !important;
+}
+
+.modal-footer .btn-dark,
+.modal-footer .btn-primary {
+    background-color: #F5F7DF !important;
+    color: #443627 !important;
+    border-color: #F5F7DF !important;
+    font-weight: 700 !important;
+}
+
+.modal-footer .btn-dark:hover,
+.modal-footer .btn-primary:hover {
+    background-color: #ffffff !important;
+    color: #2b2219 !important;
+    border-color: #ffffff !important;
+}
+
+/* Modals with Tables (Check-ins & Check-outs) */
+.modal .table thead,
+.modal .table thead tr,
+.modal .table thead th {
+    background-color: #443627 !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(245, 247, 223, 0.2) !important;
+}
+
+.modal .table tbody tr {
+    background-color: #F5F7DF !important;
+}

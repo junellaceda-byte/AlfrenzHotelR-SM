@@ -1,21 +1,23 @@
 <!-- Topbar -->
-<header class="bg-white border-bottom shadow-sm px-4 py-3 d-flex justify-content-between align-items-center">
+@php
+    $displayReceptionistUsername = $receptionistUsername ?? (session('staff_id') ? \App\Models\Staff::find(session('staff_id'))?->username : null) ?? session('staff_username') ?? 'Receptionist';
+@endphp
+<header class="bg-white border-bottom shadow-sm px-4 py-3 d-flex justify-content-between align-items-center" style="background-color: #995F2F !important; border-bottom: 1px solid rgba(68, 54, 39, 0.15) !important;">
     <div>
         <!-- Welcoming Greeting -->
-        <h4 class="mb-0 fw-bold text-dark" style="font-size: clamp(1.1rem, 1.3vw, 1.45rem); letter-spacing: -0.01em;">
-            <!-- Good day, {{ Auth::check() ? Auth::user()->name : 'Name' }}! -->
-             Good day, Name!
+        <h4 class="mb-0 fw-bold text-dark" style="font-size: clamp(1.1rem, 1.3vw, 1.45rem); letter-spacing: -0.01em; color: #ffffff !important;">
+            Good day, {{ $displayReceptionistUsername }}!
         </h4>
     </div>
     
     <!-- Header Action Buttons -->
     <div class="d-flex align-items-center gap-2 gap-sm-3">
         <!-- Date and Time (live, Manila time) -->
-        <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary small">
-            <span id="current-date" data-format="{{ $dateFormat ?? 'M d, Y' }}">{{ \App\Services\SystemFormatService::formatDate(now()) }}</span>
+        <div class="px-3 py-2 rounded shadow-sm fw-bold small" style="background-color: #443627; border: 1px solid #443627; color: #F5F7DF;">
+            <span id="current-date" style="color: #F5F7DF;" data-format="{{ $dateFormat ?? 'M d, Y' }}">{{ \App\Services\SystemFormatService::formatDate(now()) }}</span>
         </div>
-        <div class="border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary small">
-            <span id="current-time" data-format="{{ $timeFormat ?? 'h:i A' }}">{{ \App\Services\SystemFormatService::formatTime(now()) }}</span>
+        <div class="px-3 py-2 rounded shadow-sm fw-bold small" style="background-color: #443627; border: 1px solid #443627; color: #F5F7DF;">
+            <span id="current-time" style="color: #F5F7DF;" data-format="{{ $timeFormat ?? 'h:i A' }}">{{ \App\Services\SystemFormatService::formatTime(now()) }}</span>
         </div>
         
         <!-- Notifications bell -->
@@ -124,21 +126,6 @@
                                                     <option value="" disabled>No amenities available</option>
                                                 @endforelse
                                             </select>
-                                        </div>
-                                        <div class="row g-2 mb-3">
-                                            <div class="col-6">
-                                                <label for="amenityQuantity" class="form-label fw-bold small text-secondary">QUANTITY (beds or hours)</label>
-                                                <input type="number" class="form-control" id="amenityQuantity" name="quantity" min="1" max="20" value="1">
-                                            </div>
-                                            <div class="col-6">
-                                                <label for="amenitySpecialReq" class="form-label fw-bold small text-secondary">NOTES / TIME</label>
-                                                <input type="text" class="form-control" id="amenitySpecialReq" name="notes" placeholder="e.g. ASAP / 8 PM">
-                                            </div>
-                                        </div>
-                                        <div class="mb-2">
-                                            <button type="button" class="btn btn-outline-secondary w-100 fw-semibold text-dark" id="btnAddAmenityToList" style="font-size: 0.85rem;">
-                                                + Add to Amenities List
-                                            </button>
                                         </div>
                                     </div>
                                     <div class="text-muted" style="font-size: 0.75rem;">

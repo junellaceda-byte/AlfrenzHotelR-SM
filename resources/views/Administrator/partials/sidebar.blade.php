@@ -21,7 +21,10 @@
 
     <!-- Navigation Items -->
     <div class="flex-grow-1 overflow-y-auto overflow-x-hidden w-100" style="scrollbar-width: thin;">
-        <ul class="nav flex-column align-items-stretch w-100 gap-2 px-1 my-2">
+        <ul class="nav flex-column align-items-stretch w-100 gap-2 px-1 my-2 position-relative sidebar-nav-list" id="adminSidebarNavList">
+            <!-- Single Sliding Active Indicator -->
+            <div class="sidebar-active-indicator" id="adminSidebarIndicator" aria-hidden="true"></div>
+
             <!-- Overview -->
             <li class="nav-item w-100">
                 <a href="?section=overview" class="nav-link sidebar-nav-link text-uppercase fw-bold {{ request('section', 'overview') == 'overview' ? 'active' : '' }}">
@@ -74,20 +77,22 @@
     </div>
 </aside>
 
+<script src="{{ asset('js/sidebar-sliding-indicator.js') }}"></script>
+
 <!-- Logout Confirmation Modal -->
 <div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-0 pb-0">
-                <h6 class="modal-title fw-bold text-dark" id="logoutConfirmModalLabel">Confirm Logout</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow overflow-hidden">
+            <div class="modal-header border-0 pb-2 text-white" style="background-color: #443627;">
+                <h6 class="modal-title fw-bold text-white" id="logoutConfirmModalLabel">Confirm Logout</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body text-center py-3">
-                <p class="mb-0 text-secondary fw-semibold">Are you sure you want to logout?</p>
+            <div class="modal-body text-center py-4" style="background-color: #F5F7DF;">
+                <p class="mb-0 fw-semibold" style="color: #2b2219;">Are you sure you want to logout?</p>
             </div>
-            <div class="modal-footer border-0 pt-0 justify-content-center gap-2">
-                <button type="button" class="btn btn-sm btn-secondary px-3 fw-semibold" data-bs-dismiss="modal">Cancel</button>
-                <a href="{{ url('/login') }}" class="btn btn-sm btn-danger px-3 fw-semibold">Logout</a>
+            <div class="modal-footer border-0 pt-2 pb-2 justify-content-center gap-2" style="background-color: #443627;">
+                <button type="button" class="btn btn-sm px-3 fw-semibold text-decoration-underline" style="color: #F5F7DF; background: transparent; border: none;" data-bs-dismiss="modal">Cancel</button>
+                <a href="{{ route('logout') }}" class="btn btn-sm btn-danger px-3 fw-semibold" id="adminConfirmLogoutBtn">Logout</a>
             </div>
         </div>
     </div>

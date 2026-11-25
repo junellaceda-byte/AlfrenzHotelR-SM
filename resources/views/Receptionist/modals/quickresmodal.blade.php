@@ -350,26 +350,26 @@
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             @isset($selectedInvoice)
-                <div class="modal-header text-white" style="background-color: #6A4435;">
+                <div class="modal-header text-white" style="background-color: #443627;">
                     <h5 class="modal-title" id="billingModalLabel">
                         Billing Process - {{ $selectedInvoice->booking->guest->fname ?? 'Unknown' }} {{ $selectedInvoice->booking->guest->lname ?? '' }}
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4 p-lg-4 bg-light">
-                    <small class="text-muted mb-4 d-block">Create a new bill, add charges, and process payment.</small>
+                <div class="modal-body p-4 p-lg-4" style="background-color: #EFEABB; color: #000000;">
+                    <small class="mb-4 d-block fw-semibold" style="color: #000000;">Create a new bill, add charges, and process payment.</small>
                     
                     <div class="row g-4">
                         <!-- 1. Guest & Room Information -->
                         <div class="col-md-4">
-                            <div class="card h-100 bg-white border rounded shadow-sm">
-                                <div class="card-body">
-                                    <h6 class="card-subtitle text-dark fw-bold mb-1"><span class="badge bg-secondary rounded-circle me-2">1</span>Guest & Room Information</h6>
-                                    <small class="text-muted d-block mb-4 ms-4">Selected room and guest details.</small>
+                            <div class="card h-100 border rounded shadow-sm" style="background-color: #E7E6B9; border-color: rgba(68, 54, 39, 0.2) !important; color: #000000;">
+                                <div class="card-body" style="color: #000000;">
+                                    <h6 class="card-subtitle fw-bold mb-1" style="color: #000000;"><span class="badge bg-secondary rounded-circle me-2">1</span>Guest & Room Information</h6>
+                                    <small class="d-block mb-4 ms-4" style="color: #000000;">Selected room and guest details.</small>
                                     
                                     <div class="mb-3 px-2">
-                                        <label class="form-label text-muted small fw-bold mb-0">Room Number</label>
-                                        <div>
+                                        <label class="form-label small fw-bold mb-0" style="color: #000000;">Room Number</label>
+                                        <div style="color: #000000;">
                                             @if(is_array($selectedInvoice->booking->booked_rooms))
                                                 {{ implode(', ', $selectedInvoice->booking->booked_rooms) }}
                                             @else
@@ -378,28 +378,28 @@
                                         </div>
                                     </div>
                                     <div class="mb-3 px-2">
-                                        <label class="form-label text-muted small fw-bold mb-0">Guest Name</label>
-                                        <div>{{ $selectedInvoice->booking->guest->fname ?? 'Unknown' }} {{ $selectedInvoice->booking->guest->lname ?? '' }}</div>
+                                        <label class="form-label small fw-bold mb-0" style="color: #000000;">Guest Name</label>
+                                        <div style="color: #000000;">{{ $selectedInvoice->booking->guest->fname ?? 'Unknown' }} {{ $selectedInvoice->booking->guest->lname ?? '' }}</div>
                                     </div>
                                     <div class="mb-3 px-2">
-                                        <label class="form-label text-muted small fw-bold mb-0">Contact Number</label>
-                                        <div>{{ $selectedInvoice->booking->guest->phone ?? 'N/A' }}</div>
+                                        <label class="form-label small fw-bold mb-0" style="color: #000000;">Contact Number</label>
+                                        <div style="color: #000000;">{{ $selectedInvoice->booking->guest->phone ?? 'N/A' }}</div>
                                     </div>
                                     <div class="row mb-3 px-2">
                                         <div class="col-6">
-                                            <label class="form-label text-muted small fw-bold mb-0">Check-in Date</label>
-                                            <div>{{ $selectedInvoice->booking->check_in_datetime ? \App\Services\SystemFormatService::formatDate($selectedInvoice->booking->check_in_datetime) : 'N/A' }}</div>
+                                            <label class="form-label small fw-bold mb-0" style="color: #000000;">Check-in Date</label>
+                                            <div style="color: #000000;">{{ $selectedInvoice->booking->check_in_datetime ? \App\Services\SystemFormatService::formatDate($selectedInvoice->booking->check_in_datetime) : 'N/A' }}</div>
                                         </div>
                                         <div class="col-6">
-                                            <label class="form-label text-muted small fw-bold mb-0">Check-out Date</label>
-                                            <div>{{ $selectedInvoice->booking->check_out_datetime ? \App\Services\SystemFormatService::formatDate($selectedInvoice->booking->check_out_datetime) : 'N/A' }}</div>
+                                            <label class="form-label small fw-bold mb-0" style="color: #000000;">Check-out Date</label>
+                                            <div style="color: #000000;">{{ $selectedInvoice->booking->check_out_datetime ? \App\Services\SystemFormatService::formatDate($selectedInvoice->booking->check_out_datetime) : 'N/A' }}</div>
                                         </div>
                                     </div>
                                     <div class="mb-3 px-2">
-                                        <label class="form-label text-muted small fw-bold mb-0">Nights</label>
-                                        <div>
-                                            @if($selectedInvoice->booking->check_in_datetime && $selectedInvoice->booking->check_out_datetime)
-                                                {{ $selectedInvoice->booking->check_in_datetime->startOfDay()->diffInDays($selectedInvoice->booking->check_out_datetime->startOfDay()) }} nights
+                                        <label class="form-label small fw-bold mb-0" style="color: #000000;">Stay Type</label>
+                                        <div style="color: #000000;">
+                                            @if($selectedInvoice->booking)
+                                                {{ $selectedInvoice->booking->stay_type_display }}
                                             @else
                                                 N/A
                                             @endif
@@ -411,97 +411,103 @@
 
                         <!-- 2. Charges & Add-ons -->
                         <div class="col-md-4">
-                            <div class="card h-100 bg-white border rounded shadow-sm">
-                                <div class="card-body">
-                                    <h6 class="card-subtitle text-dark fw-bold mb-1"><span class="badge bg-secondary rounded-circle me-2">2</span>Charges & Add-ons</h6>
-                                    <small class="text-muted d-block mb-4 ms-4">View daily rate and add incidentals.</small>
+                            <div class="card h-100 border rounded shadow-sm" style="background-color: #E7E6B9; border-color: rgba(68, 54, 39, 0.2) !important; color: #000000;">
+                                <div class="card-body" style="color: #000000;">
+                                    <h6 class="card-subtitle fw-bold mb-1" style="color: #000000;"><span class="badge bg-secondary rounded-circle me-2">2</span>Charges & Add-ons</h6>
+                                    <small class="d-block mb-4 ms-4" style="color: #000000;">View daily rate and add incidentals.</small>
                                     
-                                    <div class="d-flex justify-content-between mb-3 px-2">
-                                        <span class="text-muted">Room Rate</span>
-                                        <span class="fw-bold">₱ {{ number_format($selectedInvoice->room_charges, 2) }}</span>
+                                    <div class="d-flex justify-content-between mb-3 px-2" style="color: #000000;">
+                                        <span style="color: #000000;">Room Rate</span>
+                                        <span class="fw-bold" style="color: #000000;">₱ {{ number_format($selectedInvoice->room_charges, 2) }}</span>
                                     </div>
+
+                                    @php
+                                        $advanceDeposit = (float) ($selectedInvoice->advance_deposit ?? $selectedInvoice->booking?->deposit ?? 0);
+                                    @endphp
+                                    @if($advanceDeposit > 0)
+                                        <div class="d-flex justify-content-between mb-3 px-2" id="billing_advance_deposit_entry" style="color: #000000;">
+                                            <span style="color: #000000;">Advance Deposit</span>
+                                            <span class="fw-bold" style="color: #000000;">- ₱ {{ number_format($advanceDeposit, 2) }}</span>
+                                        </div>
+                                    @endif
                                     
                                     <!-- Display Added Amenities -->
                                     @if($selectedInvoice->amenities && $selectedInvoice->amenities->count() > 0)
-                                        <div class="mt-3 mb-2 fw-bold small px-2">Added Incidentals</div>
-                                        <div class="px-2">
+                                        <div class="mt-3 mb-2 fw-bold small px-2" style="color: #000000;">Added Incidentals</div>
+                                        <div class="px-2" style="color: #000000;">
                                         @foreach($selectedInvoice->amenities as $amenity)
-                                            <div class="d-flex justify-content-between mb-2 small">
-                                                <span class="text-muted">{{ $amenity->item_name }} (x{{ $amenity->quantity }})</span>
-                                                <span>₱ {{ number_format($amenity->total_amount, 2) }}</span>
+                                            <div class="d-flex justify-content-between mb-2 small" style="color: #000000;">
+                                                <span style="color: #000000;">{{ $amenity->item_name }} (x{{ $amenity->quantity }})</span>
+                                                <span style="color: #000000;">₱ {{ number_format($amenity->total_amount, 2) }}</span>
                                             </div>
                                         @endforeach
                                         </div>
                                     @endif
                                     
                                     <hr>
-                                    <div class="d-flex justify-content-between fw-bold mb-4 px-2">
-                                        <span>Subtotal</span>
-                                        <span>₱ {{ number_format($selectedInvoice->room_charges + $selectedInvoice->extra_charges_total, 2) }}</span>
+                                    <div class="d-flex justify-content-between fw-bold mb-4 px-2" style="color: #000000;">
+                                        <span style="color: #000000;">Subtotal</span>
+                                        <span style="color: #000000;">₱ {{ number_format($selectedInvoice->room_charges + $selectedInvoice->extra_charges_total, 2) }}</span>
                                     </div>
-                                    
-                                    <!-- Quick Add Amenities -->
-                                    <div class="fw-bold small mb-2 px-2">Quick Add Amenities</div>
-                                        <ul class="list-group list-group-flush mb-3" id="quickAddAmenitiesList" data-invoice-id="{{ $selectedInvoice->id ?? '' }}">
-                                            @foreach(($availableAmenities ?? \App\Models\Amenity::where('offered', true)->get())->filter(fn($a) => (bool) ($a->offered ?? $a->is_available ?? false)) as $item)
-                                                <li class="list-group-item d-flex justify-content-between align-items-center px-2 py-2 border-0 bg-transparent">
-                                                    @if($item->is_available)
-                                                        <span class="small">{{ $item->item_name }}</span>
-                                                        <div class="d-flex align-items-center">
-                                                            <span class="text-muted small me-3">₱ {{ number_format($item->price, 2) }}</span>
-                                                            <div class="d-flex gap-1">
-                                                                <form action="{{ route('billing.removeAmenity', $selectedInvoice->id) }}" method="POST" class="m-0">
-                                                                    @csrf
-                                                                    <input type="hidden" name="item_name" value="{{ $item->item_name }}">
-                                                                    <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" style="border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" title="Remove 1">-</button>
-                                                                </form>
-                                                                <form action="{{ route('billing.addAmenity', $selectedInvoice->id) }}" method="POST" class="m-0">
-                                                                    @csrf
-                                                                    <input type="hidden" name="item_name" value="{{ $item->item_name }}">
-                                                                    <input type="hidden" name="price" value="{{ $item->price }}">
-                                                                    <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" style="border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;" title="Add 1">+</button>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    @else
-                                                        <span class="text-decoration-line-through text-muted small">{{ $item->item_name }}</span>
-                                                        <span class="text-muted small fst-italic">Out of Stock</span>
-                                                    @endif
-                                                </li>
-                                            @endforeach
-                                        </ul>
                                 </div>
                             </div>
                         </div>
 
                         <!-- 3. Payment & Summary -->
                         <div class="col-md-4">
-                            <div class="card h-100 bg-white border rounded shadow-sm">
-                                <div class="card-body d-flex flex-column">
-                                    <h6 class="card-subtitle text-dark fw-bold mb-1"><span class="badge bg-secondary rounded-circle me-2">3</span>Payment & Summary</h6>
-                                    <small class="text-muted d-block mb-4 ms-4">Select payment method and finalize.</small>
+                            <div class="card h-100 border rounded shadow-sm" style="background-color: #E7E6B9; border-color: rgba(68, 54, 39, 0.2) !important; color: #000000;">
+                                <div class="card-body d-flex flex-column" style="color: #000000;">
+                                    <h6 class="card-subtitle fw-bold mb-1" style="color: #000000;"><span class="badge bg-secondary rounded-circle me-2">3</span>Payment & Summary</h6>
+                                    <small class="d-block mb-4 ms-4" style="color: #000000;">Select payment method and finalize.</small>
                                     
-                                    <div class="mb-4 bg-light p-3 rounded">
-                                        <div class="fw-bold small mb-3">Summary</div>
-                                        <div class="d-flex justify-content-between mb-2 small">
-                                            <span class="text-muted">Room Charge</span>
-                                            <span>₱ {{ number_format($selectedInvoice->room_charges, 2) }}</span>
+                                    @php
+                                        $advanceDeposit = (float) ($selectedInvoice->advance_deposit ?? $selectedInvoice->booking?->deposit ?? 0);
+                                        $totalCharges = (float) $selectedInvoice->grand_total;
+                                        $remainingBalance = max(0.0, round($totalCharges - $advanceDeposit, 2));
+                                    @endphp
+                                    <div class="mb-4 p-3 rounded billing-summary-box" style="background-color: #EFF5CD; border: 1px solid rgba(68, 54, 39, 0.15); color: #000000;">
+                                        <div class="fw-bold small mb-3" style="color: #000000;">Summary</div>
+                                        <div class="d-flex justify-content-between mb-2 small" style="color: #000000;">
+                                            <span style="color: #000000;">Room Charge</span>
+                                            <span style="color: #000000;">₱ {{ number_format($selectedInvoice->room_charges, 2) }}</span>
                                         </div>
-                                        <div class="d-flex justify-content-between mb-2 small">
-                                            <span class="text-muted">Incidentals</span>
-                                            <span>₱ {{ number_format($selectedInvoice->extra_charges_total, 2) }}</span>
+                                        <div class="d-flex justify-content-between mb-2 small" style="color: #000000;">
+                                            <span style="color: #000000;">Incidentals</span>
+                                            <span style="color: #000000;">₱ {{ number_format($selectedInvoice->extra_charges_total, 2) }}</span>
                                         </div>
-                                        <hr class="my-2">
-                                        <div class="d-flex justify-content-between fw-bold fs-6 mt-3">
-                                            <span>Total Amount</span>
-                                            <span>₱ {{ number_format($selectedInvoice->grand_total, 2) }}</span>
-                                        </div>
+                                        @if($selectedInvoice->discount_amount > 0)
+                                            <div class="d-flex justify-content-between mb-2 small" style="color: #000000;">
+                                                <span style="color: #000000;">Discount</span>
+                                                <span style="color: #000000;">- ₱ {{ number_format($selectedInvoice->discount_amount, 2) }}</span>
+                                            </div>
+                                        @endif
+                                        @if($advanceDeposit > 0)
+                                            <div class="d-flex justify-content-between mb-2 small" style="color: #000000;">
+                                                <span style="color: #000000;">Total Amount</span>
+                                                <span style="color: #000000;">₱ {{ number_format($totalCharges, 2) }}</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2 small" style="color: #000000;">
+                                                <span style="color: #000000;">Advance Deposit</span>
+                                                <span class="fw-semibold" style="color: #000000;">- ₱ {{ number_format($advanceDeposit, 2) }}</span>
+                                            </div>
+                                            <hr class="my-2">
+                                            <div class="d-flex justify-content-between fw-bold fs-6 mt-3" style="color: #000000;">
+                                                <span style="color: #000000;">Remaining Balance Due</span>
+                                                <span class="fw-bold" style="color: #000000;">₱ {{ number_format($remainingBalance, 2) }}</span>
+                                            </div>
+                                        @else
+                                            <hr class="my-2">
+                                            <div class="d-flex justify-content-between fw-bold fs-6 mt-3" style="color: #000000;">
+                                                <span style="color: #000000;">Total Amount</span>
+                                                <span style="color: #000000;">₱ {{ number_format($selectedInvoice->grand_total, 2) }}</span>
+                                            </div>
+                                        @endif
                                     </div>
 
                                     <form action="{{ route('billing.processPayment', $selectedInvoice->id) }}" method="POST" class="mt-auto">
                                         @csrf
                                         <div class="mb-4">
-                                            <div class="fw-bold small mb-2">Payment Method</div>
+                                            <div class="fw-bold small mb-2" style="color: #000000;">Payment Method</div>
                                             <div class="btn-group w-100" role="group">
                                                 <input type="radio" class="btn-check" name="payment_method" id="pay_cash" value="cash" autocomplete="off" checked>
                                                 <label class="btn btn-outline-secondary" for="pay_cash">Cash</label>
@@ -512,8 +518,8 @@
                                         </div>
 
                                         <div class="mb-3 d-none" id="billing_ewallet_ref_wrap">
-                                            <label for="billing_reference_number" class="form-label fw-bold small mb-1">Reference Number</label>
-                                            <input type="text" class="form-control form-control-sm" id="billing_reference_number" name="reference_number" placeholder="e.g. GCash/Maya transaction ID">
+                                            <label for="billing_reference_number" class="form-label fw-bold small mb-1" style="color: #000000;">Reference Number</label>
+                                            <input type="text" class="form-control form-control-sm" id="billing_reference_number" name="reference_number" placeholder="e.g. GCash/Maya transaction ID" style="color: #000000;">
                                         </div>
                                         
                                         <button type="submit" class="btn text-white w-100 py-2 fw-semibold" style="background-color: #6A4435; border-color: #6A4435;">Process Payment</button>
@@ -524,6 +530,10 @@
                     </div>
                 </div>
                 <style>
+                    #billingModal .modal-body,
+                    #billingModal .modal-body *:not(.btn):not(.btn *):not(.badge) {
+                        color: #000000 !important;
+                    }
                     #billingModal .btn-check:checked + .btn-outline-secondary {
                         background-color: #6A4435 !important;
                         border-color: #6A4435 !important;
@@ -535,8 +545,8 @@
                     <h5 class="modal-title" id="billingModalLabel">Billing Process</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4 p-lg-4 bg-light text-center">
-                    <p class="text-muted mb-0">No invoice selected to process.</p>
+                <div class="modal-body p-4 p-lg-4 bg-light text-center" style="color: #000000;">
+                    <p class="mb-0" style="color: #000000;">No invoice selected to process.</p>
                 </div>
             @endisset
         </div>
@@ -580,8 +590,16 @@
                     </tbody>
                     <tfoot>
                         <tr class="border-top">
-                            <th>Grand Total</th>
+                            <th id="pd_total_label">Grand Total</th>
                             <th class="text-end" id="pd_grand_total">—</th>
+                        </tr>
+                        <tr id="pd_deposit_row" class="text-success d-none">
+                            <th>Advance Deposit</th>
+                            <th class="text-end" id="pd_advance_deposit">—</th>
+                        </tr>
+                        <tr class="border-top d-none" id="pd_remaining_row">
+                            <th>Remaining Payment</th>
+                            <th class="text-end fw-bold text-primary" id="pd_remaining_payment">—</th>
                         </tr>
                     </tfoot>
                 </table>
@@ -597,6 +615,14 @@
                     <div class="col-6 d-none" id="pd_ref_wrap">
                         <div class="text-muted">Reference Number</div>
                         <div class="fw-semibold" id="pd_reference_number">—</div>
+                    </div>
+                    <div class="col-6 d-none" id="pd_deposit_info_col">
+                        <div class="text-muted">Advance Deposit</div>
+                        <div class="fw-semibold text-success" id="pd_deposit_info_val">—</div>
+                    </div>
+                    <div class="col-6 d-none" id="pd_remaining_info_col">
+                        <div class="text-muted">Remaining Payment</div>
+                        <div class="fw-semibold text-primary" id="pd_remaining_info_val">—</div>
                     </div>
                 </div>
             </div>

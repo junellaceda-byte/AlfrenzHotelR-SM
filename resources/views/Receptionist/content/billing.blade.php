@@ -26,18 +26,18 @@
         
         <!-- Card 1: Pending Payments (Left Side) -->
         <div class="col-lg-6 d-flex flex-column">
-            <div class="card bg-white border rounded shadow-sm flex-grow-1 d-flex flex-column">
-                <div class="card-body p-4 p-lg-4 d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h5 class="card-title text-dark mb-1 fs-5">Pending Payments</h5>
-                            <small class="text-muted">Payments that are due or not yet settled.</small>
-                        </div>
-                        <span class="badge bg-danger rounded-pill">{{ $pendingPayments->total() }} items</span>
+            <div class="card border rounded shadow-sm flex-grow-1 d-flex flex-column overflow-hidden billing-card-container" style="background-color: #BF9B7A; border-color: rgba(68, 54, 39, 0.25) !important;">
+                <div class="card-header border-0 d-flex justify-content-between align-items-center p-3 px-4" style="background-color: #443627; color: #ffffff;">
+                    <div>
+                        <h5 class="card-title text-white mb-1 fs-5 fw-bold" style="color: #ffffff !important;">Pending Payments</h5>
+                        <small style="color: #F5F7DF; opacity: 0.9;">Payments that are due or not yet settled.</small>
                     </div>
-                    
+                    <span class="badge bg-danger rounded-pill">{{ $pendingPayments->total() }} items</span>
+                </div>
+                
+                <div class="card-body p-3 p-lg-4 d-flex flex-column flex-grow-1 billing-table-container" style="min-height: 0; background-color: #BF9B7A;">
                     <!-- Added flex-grow-1 and overflow-auto so the table scrolls internally if it exceeds screen height -->
-                    <div class="table-responsive flex-grow-1" style="min-height: 0; overflow-y: auto;">
+                    <div class="table-responsive flex-grow-1 billing-table-container" style="min-height: 0; overflow-y: auto; background-color: #BF9B7A;">
                         <table class="table table-bordered align-middle billing-table billing-pending-table mb-0" style="table-layout: fixed; width: 100%; min-width: {{ $minTableWidth }}px;">
                             <colgroup>
                                 <col style="width: 20%;">
@@ -47,7 +47,7 @@
                                 <col style="width: 13%;">
                                 <col style="width: 16%;">
                             </colgroup>
-                            <thead class="table-light sticky-top">
+                            <thead class="sticky-top billing-table-header-vintage-brown" style="background-color: #6A4435; --bs-table-bg: #6A4435; --bs-table-color: #ffffff; color: #ffffff;">
                                 <tr>
                                     <th>Due Date</th>
                                     <th>Guest Name</th>
@@ -59,15 +59,15 @@
                             </thead>
                             <tbody>
                                 @forelse($pendingPayments as $invoice)
-                                <tr>
-                                    <td>
+                                <tr style="background-color: #F2F6D0;">
+                                    <td style="background-color: #F2F6D0;">
                                         <div class="small">{{ $invoice->booking->check_out_datetime ? \App\Services\SystemFormatService::formatDate($invoice->booking->check_out_datetime) : 'N/A' }}</div>
                                         <div class="text-muted small">{{ $invoice->booking->check_out_datetime ? \App\Services\SystemFormatService::formatTime($invoice->booking->check_out_datetime) : '' }}</div>
                                     </td>
-                                    <td>
+                                    <td style="background-color: #F2F6D0;">
                                         <div>{{ $invoice->booking->guest->fname ?? 'N/A' }} {{ $invoice->booking->guest->lname ?? '' }}</div>
                                     </td>
-                                    <td>
+                                    <td style="background-color: #F2F6D0;">
                                         <div>
                                             @if(is_array($invoice->booking->booked_rooms))
                                                 {{ implode(', ', $invoice->booking->booked_rooms) }}
@@ -77,29 +77,29 @@
                                         </div>
                                     </td>
                                     <td class="col-total-amount text-nowrap">₱ {{ number_format($invoice->grand_total, 2) }}</td>
-                                    <td><span class="badge {{ $invoice->status == 'unpaid' ? 'bg-warning text-dark' : 'bg-info' }}">{{ ucfirst($invoice->status) }}</span></td>
-                                    <td class="text-center text-nowrap">
+                                    <td style="background-color: #F2F6D0;"><span class="badge {{ $invoice->status == 'unpaid' ? 'bg-warning text-dark' : 'bg-info' }}">{{ ucfirst($invoice->status) }}</span></td>
+                                    <td class="text-center text-nowrap" style="background-color: #F2F6D0;">
                                         <a href="{{ route('content.billing', ['edit_id' => $invoice->id]) }}" class="btn btn-sm btn-outline-primary text-nowrap px-2 btn-pay-now">Pay Now</a>
                                     </td>
                                 </tr>
                                 @empty
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted" style="height: 180px; vertical-align: middle;">No pending payments.</td>
+                                <tr style="background-color: #F2F6D0;">
+                                    <td colspan="6" class="text-center text-muted" style="height: 180px; vertical-align: middle; background-color: #F2F6D0;">No pending payments.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+                </div>
+                
+                <!-- Footer background: Vintage Brown #443627 -->
+                <div class="card-footer border-0 d-flex justify-content-between align-items-center p-3 px-4 mt-auto flex-wrap gap-2" style="background-color: #443627; color: #F5F7DF;">
+                    <span style="font-size: 0.8rem; color: #F5F7DF;">
+                        Showing {{ $pendingPayments->firstItem() ?? 0 }} to {{ $pendingPayments->lastItem() ?? 0 }} of {{ $pendingPayments->total() }} result(s)
+                    </span>
                     
-                    <!-- mt-3 pt-3 mt-auto forces pagination to the very bottom of the card -->
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-3 mt-auto flex-wrap gap-2">
-                        <span class="text-muted" style="font-size: 0.8rem;">
-                            Showing {{ $pendingPayments->firstItem() ?? 0 }} to {{ $pendingPayments->lastItem() ?? 0 }} of {{ $pendingPayments->total() }} result(s)
-                        </span>
-                        
-                        <div class="billing-pagination">
-                            {{ $pendingPayments->links('pagination::bootstrap-5') }}
-                        </div>
+                    <div class="billing-pagination">
+                        {{ $pendingPayments->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
             </div>
@@ -107,18 +107,18 @@
         
         <!-- Card 2: Confirmed Payments (Right Side) -->
         <div class="col-lg-6 d-flex flex-column">
-            <div class="card bg-white border rounded shadow-sm flex-grow-1 d-flex flex-column">
-                <div class="card-body p-4 p-lg-4 d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h5 class="card-title text-dark mb-1 fs-5">Confirmed Payments</h5>
-                            <small class="text-muted">Successfully processed and settled payments.</small>
-                        </div>
-                        <span class="badge bg-success rounded-pill">{{ $confirmedPayments->total() }} items</span>
+            <div class="card border rounded shadow-sm flex-grow-1 d-flex flex-column overflow-hidden billing-card-container" style="background-color: #BF9B7A; border-color: rgba(68, 54, 39, 0.25) !important;">
+                <div class="card-header border-0 d-flex justify-content-between align-items-center p-3 px-4" style="background-color: #443627; color: #ffffff;">
+                    <div>
+                        <h5 class="card-title text-white mb-1 fs-5 fw-bold" style="color: #ffffff !important;">Confirmed Payments</h5>
+                        <small style="color: #F5F7DF; opacity: 0.9;">Successfully processed and settled payments.</small>
                     </div>
-                    
+                    <span class="badge bg-success rounded-pill">{{ $confirmedPayments->total() }} items</span>
+                </div>
+                
+                <div class="card-body p-3 p-lg-4 d-flex flex-column flex-grow-1 billing-table-container" style="min-height: 0; background-color: #BF9B7A;">
                     <!-- Added flex-grow-1 and overflow-auto so the table scrolls internally if it exceeds screen height -->
-                    <div class="table-responsive flex-grow-1" style="min-height: 0; overflow-y: auto;">
+                    <div class="table-responsive flex-grow-1 billing-table-container" style="min-height: 0; overflow-y: auto; background-color: #BF9B7A;">
                         <table class="table table-bordered align-middle billing-table billing-confirmed-table mb-0" style="table-layout: fixed; width: 100%; min-width: {{ $minTableWidth }}px;">
                             <colgroup>
                                 <col style="width: 20%;">
@@ -128,7 +128,7 @@
                                 <col style="width: 13%;">
                                 <col style="width: 16%;">
                             </colgroup>
-                            <thead class="table-light sticky-top">
+                            <thead class="sticky-top billing-table-header-vintage-brown" style="background-color: #6A4435; --bs-table-bg: #6A4435; --bs-table-color: #ffffff; color: #ffffff;">
                                 <tr>
                                     <th>Date Paid</th>
                                     <th>Guest Name</th>
@@ -154,6 +154,9 @@
                                     $isEwallet = in_array($cleanMethod, ['ewallet', 'gcash', 'e-wallet', 'paymaya', 'paypal']);
                                     $referenceNumber = $log?->reference_number ?? $invoice->booking?->reference_number ?? '';
 
+                                    $advanceDeposit = (float) ($invoice->advance_deposit ?? $invoice->booking?->deposit ?? 0);
+                                    $remainingPayment = max(0.0, round((float) $invoice->grand_total - $advanceDeposit, 2));
+
                                     // Build charges JSON for the details modal
                                     $charges = [];
                                     if ($invoice->room_charges > 0) {
@@ -171,16 +174,19 @@
                                     if ($invoice->discount_amount > 0) {
                                         $charges[] = ['description' => 'Discount', 'type' => 'discount', 'amount' => -$invoice->discount_amount];
                                     }
+                                    if ($advanceDeposit > 0) {
+                                        $charges[] = ['description' => 'Advance Deposit', 'type' => 'deposit', 'amount' => -$advanceDeposit];
+                                    }
                                 @endphp
-                                <tr>
-                                    <td>
+                                <tr style="background-color: #F2F6D0;">
+                                    <td style="background-color: #F2F6D0;">
                                         <div class="small">{{ \App\Services\SystemFormatService::formatDate($invoice->updated_at) }}</div>
                                         <div class="text-muted small">{{ \App\Services\SystemFormatService::formatTime($invoice->updated_at) }}</div>
                                     </td>
-                                    <td>
+                                    <td style="background-color: #F2F6D0;">
                                         <div>{{ $invoice->booking->guest->fname ?? 'N/A' }} {{ $invoice->booking->guest->lname ?? '' }}</div>
                                     </td>
-                                    <td>
+                                    <td style="background-color: #F2F6D0;">
                                         <div>
                                             @if(is_array($invoice->booking->booked_rooms))
                                                 {{ implode(', ', $invoice->booking->booked_rooms) }}
@@ -190,8 +196,8 @@
                                         </div>
                                     </td>
                                     <td class="col-total-amount text-nowrap">₱ {{ number_format($invoice->grand_total, 2) }}</td>
-                                    <td><span class="badge bg-success">Paid</span></td>
-                                    <td class="text-center text-nowrap">
+                                    <td style="background-color: #F2F6D0;"><span class="badge bg-success">Paid</span></td>
+                                    <td class="text-center text-nowrap" style="background-color: #F2F6D0;">
                                         <button type="button" class="btn btn-sm btn-outline-secondary btn-view-payment"
                                             data-guest="{{ trim(($invoice->booking->guest->fname ?? 'N/A') . ' ' . ($invoice->booking->guest->lname ?? '')) }}"
                                             data-rooms="@if(is_array($invoice->booking->booked_rooms)) Room {{ implode(', ', $invoice->booking->booked_rooms) }} @else Room {{ $invoice->booking->booked_rooms }} @endif"
@@ -200,6 +206,8 @@
                                             data-is-ewallet="{{ $isEwallet ? '1' : '0' }}"
                                             data-reference-number="{{ $referenceNumber }}"
                                             data-grand-total="{{ number_format($invoice->grand_total, 2) }}"
+                                            data-advance-deposit="{{ number_format($advanceDeposit, 2) }}"
+                                            data-remaining-payment="{{ number_format($remainingPayment, 2) }}"
                                             data-charges='@json($charges)'
                                             title="View Payment Details">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
@@ -210,23 +218,23 @@
                                     </td>
                                 </tr>
                                 @empty
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted" style="height: 180px; vertical-align: middle;">No confirmed payments yet.</td>
+                                <tr style="background-color: #F2F6D0;">
+                                    <td colspan="6" class="text-center text-muted" style="height: 180px; vertical-align: middle; background-color: #F2F6D0;">No confirmed payments yet.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+                </div>
+                
+                <!-- Footer background: Vintage Brown #443627 -->
+                <div class="card-footer border-0 d-flex justify-content-between align-items-center p-3 px-4 mt-auto flex-wrap gap-2" style="background-color: #443627; color: #F5F7DF;">
+                    <span style="font-size: 0.8rem; color: #F5F7DF;">
+                        Showing {{ $confirmedPayments->firstItem() ?? 0 }} to {{ $confirmedPayments->lastItem() ?? 0 }} of {{ $confirmedPayments->total() }} result(s)
+                    </span>
                     
-                    <!-- mt-3 pt-3 mt-auto forces pagination to the very bottom of the card -->
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-3 mt-auto flex-wrap gap-2">
-                        <span class="text-muted" style="font-size: 0.8rem;">
-                            Showing {{ $confirmedPayments->firstItem() ?? 0 }} to {{ $confirmedPayments->lastItem() ?? 0 }} of {{ $confirmedPayments->total() }} result(s)
-                        </span>
-                        
-                        <div class="billing-pagination">
-                            {{ $confirmedPayments->links('pagination::bootstrap-5') }}
-                        </div>
+                    <div class="billing-pagination">
+                        {{ $confirmedPayments->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
             </div>
@@ -315,9 +323,20 @@
         width: 100% !important;
         margin-bottom: 0;
     }
+    .billing-table thead,
+    .billing-table thead tr,
     .billing-table thead th {
+        background-color: #6A4435 !important;
+        --bs-table-bg: #6A4435 !important;
+        --bs-table-color: #ffffff !important;
+        color: #ffffff !important;
         vertical-align: middle;
         white-space: nowrap;
+    }
+    .billing-table tbody tr,
+    .billing-table tbody td {
+        background-color: #F2F6D0 !important;
+        --bs-table-bg: #F2F6D0 !important;
     }
     .billing-table tbody td {
         vertical-align: middle;

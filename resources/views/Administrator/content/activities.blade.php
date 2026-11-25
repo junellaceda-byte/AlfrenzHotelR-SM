@@ -1,19 +1,42 @@
 <!-- Section 2: Activity Logs Content -->
+<style>
+    #activityLogsPagination .page-item.active .page-link {
+        background-color: #F5F7DF !important;
+        border-color: #F5F7DF !important;
+        color: #443627 !important;
+        font-weight: 700;
+    }
+    #activityLogsPagination .page-link {
+        color: #F5F7DF;
+        background-color: rgba(245, 247, 223, 0.15);
+        border-color: rgba(245, 247, 223, 0.3);
+    }
+    #activityLogsPagination .page-link:hover {
+        background-color: rgba(245, 247, 223, 0.3);
+        color: #ffffff;
+    }
+    #activityLogsPagination .page-item.disabled .page-link {
+        color: rgba(245, 247, 223, 0.4);
+        background-color: transparent;
+        border-color: rgba(245, 247, 223, 0.15);
+        cursor: not-allowed;
+    }
+</style>
 
 <!-- Activity Logs Box Container -->
-<div class="card border rounded overflow-hidden shadow-sm bg-white">
+<div class="card border rounded overflow-hidden shadow-sm" style="background-color: #F5F7DF;">
 
     <!-- Name Header with Bottom Border -->
-    <div class="p-4 border-bottom bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="p-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2 text-white" style="background-color: #443627;">
         <div>
-            <h5 class="fw-bold m-0 text-dark">System Activity Logs</h5>
-            <small class="text-muted">Automatically recorded activities performed by Receptionist accounts and system events</small>
+            <h5 class="fw-bold m-0 text-white">System Activity Logs</h5>
+            <small class="text-white-50">Automatically recorded activities performed by Receptionist accounts and system events</small>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-secondary rounded-pill px-3 py-2 fw-semibold" id="activityLogsCountBadge">
+            <span class="badge rounded-pill px-3 py-2 fw-semibold border" style="background-color: rgba(245, 247, 223, 0.15); color: #F5F7DF; border-color: rgba(245, 247, 223, 0.3) !important;" id="activityLogsCountBadge">
                 {{ isset($activityLogs) ? $activityLogs->total() : 0 }} records
             </span>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="activityRefreshBtn" title="Refresh activities">
+            <button type="button" class="btn btn-sm btn-outline-light" id="activityRefreshBtn" title="Refresh activities">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
                     <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
@@ -94,26 +117,22 @@
         <small class="fw-bold text-muted">Active Filters:</small>
         <span class="badge bg-light text-dark border" id="badgeFilterWho">Who: {{ $filterWho ?? 'Everyone' }}</span>
         <span class="badge bg-light text-dark border" id="badgeFilterType">Type: {{ $filterType ?? 'All' }}</span>
-        @if(!empty($filterDate))
-            <span class="badge bg-light text-dark border" id="badgeFilterDate">Date: {{ $filterDate }}</span>
-        @endif
-        @if(!empty($filterSearch))
-            <span class="badge bg-light text-dark border" id="badgeFilterSearch">Search: "{{ $filterSearch }}"</span>
-        @endif
+        <span class="badge bg-light text-dark border {{ empty($filterDate) ? 'd-none' : '' }}" id="badgeFilterDate">Date: {{ $filterDate ?? '' }}</span>
+        <span class="badge bg-light text-dark border {{ empty($filterSearch) ? 'd-none' : '' }}" id="badgeFilterSearch">Search: "{{ $filterSearch ?? '' }}"</span>
         <a href="{{ url('/admindashboard?section=activities') }}" class="btn btn-sm btn-link text-decoration-none text-danger p-0 ms-2 small" id="activityResetAllFilters">Reset filters</a>
     </div>
 
     <!-- Space for the actual logs to populate below the filters -->
     <div class="p-4 pt-0">
-        <div class="table-responsive border rounded bg-white">
-            <table class="table table-hover align-middle mb-0" id="activityLogsTable">
-                <thead class="table-light border-bottom">
+        <div class="table-responsive border rounded" style="background-color: #F5F7DF;">
+            <table class="table table-hover align-middle mb-0" id="activityLogsTable" style="background-color: #F5F7DF;">
+                <thead class="border-bottom" style="background-color: #443627; color: #ffffff;">
                     <tr>
-                        <th class="py-3 px-3 fw-bold text-secondary small text-uppercase" style="width: 14%;">Type</th>
-                        <th class="py-3 px-3 fw-bold text-secondary small text-uppercase" style="width: 22%;">Responsible User</th>
-                        <th class="py-3 px-3 fw-bold text-secondary small text-uppercase" style="width: 32%;">Activity Details</th>
-                        <th class="py-3 px-3 fw-bold text-secondary small text-uppercase" style="width: 16%;">Financials / Method</th>
-                        <th class="py-3 px-3 fw-bold text-secondary small text-uppercase text-end" style="width: 16%;">Date & Time</th>
+                        <th class="py-3 px-3 fw-bold text-white small text-uppercase" style="width: 14%; background-color: #443627; color: #ffffff;">Type</th>
+                        <th class="py-3 px-3 fw-bold text-white small text-uppercase" style="width: 22%; background-color: #443627; color: #ffffff;">Responsible User</th>
+                        <th class="py-3 px-3 fw-bold text-white small text-uppercase" style="width: 32%; background-color: #443627; color: #ffffff;">Activity Details</th>
+                        <th class="py-3 px-3 fw-bold text-white small text-uppercase" style="width: 16%; background-color: #443627; color: #ffffff;">Financials / Method</th>
+                        <th class="py-3 px-3 fw-bold text-white small text-uppercase text-end text-white" style="width: 16%; background-color: #443627; color: #ffffff;">Date & Time</th>
                     </tr>
                 </thead>
                 <tbody id="activityLogsTableBody">
@@ -251,14 +270,14 @@
         </div>
 
         <!-- Pagination Controls -->
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" id="activityLogsPagination">
-            <div class="small text-muted" id="activityLogsPaginationInfo">
+        <div class="card-footer border-top d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 p-3 rounded" id="activityLogsPagination" style="background-color: #443627; color: #F5F7DF;">
+            <div class="small" id="activityLogsPaginationInfo" style="color: #F5F7DF;">
                 @if(isset($activityLogs) && $activityLogs->total() > 0)
                     Showing {{ $activityLogs->firstItem() }} to {{ $activityLogs->lastItem() }} of {{ $activityLogs->total() }} entries
                 @endif
             </div>
-            <div>
-                @if(isset($activityLogs))
+            <div id="activityLogsPaginationLinks">
+                @if(isset($activityLogs) && $activityLogs->total() > 0)
                     {{ $activityLogs->links('Receptionist.vendor.pagination.bootstrap-5') }}
                 @endif
             </div>
@@ -277,19 +296,27 @@
         var clearDateBtn = document.getElementById('activityClearDateBtn');
         var clearSearchBtn = document.getElementById('activityClearSearchBtn');
         var refreshBtn = document.getElementById('activityRefreshBtn');
+        var filterForm = document.getElementById('activityFilterForm');
+        var resetAllBtn = document.getElementById('activityResetAllFilters');
         var tableBody = document.getElementById('activityLogsTableBody');
         var countBadge = document.getElementById('activityLogsCountBadge');
         var paginationInfo = document.getElementById('activityLogsPaginationInfo');
+        var paginationLinks = document.getElementById('activityLogsPaginationLinks');
         var paginationWrap = document.getElementById('activityLogsPagination');
         var activeFiltersWrap = document.getElementById('activityActiveFiltersWrap');
         var badgeWho = document.getElementById('badgeFilterWho');
         var badgeType = document.getElementById('badgeFilterType');
+        var badgeDate = document.getElementById('badgeFilterDate');
+        var badgeSearch = document.getElementById('badgeFilterSearch');
 
         var searchTimeout = null;
-        var currentPage = 1;
+        var urlParams = new URLSearchParams(window.location.search);
+        var initialPage = parseInt(urlParams.get('page'), 10);
+        var currentPage = (!isNaN(initialPage) && initialPage > 0) ? initialPage : {{ isset($activityLogs) ? $activityLogs->currentPage() : 1 }};
 
-        function fetchActivities(page) {
-            if (page) currentPage = page;
+        function fetchActivities(page, updateHistory) {
+            if (typeof updateHistory === 'undefined') updateHistory = true;
+            if (page) currentPage = parseInt(page, 10);
 
             var params = new URLSearchParams();
             params.set('who', whoSelect ? whoSelect.value : 'all');
@@ -299,8 +326,10 @@
             params.set('page', currentPage);
 
             // Update browser URL query string without reloading
-            var newUrl = window.location.pathname + '?section=activities&' + params.toString();
-            window.history.replaceState({ path: newUrl }, '', newUrl);
+            if (updateHistory) {
+                var newUrl = window.location.pathname + '?section=activities&' + params.toString();
+                window.history.replaceState({ path: newUrl }, '', newUrl);
+            }
 
             // Toggle clear buttons
             if (clearDateBtn) {
@@ -328,6 +357,22 @@
             if (badgeType && typeSelect) {
                 badgeType.textContent = 'Type: ' + typeSelect.options[typeSelect.selectedIndex].text;
             }
+            if (badgeDate) {
+                if (dateInput && dateInput.value) {
+                    badgeDate.textContent = 'Date: ' + dateInput.value;
+                    badgeDate.classList.remove('d-none');
+                } else {
+                    badgeDate.classList.add('d-none');
+                }
+            }
+            if (badgeSearch) {
+                if (searchInput && searchInput.value.trim()) {
+                    badgeSearch.textContent = 'Search: "' + searchInput.value.trim() + '"';
+                    badgeSearch.classList.remove('d-none');
+                } else {
+                    badgeSearch.classList.add('d-none');
+                }
+            }
 
             // Fetch data from API endpoint
             fetch('/api/admin/activities?' + params.toString())
@@ -338,18 +383,96 @@
                         if (countBadge) countBadge.textContent = res.total + ' records';
                         if (paginationInfo) {
                             if (res.total > 0) {
-                                var from = (res.current_page - 1) * res.per_page + 1;
-                                var to = Math.min(res.current_page * res.per_page, res.total);
+                                var from = res.from ? res.from : ((res.current_page - 1) * res.per_page + 1);
+                                var to = res.to ? res.to : Math.min(res.current_page * res.per_page, res.total);
                                 paginationInfo.textContent = 'Showing ' + from + ' to ' + to + ' of ' + res.total + ' entries';
                             } else {
                                 paginationInfo.textContent = '';
                             }
                         }
+                        renderPagination(res);
                     }
                 })
                 .catch(function (err) {
                     console.error('Error fetching activities:', err);
                 });
+        }
+
+        function renderPagination(res) {
+            if (!paginationLinks) return;
+
+            var curr = parseInt(res.current_page, 10) || 1;
+            var last = parseInt(res.last_page, 10) || 1;
+            var total = parseInt(res.total, 10) || 0;
+
+            if (total === 0) {
+                paginationLinks.innerHTML = '';
+                return;
+            }
+
+            var html = '<nav aria-label="Page navigation"><ul class="pagination mb-0">';
+
+            // Previous Button
+            if (curr <= 1) {
+                html += '<li class="page-item disabled" aria-disabled="true"><span class="page-link">Previous</span></li>';
+            } else {
+                html += '<li class="page-item"><a class="page-link" href="#" data-page="' + (curr - 1) + '" rel="prev">Previous</a></li>';
+            }
+
+            // Page Numbers
+            var pages = [];
+            if (last <= 7) {
+                for (var i = 1; i <= last; i++) {
+                    pages.push(i);
+                }
+            } else {
+                pages.push(1);
+
+                var start = Math.max(2, curr - 1);
+                var end = Math.min(last - 1, curr + 1);
+
+                if (curr <= 3) {
+                    start = 2;
+                    end = 4;
+                } else if (curr >= last - 2) {
+                    start = last - 3;
+                    end = last - 1;
+                }
+
+                if (start > 2) {
+                    pages.push('...');
+                }
+
+                for (var j = start; j <= end; j++) {
+                    pages.push(j);
+                }
+
+                if (end < last - 1) {
+                    pages.push('...');
+                }
+
+                pages.push(last);
+            }
+
+            pages.forEach(function (p) {
+                if (p === '...') {
+                    html += '<li class="page-item disabled" aria-disabled="true"><span class="page-link">&hellip;</span></li>';
+                } else if (p === curr) {
+                    html += '<li class="page-item active" aria-current="page"><span class="page-link">' + p + '</span></li>';
+                } else {
+                    html += '<li class="page-item"><a class="page-link" href="#" data-page="' + p + '">' + p + '</a></li>';
+                }
+            });
+
+            // Next Button
+            if (curr >= last) {
+                html += '<li class="page-item disabled" aria-disabled="true"><span class="page-link">Next</span></li>';
+            } else {
+                html += '<li class="page-item"><a class="page-link" href="#" data-page="' + (curr + 1) + '" rel="next">Next</a></li>';
+            }
+
+            html += '</ul></nav>';
+            paginationLinks.innerHTML = html;
         }
 
         function renderLogs(logs) {
@@ -463,14 +586,33 @@
             tableBody.innerHTML = html;
         }
 
-        // Attach event listeners
-        if (whoSelect) whoSelect.addEventListener('change', function () { fetchActivities(1); });
-        if (typeSelect) typeSelect.addEventListener('change', function () { fetchActivities(1); });
-        if (dateInput) dateInput.addEventListener('change', function () { fetchActivities(1); });
+        // Attach event listeners for filters - all automatically reset to page 1
+        if (whoSelect) {
+            whoSelect.addEventListener('change', function () {
+                currentPage = 1;
+                fetchActivities(1);
+            });
+        }
+
+        if (typeSelect) {
+            typeSelect.addEventListener('change', function () {
+                currentPage = 1;
+                fetchActivities(1);
+            });
+        }
+
+        if (dateInput) {
+            dateInput.addEventListener('change', function () {
+                currentPage = 1;
+                fetchActivities(1);
+            });
+        }
 
         if (clearDateBtn && dateInput) {
-            clearDateBtn.addEventListener('click', function () {
+            clearDateBtn.addEventListener('click', function (e) {
+                e.preventDefault();
                 dateInput.value = '';
+                currentPage = 1;
                 fetchActivities(1);
             });
         }
@@ -479,14 +621,37 @@
             searchInput.addEventListener('input', function () {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(function () {
+                    currentPage = 1;
                     fetchActivities(1);
-                }, 350);
+                }, 300);
             });
         }
 
         if (clearSearchBtn && searchInput) {
-            clearSearchBtn.addEventListener('click', function () {
+            clearSearchBtn.addEventListener('click', function (e) {
+                e.preventDefault();
                 searchInput.value = '';
+                currentPage = 1;
+                fetchActivities(1);
+            });
+        }
+
+        if (filterForm) {
+            filterForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                currentPage = 1;
+                fetchActivities(1);
+            });
+        }
+
+        if (resetAllBtn) {
+            resetAllBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (whoSelect) whoSelect.value = 'all';
+                if (typeSelect) typeSelect.value = 'all';
+                if (dateInput) dateInput.value = '';
+                if (searchInput) searchInput.value = '';
+                currentPage = 1;
                 fetchActivities(1);
             });
         }
@@ -497,22 +662,64 @@
             });
         }
 
-        // Handle pagination link clicks dynamically
+        // Handle pagination link clicks dynamically (Previous, Next, and page numbers)
         document.addEventListener('click', function (e) {
             var target = e.target.closest('#activityLogsPagination .page-link');
-            if (target && target.getAttribute('href')) {
+            if (!target) return;
+
+            var pageItem = target.closest('.page-item');
+            if (pageItem && (pageItem.classList.contains('disabled') || pageItem.classList.contains('active'))) {
                 e.preventDefault();
+                return;
+            }
+
+            var targetPage = null;
+            if (target.dataset && target.dataset.page) {
+                targetPage = parseInt(target.dataset.page, 10);
+            } else if (target.getAttribute('href')) {
                 var href = target.getAttribute('href');
-                var match = href.match(/page=(\d+)/);
+                var match = href.match(/[?&]page=(\d+)/);
                 if (match) {
-                    fetchActivities(parseInt(match[1], 10));
+                    targetPage = parseInt(match[1], 10);
                 }
+            }
+
+            if (targetPage && !isNaN(targetPage) && targetPage > 0 && targetPage !== currentPage) {
+                e.preventDefault();
+                fetchActivities(targetPage);
+
+                var tableCard = document.getElementById('activityLogsTable');
+                if (tableCard && typeof tableCard.scrollIntoView === 'function') {
+                    var rect = tableCard.getBoundingClientRect();
+                    if (rect.top < 0) {
+                        tableCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            } else if (target.getAttribute('href') === '#' || target.dataset.page) {
+                e.preventDefault();
             }
         });
 
         // Periodic background poll every 30 seconds to catch newly recorded activities
         setInterval(function () {
-            fetchActivities(currentPage);
+            fetchActivities(currentPage, false);
         }, 30000);
+
+        // Sync on popstate (browser back/forward navigation)
+        window.addEventListener('popstate', function () {
+            var popParams = new URLSearchParams(window.location.search);
+            var page = parseInt(popParams.get('page'), 10) || 1;
+            var who = popParams.get('who') || 'all';
+            var type = popParams.get('type') || 'all';
+            var date = popParams.get('date') || '';
+            var search = popParams.get('search') || '';
+
+            if (whoSelect) whoSelect.value = who;
+            if (typeSelect) typeSelect.value = type;
+            if (dateInput) dateInput.value = date;
+            if (searchInput) searchInput.value = search;
+
+            fetchActivities(page, false);
+        });
     });
 </script>

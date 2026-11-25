@@ -36,9 +36,8 @@ class AdminSidebarTopbarDesignTest extends TestCase
         $response->assertSee('AMENITIES');
         $response->assertSee('ACTIVITIES LOGS');
         $response->assertSee('SALES REPORTS');
-        $response->assertSee('ARCHIVE');
         $response->assertSee('ROOM MANAGEMENT');
-        $response->assertSee('STAFF');
+        $response->assertSee('Account Management');
         $response->assertSee('SETTINGS');
         $response->assertSee('LOGOUT');
 
@@ -70,17 +69,16 @@ class AdminSidebarTopbarDesignTest extends TestCase
 
         // 2. Welcoming greeting
         $response->assertSee('<h4 class="mb-0 fw-bold text-dark text-truncate"', false);
-        $response->assertSee('Good day, Name!');
+        $response->assertSee('Good day, admin!');
 
         // 3. Live Date & Time boxes with Receptionist styling
-        $response->assertSee('border px-3 py-2 bg-white rounded shadow-sm fw-bold text-secondary small', false);
+        $response->assertSee('border px-3 py-2 rounded shadow-sm fw-bold small', false);
         $response->assertSee('id="current-date"', false);
         $response->assertSee('id="current-time"', false);
 
-        // 4. Action buttons: Notification bell with SVG and Avatar
-        $response->assertSee('icons/bell.svg', false);
+        // 4. Action buttons: Avatar
         $response->assertSee('title="Administrator"', false);
-        $response->assertSee('border rounded-circle bg-white shadow-sm fw-bold', false);
+        $response->assertSee('border rounded-circle shadow-sm fw-bold', false);
     }
 
     public function test_admin_responsive_mobile_hamburger_and_offcanvas(): void

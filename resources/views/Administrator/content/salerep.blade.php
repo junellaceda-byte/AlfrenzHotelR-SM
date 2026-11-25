@@ -1,23 +1,24 @@
 <!-- Reuse the overview CSS to keep the design consistent -->
 <link rel="stylesheet" href="{{ asset('CSS/Administrator/overview.css') }}">
+<link rel="stylesheet" href="{{ asset('CSS/Administrator/salerep.css') }}">
 
 <!-- Filter Bar for Sales Reports (Date, Month, Year) -->
-<div class="card border rounded p-3 mb-3 bg-white shadow-sm">
+<div class="card border rounded p-3 mb-3 shadow-sm sales-reports-filter-bar" style="background-color: #443627; border-color: #443627;">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div class="d-flex align-items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#443627" viewBox="0 0 16 16">
+        <div class="d-flex align-items-center gap-2 sales-filter-title-wrapper" style="min-width: 0; max-width: 320px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#F5F7DF" viewBox="0 0 16 16" class="flex-shrink-0">
                 <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
             </svg>
-            <div>
-                <h6 class="fw-bold m-0" style="color: #443627;">Sales Reports Filter</h6>
-                <small id="salesFilterSubtitle" class="text-muted">Showing live sales data from Receptionist Billing</small>
+            <div class="text-truncate" style="min-width: 0;">
+                <h6 class="fw-bold m-0 text-truncate" style="color: #F5F7DF;">Sales Reports Filter</h6>
+                <small id="salesFilterSubtitle" class="d-block text-truncate" style="color: rgba(245, 247, 223, 0.85);" title="Showing live sales data for Today">Showing live sales data for Today</small>
             </div>
         </div>
 
-        <div class="d-flex flex-wrap align-items-center gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
             <!-- Year Selector -->
             <div>
-                <select id="salesFilterYear" class="form-select form-select-sm border-secondary fw-semibold" style="min-width: 95px; color: #443627;">
+                <select id="salesFilterYear" class="form-select form-select-sm border-0 fw-semibold" style="min-width: 95px; background-color: #F5F7DF; color: #443627;">
                     @php
                         $currentYear = (int) now()->setTimezone('Asia/Manila')->format('Y');
                     @endphp
@@ -29,7 +30,7 @@
 
             <!-- Month Selector -->
             <div>
-                <select id="salesFilterMonth" class="form-select form-select-sm border-secondary fw-semibold" style="min-width: 130px; color: #443627;">
+                <select id="salesFilterMonth" class="form-select form-select-sm border-0 fw-semibold" style="min-width: 130px; background-color: #F5F7DF; color: #443627;">
                     @php
                         $currentMonth = (int) now()->setTimezone('Asia/Manila')->format('n');
                         $months = [
@@ -45,26 +46,53 @@
                 </select>
             </div>
 
-            <!-- Optional Specific Date Picker -->
-            <div class="d-flex align-items-center gap-1">
-                <input type="date" id="salesFilterDate" class="form-control form-control-sm border-secondary" title="Filter by specific day" style="width: 140px; color: #443627;">
-                <button type="button" id="salesFilterClearDateBtn" class="btn btn-sm btn-outline-secondary text-nowrap d-none" title="Clear specific day filter">
+            <!-- Main Sales Reports Filter Buttons: This Month, Today, Yearly, Monthly, Weekly, Custom (M/D/Y) -->
+            <div class="sales-filter-nav-group position-relative d-inline-flex align-items-center p-1 rounded" id="salesFilterGroup" role="group" aria-label="Sales Reports Filter Controls" style="background-color: #F5F7DF; border: 1px solid rgba(68, 54, 39, 0.3);">
+                <!-- Sliding highlight pill element -->
+                <div class="sales-filter-slider position-absolute" id="salesFilterSlider" aria-hidden="true"></div>
+
+                <button type="button" id="salesFilterThisMonthBtn" class="btn btn-sm sales-filter-btn position-relative" data-filter="this_month">
+                    This Month
+                </button>
+                <button type="button" id="salesFilterTodayBtn" class="btn btn-sm sales-filter-btn active" data-filter="today">
+                    Today
+                </button>
+                <button type="button" id="salesFilterYearlyBtn" class="btn btn-sm sales-filter-btn position-relative" data-filter="yearly">
+                    Yearly
+                </button>
+                <button type="button" id="salesFilterMonthlyBtn" class="btn btn-sm sales-filter-btn position-relative" data-filter="monthly">
+                    Monthly
+                </button>
+                <button type="button" id="salesFilterWeeklyBtn" class="btn btn-sm sales-filter-btn position-relative" data-filter="weekly">
+                    Weekly
+                </button>
+                <button type="button" id="salesFilterCustomBtn" class="btn btn-sm sales-filter-btn position-relative d-inline-flex align-items-center gap-1" data-filter="custom">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                    </svg>
+                    Custom
+                </button>
+            </div>
+
+            <!-- Single Calendar Date Picker for Custom Filter (M/D/Y format) -->
+            <div class="d-flex align-items-center gap-1 position-relative" id="salesCustomDatePickerWrapper">
+                <div class="input-group input-group-sm" style="width: 145px;">
+                    <button type="button" class="input-group-text border-0 px-2" id="salesCustomCalIcon" title="Open Calendar Picker" style="background-color: #F5F7DF !important; color: #443627;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="#443627" viewBox="0 0 16 16">
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg>
+                    </button>
+                    <input type="text" id="salesCustomDateInput" class="form-control form-control-sm border-0 text-center fw-semibold" placeholder="M/D/Y" title="Select single date (M/D/Y format)" style="background-color: #F5F7DF; color: #443627;">
+                    <!-- Native date input backing calendar picker -->
+                    <input type="date" id="salesFilterDate" class="position-absolute" style="opacity: 0; width: 1px; height: 1px; pointer-events: none; left: 0; top: 0;" tabindex="-1">
+                </div>
+                <button type="button" id="salesFilterClearDateBtn" class="btn btn-sm btn-outline-light text-nowrap d-none" title="Clear specific day filter">
                     &times;
                 </button>
             </div>
 
-            <!-- Quick Filter Buttons -->
-            <div class="btn-group" role="group">
-                <button type="button" id="salesFilterThisMonthBtn" class="btn btn-sm text-white" style="background-color: #443627;">
-                    This Month
-                </button>
-                <button type="button" id="salesFilterTodayBtn" class="btn btn-sm btn-outline-secondary">
-                    Today
-                </button>
-            </div>
-
-            <!-- Export to Excel Button -->
-            <button type="button" id="salesExportExcelBtn" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1" title="Export current report data to Excel">
+            <!-- Export to Excel Button (Opens Excel Formatting Modal) -->
+            <button type="button" id="salesExportExcelBtn" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#salesExportExcelModal" title="Export report data to Excel with custom styling">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                     <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
@@ -122,26 +150,15 @@
 <div class="row g-3 mb-3">
     <!-- Left Side: Occupancy Trend Line Chart (Takes up 8 columns) -->
     <div class="col-12 col-lg-8">
-        <div class="card border rounded p-3 p-sm-4 h-100">
+        <div class="card border rounded p-3 p-sm-4 h-100" style="background-color: #eff1d9;">
             <div class="d-flex justify-content-between align-items-center mb-4 gap-2">
-                <h5 class="fw-bold m-0">Occupancy & Revenue Trend</h5>
-                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-                    <div class="btn-group" role="group" aria-label="Occupancy trend period filter">
-                        <button type="button" class="btn btn-sm fw-semibold occupancy-trend-btn active"
-                            data-period="weekly"
-                            style="background-color: #443627; border-color: #443627; color: #ffffff;">
-                            Weekly
-                        </button>
-                        <button type="button" class="btn btn-sm fw-semibold occupancy-trend-btn" data-period="monthly"
-                            style="background-color: transparent; border-color: #734F46; color: #734F46;">
-                            Monthly
-                        </button>
-                        <button type="button" class="btn btn-sm fw-semibold occupancy-trend-btn" data-period="yearly"
-                            style="background-color: transparent; border-color: #734F46; color: #734F46;">
-                            Yearly
-                        </button>
-                    </div>
+                <div>
+                    <h5 class="fw-bold m-0" style="color: #443627;">Occupancy & Revenue Trend</h5>
+                    <small id="occupancyTrendSubtitle" class="text-muted">Synchronized with Sales Reports Filter</small>
                 </div>
+                <span id="occupancyTrendScopeBadge" class="badge text-bg-light border text-secondary fw-semibold">
+                    Today
+                </span>
             </div>
             <div style="position: relative; height: 320px; width: 100%;">
                 <canvas id="occupancyTrendChart"></canvas>
@@ -151,11 +168,11 @@
 
     <!-- Right Side: Revenue Target Gauge Chart (Takes up 4 columns) -->
     <div class="col-12 col-lg-4">
-        <div class="card border rounded p-3 p-sm-4 h-100 d-flex flex-column">
-            <h5 class="fw-bold m-0 mb-3">Monthly Target Progress</h5>
-            <div class="flex-grow-1 d-flex align-items-center justify-content-center" style="min-height: 250px;">
+        <div class="card border rounded p-3 p-sm-4 h-100 d-flex flex-column" style="background-color: #F5F7DF;">
+            <h5 class="fw-bold m-0 mb-3" style="color: #443627;">Monthly Target Progress</h5>
+            <div class="flex-grow-1 d-flex align-items-center justify-content-center" style="position: relative; min-height: 320px; width: 100%;">
                 <!-- ApexCharts Gauge container -->
-                <div id="revenueGaugeChart" style="width: 100%;"></div>
+                <div id="revenueGaugeChart" style="width: 100%; min-height: 320px;"></div>
             </div>
         </div>
     </div>
@@ -195,7 +212,7 @@
 
     <!-- Right Side: Revenue Breakdown Stacked Bar Chart (8 Columns) -->
     <div class="col-12 col-lg-8">
-        <div class="card border rounded p-3 p-sm-4 h-100">
+        <div class="card border rounded p-3 p-sm-4 h-100" style="background-color: #ecf3b5;">
             <div class="d-flex justify-content-between align-items-center mb-4 gap-2">
                 <h5 class="fw-bold m-0">Revenue Breakdown: Room Rates vs Extra Charges</h5>
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
@@ -222,7 +239,7 @@
 <!-- Step 4: Amenities Comparison (Ranked Horizontal Bar Chart) -->
 <div class="row g-3 mb-3">
     <div class="col-12">
-        <div class="card border rounded p-3 p-sm-4">
+        <div class="card border rounded p-3 p-sm-4" style="background-color: #EFEABB;">
             <!-- Header: Title, Dynamic Date Subtitle, and Weekly/Monthly Filter Buttons -->
             <div class="d-flex flex-wrap justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
                 <div>
@@ -239,6 +256,10 @@
                         style="background-color: transparent; border-color: #734F46; color: #734F46;">
                         Monthly
                     </button>
+                    <button type="button" class="btn btn-sm fw-semibold amenities-filter-btn" data-period="yearly"
+                        style="background-color: transparent; border-color: #734F46; color: #734F46;">
+                        Yearly
+                    </button>
                 </div>
             </div>
 
@@ -249,6 +270,7 @@
 </div>
 
 @include('Administrator.modals.settarget')
+@include('Administrator.modals.exportexcel')
 
 <!-- Scripts for the charts -->
 <!-- 1. Local Chart.js for the Line Chart -->
@@ -256,29 +278,3 @@
 
 <!-- 2. ApexCharts CDN for the Gauge Chart -->
 <script src="{{ asset('js/Administrator JS/apexcharts.min.js') }}"></script>
-
-<!-- Export to Excel button: reads current active filter and triggers CSV download -->
-<script>
-(function () {
-    'use strict';
-
-    document.getElementById('salesExportExcelBtn').addEventListener('click', function () {
-        var year  = document.getElementById('salesFilterYear').value;
-        var month = document.getElementById('salesFilterMonth').value;
-        var date  = document.getElementById('salesFilterDate').value || '';
-
-        var params = new URLSearchParams({ year: year, month: month });
-        if (date) {
-            params.set('date', date);
-        }
-
-        var url = '/admin/sales-report/export?' + params.toString();
-        var link = document.createElement('a');
-        link.href = url;
-        link.download = '';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-}());
-</script>

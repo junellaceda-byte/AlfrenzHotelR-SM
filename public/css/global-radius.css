@@ -1,0 +1,329 @@
+/* ========================================================
+   HOTEL RS - COMPONENT-SPECIFIC BORDER RADIUS DESIGN SYSTEM
+   Standardized across Administrator and Receptionist Dashboards
+   ======================================================== */
+
+:root {
+    /* 1. Modals & Dialogs (12px–16px) */
+    --radius-modal: 16px;
+
+    /* 2. Cards & Panels (8px–12px) */
+    --radius-card: 12px;
+
+    /* 3. Table Wrappers (8px–12px) */
+    --radius-table-wrapper: 12px;
+
+    /* 4. Table Cells (td, th) - strictly square for clean grid lines */
+    --radius-table-cell: 0px;
+
+    /* 5. Dropdowns & Popovers (6px–8px) */
+    --radius-dropdown: 8px;
+
+    /* 6. Alerts & Toasts (6px–8px) */
+    --radius-alert: 8px;
+
+    /* 7. Buttons & Form Inputs - shared identical radius (4px–8px) */
+    --radius-btn-input: 6px;
+
+    /* 8. Sidebar & Navigation Links (6px–8px) */
+    --radius-nav-link: 8px;
+
+    /* 9. Badges & Status Tags (4px–6px rectangular, 9999px pill) */
+    --radius-badge-rect: 6px;
+    --radius-badge-pill: 9999px;
+
+    /* 10. Checkboxes (3px–4px) */
+    --radius-checkbox: 4px;
+
+    /* 11. Avatars & Radio Buttons (50% perfectly circular) */
+    --radius-circular: 50%;
+
+    /* 12. Amenity Cube Thumbnails (8px–12px) */
+    --amenity-cube-radius: 10px;
+    --amenity-preview-radius: 10px;
+
+    /* ----------------------------------------------------
+       Bootstrap 5 CSS Variable Overrides
+       ---------------------------------------------------- */
+    --bs-border-radius: var(--radius-btn-input);
+    --bs-border-radius-sm: 4px;
+    --bs-border-radius-lg: 8px;
+    --bs-border-radius-xl: var(--radius-card);
+    --bs-border-radius-xxl: var(--radius-modal);
+    --bs-border-radius-2xl: var(--radius-modal);
+    --bs-border-radius-pill: var(--radius-badge-pill);
+
+    --bs-btn-border-radius: var(--radius-btn-input);
+    --bs-btn-border-radius-sm: 4px;
+    --bs-btn-border-radius-lg: 8px;
+
+    --bs-card-border-radius: var(--radius-card);
+    --bs-card-inner-border-radius: calc(var(--radius-card) - 1px);
+
+    --bs-modal-border-radius: var(--radius-modal);
+    --bs-modal-inner-border-radius: calc(var(--radius-modal) - 1px);
+
+    --bs-dropdown-border-radius: var(--radius-dropdown);
+    --bs-dropdown-inner-border-radius: calc(var(--radius-dropdown) - 1px);
+
+    --bs-alert-border-radius: var(--radius-alert);
+    --bs-badge-border-radius: var(--radius-badge-rect);
+    --bs-nav-pills-border-radius: var(--radius-nav-link);
+    --bs-nav-tabs-border-radius: var(--radius-nav-link);
+    --bs-pagination-border-radius: var(--radius-btn-input);
+}
+
+/* --------------------------------------------------------
+   1. Modals & Dialogs (12px–16px)
+   Largest corner radius for floating overlays
+   -------------------------------------------------------- */
+.modal-content {
+    border-radius: var(--radius-modal) !important;
+    overflow: hidden;
+}
+
+.modal-header {
+    border-top-left-radius: var(--radius-modal) !important;
+    border-top-right-radius: var(--radius-modal) !important;
+}
+
+.modal-footer {
+    border-bottom-left-radius: var(--radius-modal) !important;
+    border-bottom-right-radius: var(--radius-modal) !important;
+}
+
+.popover {
+    border-radius: var(--radius-modal) !important;
+}
+
+/* --------------------------------------------------------
+   2. Cards & Panels (8px–12px)
+   Dashboard cards, KPI cards, and content panels
+   -------------------------------------------------------- */
+.card,
+.liquid-glass-card,
+.kpi-card,
+.notifications-panel,
+.room-card,
+.chart-wrapper,
+.stat-card,
+.hotel-room-card,
+.login-card,
+.highlight-pink-flat,
+.highlight-blue-3d {
+    border-radius: var(--radius-card) !important;
+}
+
+.card-header:first-child {
+    border-top-left-radius: var(--radius-card) !important;
+    border-top-right-radius: var(--radius-card) !important;
+}
+
+.card-footer:last-child {
+    border-bottom-left-radius: var(--radius-card) !important;
+    border-bottom-right-radius: var(--radius-card) !important;
+}
+
+.card-img,
+.card-img-top {
+    border-top-left-radius: var(--radius-card) !important;
+    border-top-right-radius: var(--radius-card) !important;
+}
+
+.card-img-bottom {
+    border-bottom-left-radius: var(--radius-card) !important;
+    border-bottom-right-radius: var(--radius-card) !important;
+}
+
+/* --------------------------------------------------------
+   3. Table Wrappers (8px–12px with overflow-hidden)
+   Rounding applied exclusively to the outer wrapper
+   -------------------------------------------------------- */
+.amenities-table-wrapper,
+.staff-table-wrapper,
+.table-wrapper,
+.table-responsive.border,
+.table-responsive.rounded {
+    border-radius: var(--radius-table-wrapper) !important;
+    overflow: hidden !important;
+}
+
+/* --------------------------------------------------------
+   4. Table Cells (td, th: 0px)
+   Strictly square cells for clean borders and grid alignment
+   -------------------------------------------------------- */
+.table td,
+.table th,
+.table tr,
+table td,
+table th,
+table tr,
+.table > :not(caption) > * > *,
+.amenities-table td,
+.amenities-table th,
+.staff-table td,
+.staff-table th,
+.billing-table td,
+.billing-table th {
+    border-radius: var(--radius-table-cell) !important;
+}
+
+/* --------------------------------------------------------
+   5. Dropdowns & Popovers (6px–8px)
+   -------------------------------------------------------- */
+.dropdown-menu {
+    border-radius: var(--radius-dropdown) !important;
+    overflow: hidden;
+}
+
+.dropdown-menu .dropdown-item:first-child {
+    border-top-left-radius: calc(var(--radius-dropdown) - 1px);
+    border-top-right-radius: calc(var(--radius-dropdown) - 1px);
+}
+
+.dropdown-menu .dropdown-item:last-child {
+    border-bottom-left-radius: calc(var(--radius-dropdown) - 1px);
+    border-bottom-right-radius: calc(var(--radius-dropdown) - 1px);
+}
+
+/* --------------------------------------------------------
+   6. Alerts & Toasts (6px–8px)
+   -------------------------------------------------------- */
+.alert,
+.toast,
+.alert-dismissible {
+    border-radius: var(--radius-alert) !important;
+}
+
+/* --------------------------------------------------------
+   7. Buttons & Form Inputs (4px–8px shared identical radius)
+   Buttons, text inputs, selects, and textareas share same radius
+   -------------------------------------------------------- */
+.btn,
+.btn-sm,
+.btn-lg,
+.btn-dark,
+.btn-outline-dark,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-success,
+.btn-warning,
+.btn-info,
+.btn-light,
+.btn-filter,
+.btn-pay-now,
+.btn-sidebar-logout,
+.btn-set-target,
+.amenity-filter-btn,
+.btn-book-now,
+.btn-brown,
+.filter-btn-group .btn-filter,
+.btn-card-amenities,
+.bn-room-btn {
+    border-radius: var(--radius-btn-input) !important;
+}
+
+.form-control,
+.form-select,
+.form-control-sm,
+.form-control-lg,
+.input-group-text,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="date"],
+select.form-select,
+textarea.form-control {
+    border-radius: var(--radius-btn-input) !important;
+}
+
+/* --------------------------------------------------------
+   8. Sidebar & Navigation Links (6px–8px)
+   Active, inactive, and hover states
+   -------------------------------------------------------- */
+.sidebar-nav-link,
+.sidebar-item-box,
+.hover-box,
+.nav-pills .nav-link,
+.nav-tabs .nav-link,
+.pagination .page-item .page-link,
+.pagination .page-link {
+    border-radius: var(--radius-nav-link) !important;
+}
+
+/* --------------------------------------------------------
+   9. Badges & Status Tags
+   - Rectangular: 4px–6px
+   - Pill-shaped status indicators: 9999px
+   -------------------------------------------------------- */
+.badge:not(.rounded-pill):not([class*="pill"]),
+.room-tag,
+.amenity-rank-badge {
+    border-radius: var(--radius-badge-rect) !important;
+}
+
+.badge.rounded-pill,
+.badge-pill,
+.rounded-pill,
+.filter-pill,
+.room-status-badge,
+.notification-count-badge,
+.amenity-bar-track,
+.amenity-bar-fill {
+    border-radius: var(--radius-badge-pill) !important;
+}
+
+/* --------------------------------------------------------
+   10. Checkboxes (3px–4px)
+   -------------------------------------------------------- */
+.form-check-input[type="checkbox"],
+.form-check-input:not([type="radio"]) {
+    border-radius: var(--radius-checkbox) !important;
+}
+
+/* --------------------------------------------------------
+   11. Avatars & Radio Buttons (50% perfectly circular)
+   -------------------------------------------------------- */
+.rounded-circle,
+.avatar,
+.form-check-input[type="radio"],
+.sidebar-logo-circle {
+    border-radius: var(--radius-circular) !important;
+}
+
+/* --------------------------------------------------------
+   12. Amenity Cube Image Previews (8px–12px)
+   -------------------------------------------------------- */
+.amenity-cube-thumb,
+.amenity-cube-preview,
+.img-thumbnail {
+    border-radius: var(--amenity-cube-radius, 10px) !important;
+}
+
+/* --------------------------------------------------------
+   13. Standard Bootstrap Utility Classes Mappings
+   -------------------------------------------------------- */
+.rounded {
+    border-radius: var(--radius-btn-input) !important;
+}
+.rounded-1 {
+    border-radius: 4px !important;
+}
+.rounded-2 {
+    border-radius: 6px !important;
+}
+.rounded-3 {
+    border-radius: 8px !important;
+}
+.rounded-4 {
+    border-radius: 12px !important;
+}
+.rounded-5 {
+    border-radius: 16px !important;
+}
+.rounded-0 {
+    border-radius: 0 !important;
+}

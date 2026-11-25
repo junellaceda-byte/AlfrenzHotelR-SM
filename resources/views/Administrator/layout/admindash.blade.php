@@ -15,9 +15,13 @@
     <!-- Bootstrap & Sidebar CSS -->
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('css/sidebar.css') }}" rel="stylesheet">
+    <!-- Component-Specific Border Radius Design System -->
+    <link href="{{ asset('css/global-radius.css') }}" rel="stylesheet">
+    <!-- Administrator Theme CSS -->
+    <link href="{{ asset('css/Administrator/admin.css') }}" rel="stylesheet">
 </head>
 
-<body class="m-0 p-0 overflow-hidden" style="background-color: #f8f9fa; font-family: 'Inter', system-ui, -apple-system, sans-serif; height: 100vh;">
+<body class="m-0 p-0 overflow-hidden" style="background-color: #F5F7DF; font-family: 'Inter', system-ui, -apple-system, sans-serif; height: 100vh;">
 
     <div class="container-fluid p-0 vh-100 overflow-hidden">
         <div class="row g-0 flex-nowrap h-100 w-100 m-0">
@@ -30,7 +34,7 @@
                 @include('Administrator.partials.topbar')
 
                 <!-- Main Content Box -->
-                <main class="p-3 p-xl-4 flex-grow-1 overflow-y-auto overflow-x-hidden" style="background-color: #f8f9fa;">
+                <main class="p-3 p-xl-4 flex-grow-1 overflow-y-auto overflow-x-hidden" style="background-color: #fbedfb;">
                     @php
                         $section = request('section', 'overview');
                     @endphp
