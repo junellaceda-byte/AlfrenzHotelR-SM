@@ -4,7 +4,7 @@
 
 <!-- Filter Bar for Sales Reports (Date, Month, Year) -->
 <div class="card border rounded p-3 mb-3 shadow-sm sales-reports-filter-bar" style="background-color: #443627; border-color: #443627;">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div class="sales-filter-bar-inner d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div class="d-flex align-items-center gap-2 sales-filter-title-wrapper" style="min-width: 0; max-width: 320px;">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#F5F7DF" viewBox="0 0 16 16" class="flex-shrink-0">
                 <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
@@ -15,9 +15,9 @@
             </div>
         </div>
 
-        <div class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
+        <div class="sales-filter-controls-wrapper d-flex flex-wrap align-items-center gap-2">
             <!-- Year Selector -->
-            <div>
+            <div class="sales-filter-year-col">
                 <select id="salesFilterYear" class="form-select form-select-sm border-0 fw-semibold" style="min-width: 95px; background-color: #F5F7DF; color: #443627;">
                     @php
                         $currentYear = (int) now()->setTimezone('Asia/Manila')->format('Y');
@@ -29,7 +29,7 @@
             </div>
 
             <!-- Month Selector -->
-            <div>
+            <div class="sales-filter-month-col">
                 <select id="salesFilterMonth" class="form-select form-select-sm border-0 fw-semibold" style="min-width: 130px; background-color: #F5F7DF; color: #443627;">
                     @php
                         $currentMonth = (int) now()->setTimezone('Asia/Manila')->format('n');
@@ -131,17 +131,17 @@
 
     <!-- Card 4: Monthly Target Goal -->
     <div class="col-6 col-lg-3">
-        <div class="card h-100 rounded p-2 p-sm-3 highlight-pink-flat">
-            <div class="d-flex justify-content-between align-items-center mb-1 mb-sm-2 gap-1">
-                <h4 class="text-dark m-0 fs-6 text-truncate">Monthly Target</h4>
+        <div class="card h-100 rounded p-2 p-sm-3 highlight-pink-flat monthly-target-card">
+            <div class="monthly-target-header d-flex justify-content-between align-items-center mb-1 mb-sm-2 gap-1 flex-wrap">
+                <h4 class="text-dark m-0 fs-6 text-truncate monthly-target-title">Monthly Target</h4>
                 <button type="button"
-                    class="btn text-white text-nowrap d-inline-flex align-items-center justify-content-center"
+                    class="btn text-white text-nowrap d-inline-flex align-items-center justify-content-center btn-set-target-monthly"
                     data-bs-toggle="modal" data-bs-target="#setTargetModal"
-                    style="background-color: #30AFFF; width: 105px; height: 30px; font-size: 0.875rem; padding: 0;">
+                    style="background-color: #30AFFF;">
                     Set Target
                 </button>
             </div>
-            <div id="monthlyTargetValue" class="fs-4 fs-sm-3 fw-bold text-dark">₱150,000</div>
+            <div id="monthlyTargetValue" class="fs-4 fs-sm-3 fw-bold text-dark monthly-target-amount">₱150,000</div>
         </div>
     </div>
 </div>
@@ -168,11 +168,15 @@
 
     <!-- Right Side: Revenue Target Gauge Chart (Takes up 4 columns) -->
     <div class="col-12 col-lg-4">
-        <div class="card border rounded p-3 p-sm-4 h-100 d-flex flex-column" style="background-color: #F5F7DF;">
+        <div class="card border rounded p-3 p-sm-4 h-100 d-flex flex-column monthly-target-progress-card" style="background-color: #F5F7DF;">
             <h5 class="fw-bold m-0 mb-3" style="color: #443627;">Monthly Target Progress</h5>
-            <div class="flex-grow-1 d-flex align-items-center justify-content-center" style="position: relative; min-height: 320px; width: 100%;">
+            <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center" style="position: relative; min-height: 320px; width: 100%;">
                 <!-- ApexCharts Gauge container -->
-                <div id="revenueGaugeChart" style="width: 100%; min-height: 320px;"></div>
+                <div id="revenueGaugeChart" style="width: 100%; min-height: 270px;"></div>
+                <!-- Repositioned Achieved Goal Label directly below the Arc Progress Chart -->
+                <div id="monthlyTargetAchievedLabel" class="text-center fw-bold monthly-target-achieved-text mt-1" style="color: #443627;">
+                    Achieved of ₱150,000.00 Goal
+                </div>
             </div>
         </div>
     </div>

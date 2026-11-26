@@ -107,3 +107,205 @@
 .modal .table tbody tr {
     background-color: #F5F7DF !important;
 }
+
+/* ========================================================
+   UNIVERSAL RESPONSIVE LAYOUT & ADAPTIVE COMPONENT SIZING
+   Optimized for Desktops, Laptops, Tablets, iPads, iOS & Android
+   ======================================================== */
+
+/* Root & Fluid Base Configuration */
+:root {
+    --admin-side-padding: clamp(0.75rem, 2vw, 1.5rem);
+    --admin-content-radius: 10px;
+}
+
+/* Consistent Side Padding & Spacing for Admin Main Content */
+.admin-main-content {
+    box-sizing: border-box !important;
+    padding-left: var(--admin-side-padding) !important;
+    padding-right: var(--admin-side-padding) !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+/* Prevent unwanted horizontal overflow throughout Admin dashboard */
+.container-fluid,
+.admin-main-content .card,
+.admin-main-content .row {
+    max-width: 100%;
+}
+
+/* Touch targets and interactive accessibility */
+.btn,
+.form-select,
+.form-control {
+    min-height: 38px;
+}
+
+.btn-sm,
+.form-select-sm,
+.form-control-sm {
+    min-height: 32px;
+}
+
+/* Card & Content Adaptive Fluid Typography */
+.admin-main-content h4,
+.admin-main-content .h4 {
+    font-size: clamp(1.15rem, 2vw, 1.5rem);
+}
+
+.admin-main-content h5,
+.admin-main-content .h5 {
+    font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+}
+
+.admin-main-content h6,
+.admin-main-content .h6 {
+    font-size: clamp(0.92rem, 1.5vw, 1.1rem);
+}
+
+/* Modal Responsive Geometry: prevent full-screen overflow, scroll smoothly */
+.modal-dialog {
+    max-width: 95vw;
+    margin: 1rem auto;
+}
+
+@media (min-width: 576px) {
+    .modal-dialog {
+        max-width: 540px;
+        margin: 1.75rem auto;
+    }
+    .modal-dialog.modal-lg {
+        max-width: 760px;
+    }
+    .modal-dialog.modal-xl {
+        max-width: 960px;
+    }
+}
+
+@media (min-width: 992px) {
+    .modal-dialog.modal-lg {
+        max-width: 860px;
+    }
+    .modal-dialog.modal-xl {
+        max-width: 1140px;
+    }
+}
+
+.modal-content {
+    max-height: calc(100dvh - 2rem);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: calc(100dvh - 140px);
+}
+
+/* Tables Responsive Wrappers: Smooth touch scrolling on mobile */
+.table-responsive {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+/* ========================================================
+   BREAKPOINT SPECIFIC ADJUSTMENTS
+   ======================================================== */
+
+/* --- Mobile Phones (< 576px) --- */
+@media (max-width: 575.98px) {
+    .admin-main-content {
+        padding-top: 0.65rem !important;
+        padding-bottom: 1rem !important;
+    }
+
+    /* Modal padding and close buttons on mobile phones */
+    .modal-dialog {
+        margin: 0.5rem auto !important;
+        max-width: calc(100vw - 1rem) !important;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 0.75rem 1rem !important;
+    }
+
+    /* KPI numbers in 2x2 grids on small screens */
+    .highlight-pink-flat,
+    .highlight-blue-3d,
+    .kpi-card {
+        padding: 0.65rem 0.75rem !important;
+    }
+
+    .highlight-pink-flat .fs-4,
+    .highlight-blue-3d .fs-4,
+    .kpi-card .kpi-card-number {
+        font-size: clamp(1.05rem, 4.2vw, 1.45rem) !important;
+    }
+
+    .highlight-pink-flat h4,
+    .highlight-blue-3d h4,
+    .kpi-card .kpi-card-title {
+        font-size: 0.78rem !important;
+    }
+
+    .highlight-pink-flat img,
+    .highlight-blue-3d img {
+        width: clamp(32px, 8vw, 44px) !important;
+        height: clamp(32px, 8vw, 44px) !important;
+    }
+
+    /* Filter rows and search controls stacked cleanly */
+    .filter-btn-group,
+    .sales-filter-nav-group {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+        max-width: 100%;
+    }
+}
+
+/* --- Phablets & Small Tablets (576px to 767.98px) --- */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .admin-main-content {
+        padding-top: 0.85rem !important;
+        padding-bottom: 1.25rem !important;
+    }
+
+    .highlight-pink-flat img,
+    .highlight-blue-3d img {
+        width: 46px !important;
+        height: 46px !important;
+    }
+}
+
+/* --- iPads & Tablets Portrait (768px to 991.98px) --- */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .admin-main-content {
+        padding: 1rem 1.25rem !important;
+    }
+
+    /* Keep charts proportionate on iPad portrait */
+    .chart-container-fluid {
+        min-height: 280px;
+    }
+}
+
+/* --- Laptops & Small Desktops (992px to 1199.98px) --- */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .admin-main-content {
+        padding: 1.25rem 1.5rem !important;
+    }
+}
+
+/* --- Desktop Monitors (>= 1200px) --- */
+@media (min-width: 1200px) {
+    .admin-main-content {
+        padding: 1.5rem 1.75rem !important;
+    }
+}

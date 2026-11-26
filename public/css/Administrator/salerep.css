@@ -95,6 +95,11 @@
  * ========================================== */
 .sales-reports-filter-bar {
     contain: layout paint;
+    box-sizing: border-box;
+}
+
+.sales-filter-bar-inner {
+    width: 100%;
 }
 
 .sales-filter-title-wrapper {
@@ -107,6 +112,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.sales-filter-controls-wrapper {
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    min-width: 0;
 }
 
 /* ==========================================
@@ -126,6 +137,7 @@
     box-sizing: border-box;
     flex-shrink: 0;
     height: 38px;
+    max-width: 100%;
 }
 
 /* Smooth sliding highlight element */
@@ -147,7 +159,7 @@
                 background-color 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* Individual Filter Buttons - Fixed, consistent geometry */
+/* Individual Filter Buttons - Fluid, consistent geometry */
 .sales-filter-btn {
     appearance: none;
     -webkit-appearance: none;
@@ -158,10 +170,10 @@
     background: transparent !important;
     color: #443627;
     font-family: inherit;
-    font-size: 0.8rem;
+    font-size: clamp(0.72rem, 0.85vw, 0.82rem);
     font-weight: 600;
     line-height: 1;
-    padding: 0 14px;
+    padding: 0 clamp(8px, 1.1vw, 14px);
     height: 30px;
     border-radius: var(--radius-btn, 6px);
     z-index: 2;
@@ -198,11 +210,281 @@
 }
 
 /* ==========================================
+ * Monthly Target Card Responsive Design
+ * ========================================== */
+.monthly-target-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 82px;
+}
+
+.monthly-target-header {
+    width: 100%;
+}
+
+.monthly-target-title {
+    font-size: clamp(0.78rem, 1.1vw, 0.95rem) !important;
+    line-height: 1.25;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.btn-set-target-monthly {
+    background-color: #30AFFF;
+    border: none;
+    border-radius: var(--radius-btn, 6px);
+    font-weight: 600;
+    line-height: 1;
+    font-size: clamp(0.7rem, 0.82vw, 0.84rem);
+    padding: 0.35rem 0.65rem;
+    min-height: 28px;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-set-target-monthly:hover {
+    background-color: #1b9ce8;
+    color: #ffffff;
+}
+
+.btn-set-target-monthly:active {
+    transform: scale(0.98);
+}
+
+.monthly-target-amount {
+    font-size: clamp(1.1rem, 2.2vw, 1.55rem) !important;
+    line-height: 1.2;
+    margin-top: 0.15rem;
+    word-break: break-word;
+}
+
+/* ==========================================
+ * Responsive Breakpoint Optimizations
+ * ========================================== */
+
+/* Desktop & Laptop Refinements (992px to 1399px) */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+    .sales-filter-btn {
+        padding: 0 clamp(7px, 0.9vw, 11px);
+        font-size: 0.76rem;
+    }
+
+    #salesFilterYear {
+        min-width: 85px !important;
+        font-size: 0.8rem;
+    }
+
+    #salesFilterMonth {
+        min-width: 110px !important;
+        font-size: 0.8rem;
+    }
+
+    #salesCustomDatePickerWrapper .input-group {
+        width: 130px !important;
+    }
+
+    .btn-set-target-monthly {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Tablet & iPad Portrait (768px to 991.98px) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .sales-filter-bar-inner {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.85rem !important;
+    }
+
+    .sales-filter-title-wrapper {
+        max-width: 100% !important;
+        flex: 1 1 100%;
+    }
+
+    .sales-filter-controls-wrapper {
+        justify-content: flex-start !important;
+        width: 100%;
+        gap: 0.5rem !important;
+    }
+
+    .sales-filter-nav-group {
+        order: 1;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .sales-filter-year-col {
+        order: 2;
+    }
+
+    .sales-filter-month-col {
+        order: 3;
+    }
+
+    #salesCustomDatePickerWrapper {
+        order: 4;
+    }
+
+    #salesExportExcelBtn {
+        order: 5;
+    }
+}
+
+/* Mobile & Phablet (< 768px) */
+@media (max-width: 767.98px) {
+    .sales-filter-bar-inner {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+    }
+
+    .sales-filter-title-wrapper {
+        max-width: 100% !important;
+        flex: 1 1 100%;
+    }
+
+    .sales-filter-controls-wrapper {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-start !important;
+        width: 100%;
+        gap: 0.5rem !important;
+    }
+
+    .sales-filter-year-col {
+        flex: 1 1 calc(40% - 0.25rem);
+        min-width: 80px;
+    }
+
+    .sales-filter-year-col select {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .sales-filter-month-col {
+        flex: 1 1 calc(60% - 0.25rem);
+        min-width: 105px;
+    }
+
+    .sales-filter-month-col select {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* Horizontal scrollable group with touch momentum */
+    .sales-filter-nav-group {
+        display: flex !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        white-space: nowrap !important;
+        order: 3;
+    }
+
+    .sales-filter-nav-group::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sales-filter-btn {
+        flex: 0 0 auto !important;
+        font-size: 0.74rem !important;
+        padding: 0 10px !important;
+    }
+
+    #salesCustomDatePickerWrapper {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-width: 130px;
+        order: 4;
+    }
+
+    #salesCustomDatePickerWrapper .input-group {
+        width: 100% !important;
+    }
+
+    #salesExportExcelBtn {
+        flex: 1 1 calc(50% - 0.25rem);
+        min-width: 130px;
+        justify-content: center;
+        order: 5;
+    }
+
+    /* Monthly Target Card on mobile screens */
+    .monthly-target-header {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .monthly-target-title {
+        font-size: 0.78rem !important;
+    }
+
+    .btn-set-target-monthly {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.72rem;
+        min-height: 26px;
+    }
+
+    .monthly-target-amount {
+        font-size: 1.25rem !important;
+    }
+}
+
+/* Small Smartphone Display (< 420px) */
+@media (max-width: 419.98px) {
+    .sales-filter-year-col,
+    .sales-filter-month-col {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+
+    #salesCustomDatePickerWrapper,
+    #salesExportExcelBtn {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+
+    .sales-filter-btn {
+        font-size: 0.7rem !important;
+        padding: 0 8px !important;
+    }
+
+    .btn-set-target-monthly {
+        font-size: 0.68rem;
+        padding: 0.2rem 0.45rem;
+    }
+}
+
+/* Charts sizing preserved */
+@media (max-width: 575.98px) {
+    #occupancyTrendChart {
+        max-height: 240px !important;
+    }
+
+    #revenueGaugeChart {
+        min-height: 240px !important;
+    }
+}
+    outline: none;
+}
+
+/* Fallback / focus outlines */
+.sales-filter-btn:focus-visible {
+    outline: 2px solid #443627;
+    outline-offset: 1px;
+}
+
+/* ==========================================
  * Monthly Target Progress Gauge Styling
  * ========================================== */
 #revenueGaugeChart {
     width: 100%;
-    min-height: 320px;
+    min-height: 250px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -218,15 +500,46 @@
     overflow: visible !important;
 }
 
+/* Hide internal ApexCharts radial label to prevent duplicate/overlapping text */
 #revenueGaugeChart .apexcharts-datalabel-label {
-    fill: #443627 !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    fill: transparent !important;
+    font-size: 0px !important;
     white-space: nowrap !important;
 }
 
 #revenueGaugeChart .apexcharts-datalabel-value {
     fill: #212529 !important;
-    font-size: 24px !important;
+    font-size: clamp(24px, 2.2vw, 30px) !important;
     font-weight: 700 !important;
+}
+
+/* Dedicated Achieved Goal Text positioned directly below the Arc Chart */
+.monthly-target-achieved-text {
+    font-size: clamp(0.82rem, 1.05vw, 0.98rem);
+    font-weight: 700;
+    line-height: 1.35;
+    color: #443627;
+    padding: 0.25rem 0.75rem;
+    background-color: rgba(68, 54, 39, 0.06);
+    border-radius: var(--radius-btn, 6px);
+    border: 1px solid rgba(68, 54, 39, 0.12);
+    box-shadow: 0 1px 3px rgba(68, 54, 39, 0.04);
+    letter-spacing: 0.01em;
+    max-width: 95%;
+    word-break: break-word;
+    transition: font-size 0.2s ease, padding 0.2s ease;
+}
+
+@media (max-width: 575.98px) {
+    #revenueGaugeChart {
+        min-height: 220px !important;
+    }
+
+    .monthly-target-achieved-text {
+        font-size: 0.78rem !important;
+        padding: 0.2rem 0.5rem !important;
+    }
 }

@@ -148,4 +148,110 @@ class AdminNotificationsTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_upcoming_bookings_appear_in_notifications_with_upcoming_status(): void
+    {
+        $now = Carbon::parse('2026-11-20 10:00:00', 'Asia/Manila');
+        Carbon::setTestNow($now);
+
+        $booking = Booking::create([
+            'guest_id' => $this->guest->id,
+            'check_in_datetime' => $now->copy()->addHours(3),
+            'check_out_datetime' => $now->copy()->addHours(6),
+            'stay_type' => 'short_stay',
+            'booked_rooms' => [$this->room->id],
+            'status' => 'checked_in',
+        ]);
+
+        $response = $this->getJson(route('api.admin.notifications'));
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('due_guests'));
+        $this->assertSame('Juan Dela Cruz', $response->json('due_guests.0.name'));
+        $this->assertSame('05', $response->json('due_guests.0.room_number'));
+        $this->assertTrue($response->json('due_guests.0.is_upcoming'));
+        $this->assertFalse($response->json('due_guests.0.is_overdue'));
+        $this->assertSame('Upcoming', $response->json('due_guests.0.status_label'));
+        $this->assertStringContainsString('Scheduled check-in', $response->json('due_guests.0.time_text'));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_total_lost_revenue_calculates_actual_room_charges_and_applicable_fees(): void
+    {
+        $booking = Booking::create([
+            'guest_id' => $this->guest->id,
+            'check_in_datetime' => now()->subHours(1),
+            'check_out_datetime' => now()->addHours(2),
+            'stay_type' => 'overnight',
+            'booked_rooms' => [$this->room->id],
+            'status' => 'cancelled',
+        ]);
+
+        Invoice::create([
+            'booking_id' => $booking->id,
+            'invoice_number' => 'INV-CANCEL-001',
+            'room_charges' => 2000.00,
+            'extra_charges_total' => 450.00,
+            'discount_amount' => 0.00,
+            'grand_total' => 2450.00,
+            'status' => 'cancelled',
+            'due_date' => now()->toDateString(),
+        ]);
+
+        $response = $this->getJson(route('api.admin.notifications'));
+
+        $response->assertOk();
+        $this->assertSame(1, $response->json('cancellations_count'));
+        $this->assertEquals(2450.00, $response->json('lost_revenue_total'));
+        $this->assertSame('₱2,450.00', $response->json('lost_revenue_total_formatted'));
+        $this->assertSame(2000.00, (float) $response->json('cancellations.0.room_charges'));
+        $this->assertSame(450.00, (float) $response->json('cancellations.0.extra_charges'));
+        $this->assertSame(2450.00, (float) $response->json('cancellations.0.lost_revenue'));
+        $this->assertSame('₱2,450.00', $response->json('cancellations.0.lost_revenue_formatted'));
+    }
+
+    public function test_booking_status_changes_and_cancellations_immediately_synchronize(): void
+    {
+        $now = Carbon::parse('2026-11-20 12:00:00', 'Asia/Manila');
+        Carbon::setTestNow($now);
+
+        // 1. Initially create an upcoming booking
+        $booking = Booking::create([
+            'guest_id' => $this->guest->id,
+            'check_in_datetime' => $now->copy()->addHours(2),
+            'check_out_datetime' => $now->copy()->addHours(5),
+            'stay_type' => 'short_stay',
+            'booked_rooms' => [$this->room->id],
+            'status' => 'checked_in',
+        ]);
+
+        Invoice::create([
+            'booking_id' => $booking->id,
+            'invoice_number' => 'INV-SYNC-001',
+            'room_charges' => 500.00,
+            'extra_charges_total' => 100.00,
+            'grand_total' => 600.00,
+            'status' => 'unpaid',
+            'due_date' => $now->toDateString(),
+        ]);
+
+        $res1 = $this->getJson(route('api.admin.notifications'));
+        $res1->assertOk();
+        $this->assertSame(1, $res1->json('due_guests_count'));
+        $this->assertSame(0, $res1->json('cancellations_count'));
+        $this->assertEquals(0, $res1->json('lost_revenue_total'));
+
+        // 2. Booking is cancelled
+        $booking->update(['status' => 'cancelled']);
+
+        $res2 = $this->getJson(route('api.admin.notifications'));
+        $res2->assertOk();
+        $this->assertSame(0, $res2->json('due_guests_count'));
+        $this->assertSame(1, $res2->json('cancellations_count'));
+        $this->assertEquals(600.00, $res2->json('lost_revenue_total'));
+        $this->assertSame('₱600.00', $res2->json('lost_revenue_total_formatted'));
+
+        Carbon::setTestNow();
+    }
 }

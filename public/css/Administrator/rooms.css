@@ -25,9 +25,42 @@
 }
 
 .room-admin-actions .btn {
-    padding: 3px 7px;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
     font-size: 0.75rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box !important;
+}
+
+/* Perfect Circular UI Elements in Room Management across all screens */
+.kpi-card .kpi-icon-box {
+    width: clamp(2.5rem, 3.2vw, 3.5rem) !important;
+    height: clamp(2.5rem, 3.2vw, 3.5rem) !important;
+    min-width: clamp(2.5rem, 3.2vw, 3.5rem) !important;
+    min-height: clamp(2.5rem, 3.2vw, 3.5rem) !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+}
+
+.kpi-card .kpi-icon-box img,
+.kpi-card .kpi-icon-box svg {
+    flex-shrink: 0 !important;
 }
 
 /* Room Summary Cards background color classes filling entire container surfaces */
@@ -96,6 +129,156 @@
 
 .hotel-room-card.is-occupied:hover .room-image-wrapper {
     background-color: #646464 !important;
+}
+
+/* ========================================================
+   RESPONSIVE ENHANCEMENTS FOR ROOM MANAGEMENT
+   ======================================================== */
+
+@media (max-width: 767.98px) {
+    /* Filter Buttons Bar - 2-Column Grid on Mobile with 5th Button Centered */
+    #adminRoomFilterGroup {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.5rem !important;
+        width: 100% !important;
+        overflow-x: visible !important;
+        white-space: normal !important;
+        padding-bottom: 0 !important;
+    }
+
+    #adminRoomFilterGroup .btn-filter {
+        width: 100% !important;
+        font-size: clamp(0.7rem, 2.2vw, 0.78rem) !important;
+        padding: 0.35rem 0.5rem !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        line-height: 1.15 !important;
+        letter-spacing: 0.02em;
+        white-space: nowrap !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 5th Button ('UNDER MAINTENANCE') spans both columns and is centered */
+    #adminRoomFilterGroup .btn-filter:nth-child(5) {
+        grid-column: 1 / -1 !important;
+        justify-self: center !important;
+        width: clamp(180px, 60%, 260px) !important;
+    }
+
+    /* 1. Room Grid - Mobile 2-Column Exact Layout */
+    .hotel-room-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: clamp(0.5rem, 2vw, 0.75rem) !important;
+        width: 100% !important;
+    }
+
+    .hotel-room-card {
+        width: 100% !important;
+        min-width: 0 !important;
+        border-radius: 8px !important;
+    }
+
+    /* Scaled image wrapper to avoid excessive height */
+    .room-image-wrapper {
+        height: clamp(5rem, 18vw, 6.75rem) !important;
+    }
+
+    /* Compact overlay status text */
+    .overlay-occupied,
+    .overlay-reserved,
+    .overlay-maintenance,
+    .overlay-overdue {
+        font-size: clamp(0.6rem, 2vw, 0.72rem) !important;
+        padding: 0.2rem 0.3rem !important;
+        letter-spacing: 0.03em !important;
+    }
+
+    /* Admin Action buttons (Edit & Delete) scaled for mobile touch */
+    .room-admin-actions {
+        top: 4px !important;
+        right: 4px !important;
+        gap: 3px !important;
+    }
+
+    .room-admin-actions .btn {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+        min-height: 24px !important;
+        max-width: 24px !important;
+        max-height: 24px !important;
+        aspect-ratio: 1 / 1 !important;
+        border-radius: 50% !important;
+        flex-shrink: 0 !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .room-admin-actions .btn svg {
+        width: 10px !important;
+        height: 10px !important;
+    }
+
+    /* Room Card Body - Fluid typography & cell spacing */
+    .room-card-body {
+        padding: 0.45rem 0.55rem !important;
+    }
+
+    .room-number-heading {
+        font-size: clamp(0.76rem, 2.5vw, 0.88rem) !important;
+    }
+
+    .room-status-badge {
+        font-size: clamp(0.62rem, 1.8vw, 0.7rem) !important;
+        padding: 0.15rem 0.35rem !important;
+    }
+
+    .room-times-text,
+    .room-blocking-period {
+        font-size: clamp(0.64rem, 1.9vw, 0.72rem) !important;
+        line-height: 1.2 !important;
+    }
+
+    .room-overdue-counter {
+        font-size: clamp(0.64rem, 1.9vw, 0.72rem) !important;
+        line-height: 1.2 !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .kpi-card-title {
+        font-size: 0.72rem !important;
+        letter-spacing: 0.02em;
+    }
+
+    .kpi-card-number {
+        font-size: 1.25rem !important;
+    }
+
+    .kpi-card .kpi-icon-box {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        max-width: 36px !important;
+        max-height: 36px !important;
+        aspect-ratio: 1 / 1 !important;
+        border-radius: 50% !important;
+        flex-shrink: 0 !important;
+    }
+
+    .kpi-card .kpi-icon-box img {
+        width: 18px !important;
+        height: 18px !important;
+    }
 }
 
 /* Disable Add Amenities hover button on Administrator side */

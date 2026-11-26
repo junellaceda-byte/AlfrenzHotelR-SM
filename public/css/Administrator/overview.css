@@ -1,4 +1,3 @@
-/* --- Pink Flat Cards --- */
 .highlight-pink-flat {
     background-color: #bfdcec;
     border: 1px solid #52585b;
@@ -9,4 +8,60 @@
 
 .highlight-blue-3d:hover {
     background-color: #3d6a85 !important;
+}
+
+/* ========================================================
+   RESPONSIVE ENHANCEMENTS FOR OVERVIEW DASHBOARD
+   ======================================================== */
+
+/* Fluid sizing for Overview Cards */
+.highlight-pink-flat,
+.highlight-blue-3d {
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+
+
+/* Booking Stay Type Filter Bar Responsiveness */
+#stayTypeFilterControls {
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+}
+
+#stayTypeCalendarWrapper {
+    min-width: 130px;
+    flex: 1 1 140px;
+}
+
+#stayTypeMonthSelect,
+#stayTypeWeekSelect,
+#stayTypeYearSelect {
+    flex: 1 1 auto;
+}
+
+/* Overview Chart Container dynamic height */
+@media (max-width: 575.98px) {
+    #revenueFilter {
+        min-width: 95px !important;
+        font-size: 0.8rem !important;
+        padding: 0.25rem 0.5rem !important;
+    }
+
+    #revenueChart {
+        max-height: 260px !important;
+    }
+
+    #bookingSourceChart {
+        max-height: 200px !important;
+    }
+}
+
+@media (min-width: 576px) and (max-width: 991.98px) {
+    #revenueChart {
+        max-height: 300px !important;
+    }
+
+    #bookingSourceChart {
+        max-height: 230px !important;
+    }
 }

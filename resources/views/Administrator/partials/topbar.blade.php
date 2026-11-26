@@ -35,6 +35,11 @@
             <span id="current-time" style="color: #F5F7DF;" data-format="{{ $timeFormat ?? 'h:i A' }}">{{ \App\Services\SystemFormatService::formatTime(now()) }}</span>
             <span id="liveTime" class="d-none">{{ \App\Services\SystemFormatService::formatTime(now()) }}</span>
         </div>
+
+        <!-- Admin Avatar -->
+        <div class="border rounded-circle shadow-sm fw-bold d-flex align-items-center justify-content-center bg-white flex-shrink-0" style="width: 38px; height: 38px; color: #6A4435; font-size: 0.95rem;" title="Administrator">
+            A
+        </div>
     </div>
 </header>
 

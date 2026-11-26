@@ -1478,7 +1478,7 @@ class DashboardApiController
     }
 
     /**
-     * Admin Overview notifications: due checkouts and cancellation revenue losses.
+     * Admin Overview notifications: upcoming & due guest bookings and cancellation revenue losses.
      */
     public function adminNotifications()
     {
@@ -1516,66 +1516,220 @@ class DashboardApiController
             ];
         };
 
-        // 1. Due checkout guests (same logic as Receptionist notifications)
-        $dueInvoices = Invoice::with('booking.guest')
-            ->where('status', 'unpaid')
-            ->whereHas('booking', function ($q) use ($now) {
-                $q->where('status', 'checked_in')
-                    ->where('check_out_datetime', '<=', $now->copy()->addMinutes(30));
+        // -------------------------------------------------------------
+        // 1. Upcoming & Due guest bookings (checked-in due/overdue + upcoming)
+        // -------------------------------------------------------------
+        $dueGuestsList = collect();
+        $processedGuestBookingKeys = [];
+
+        // A. Checked-in bookings due for checkout within 30 minutes or already overdue
+        $dueBookings = Booking::with(['guest', 'invoice', 'charges'])
+            ->where('status', 'checked_in')
+            ->where('check_out_datetime', '<=', $now->copy()->addMinutes(30))
+            ->where(function ($q) {
+                // Must not be an already settled/paid invoice unless still checked in
+                $q->whereDoesntHave('invoice')
+                    ->orWhereHas('invoice', fn ($i) => $i->where('status', '!=', 'paid'))
+                    ->orWhere('status', 'checked_in');
             })
-            ->get()
-            ->sortBy(fn ($invoice) => $invoice->booking->check_out_datetime);
+            ->get();
 
-        $dueGuests = $dueInvoices->map(function ($invoice) use ($now, $formatRoomDetails) {
-            $checkOut = Carbon::parse($invoice->booking->check_out_datetime);
-            $roomInfo = $formatRoomDetails($invoice->booking->booked_rooms);
+        foreach ($dueBookings as $booking) {
+            $key = 'booking_'.$booking->id;
+            if (isset($processedGuestBookingKeys[$key])) {
+                continue;
+            }
+            $processedGuestBookingKeys[$key] = true;
 
-            return [
-                'name' => trim(($invoice->booking->guest->fname ?? 'Guest').' '.($invoice->booking->guest->lname ?? '')),
+            $checkOut = Carbon::parse($booking->check_out_datetime);
+            $checkIn = $booking->check_in_datetime ? Carbon::parse($booking->check_in_datetime) : null;
+            $roomInfo = $formatRoomDetails($booking->booked_rooms);
+            $isOverdue = $checkOut->lte($now);
+            $minutes = max(0, (int) floor($now->diffInMinutes($checkOut, false)));
+
+            $totalAmount = (float) (
+                $booking->invoice?->grand_total
+                ?? ($booking->charges ? $booking->charges->sum('amount') : 0)
+                ?? $booking->total_amount
+                ?? 0
+            );
+
+            $dueGuestsList->push([
+                'id' => $booking->id,
+                'source_type' => 'Booking',
+                'name' => trim(($booking->guest->fname ?? 'Guest').' '.($booking->guest->lname ?? '')),
                 'room_number' => $roomInfo['numbers'],
                 'booked_rooms_details' => $roomInfo['details'],
-                'stay_type' => ucwords(str_replace('_', ' ', $invoice->booking->stay_type ?? 'overnight')),
-                'check_in_time' => $invoice->booking->check_in_datetime ? SystemFormatService::formatDateTime($invoice->booking->check_in_datetime) : 'N/A',
+                'stay_type' => ucwords(str_replace('_', ' ', $booking->stay_type ?? 'overnight')),
+                'check_in_time' => $checkIn ? SystemFormatService::formatDateTime($checkIn) : 'N/A',
                 'checkout_time' => SystemFormatService::formatTime($checkOut),
-                'is_overdue' => $checkOut->lte($now),
-                'minutes' => max(0, (int) floor($now->diffInMinutes($checkOut, false))),
-                'total_amount' => (float) ($invoice->grand_total ?? $invoice->booking->total_amount ?? 0),
-                'total_amount_formatted' => '₱'.number_format((float) ($invoice->grand_total ?? $invoice->booking->total_amount ?? 0), 2),
-            ];
+                'is_overdue' => $isOverdue,
+                'is_upcoming' => false,
+                'status' => $isOverdue ? 'overdue' : 'due_soon',
+                'status_label' => $isOverdue ? 'Overdue' : 'Due Soon',
+                'minutes' => $minutes,
+                'time_text' => $isOverdue
+                    ? 'was due at '.SystemFormatService::formatTime($checkOut).' (overdue)'
+                    : SystemFormatService::formatTime($checkOut).' is due checkout ('.$minutes.'m left)',
+                'total_amount' => $totalAmount,
+                'total_amount_formatted' => '₱'.number_format($totalAmount, 2),
+                'sort_order' => $isOverdue ? 1 : 2,
+                'raw_time' => $checkOut->timestamp,
+            ]);
+        }
+
+        // B. Upcoming bookings (scheduled arrival in the future or status reserved)
+        $upcomingBookings = Booking::with(['guest', 'invoice', 'charges'])
+            ->whereNotIn('status', ['cancelled', 'checked_out'])
+            ->where(function ($q) use ($now) {
+                $q->where('status', 'reserved')
+                    ->orWhere('check_in_datetime', '>', $now);
+            })
+            ->get();
+
+        foreach ($upcomingBookings as $booking) {
+            $key = 'booking_'.$booking->id;
+            if (isset($processedGuestBookingKeys[$key])) {
+                continue;
+            }
+            $processedGuestBookingKeys[$key] = true;
+
+            $checkIn = Carbon::parse($booking->check_in_datetime);
+            $checkOut = $booking->check_out_datetime ? Carbon::parse($booking->check_out_datetime) : null;
+            $roomInfo = $formatRoomDetails($booking->booked_rooms);
+            $minutes = max(0, (int) floor($now->diffInMinutes($checkIn, false)));
+
+            $totalAmount = (float) (
+                $booking->invoice?->grand_total
+                ?? ($booking->charges ? $booking->charges->sum('amount') : 0)
+                ?? $booking->total_amount
+                ?? 0
+            );
+
+            $dueGuestsList->push([
+                'id' => $booking->id,
+                'source_type' => 'Booking',
+                'name' => trim(($booking->guest->fname ?? 'Guest').' '.($booking->guest->lname ?? '')),
+                'room_number' => $roomInfo['numbers'],
+                'booked_rooms_details' => $roomInfo['details'],
+                'stay_type' => ucwords(str_replace('_', ' ', $booking->stay_type ?? 'overnight')),
+                'check_in_time' => SystemFormatService::formatDateTime($checkIn),
+                'checkout_time' => $checkOut ? SystemFormatService::formatTime($checkOut) : 'N/A',
+                'is_overdue' => false,
+                'is_upcoming' => true,
+                'status' => 'upcoming',
+                'status_label' => ($booking->status === 'reserved') ? 'Reserved' : 'Upcoming',
+                'minutes' => $minutes,
+                'time_text' => 'Scheduled check-in at '.SystemFormatService::formatDateTime($checkIn),
+                'total_amount' => $totalAmount,
+                'total_amount_formatted' => '₱'.number_format($totalAmount, 2),
+                'sort_order' => 3,
+                'raw_time' => $checkIn->timestamp,
+            ]);
+        }
+
+        // C. Upcoming reservations (reserved status, not yet checked in)
+        $upcomingReservations = Reservation::where('status', 'reserved')
+            ->where('reservation_end_date', '>=', $now)
+            ->get();
+
+        foreach ($upcomingReservations as $res) {
+            $key = 'reservation_'.$res->id;
+            // Prevent duplicate if already processed under a matching booking
+            if (isset($processedGuestBookingKeys[$key])) {
+                continue;
+            }
+            if ($res->guest_id && isset($processedGuestBookingKeys['guest_'.$res->guest_id])) {
+                continue;
+            }
+            $processedGuestBookingKeys[$key] = true;
+
+            $start = $res->reservation_start_date ? Carbon::parse($res->reservation_start_date) : null;
+            $end = $res->reservation_end_date ? Carbon::parse($res->reservation_end_date) : null;
+            $roomInfo = $formatRoomDetails($res->selected_rooms);
+            $minutes = $start ? max(0, (int) floor($now->diffInMinutes($start, false))) : 0;
+            $deposit = (float) ($res->deposit ?? 0);
+
+            $dueGuestsList->push([
+                'id' => $res->id,
+                'source_type' => 'Reservation',
+                'name' => $res->guest_name ?: 'Guest',
+                'room_number' => $roomInfo['numbers'],
+                'booked_rooms_details' => $roomInfo['details'],
+                'stay_type' => 'Reserved Stay',
+                'check_in_time' => $start ? SystemFormatService::formatDateTime($start) : 'N/A',
+                'checkout_time' => $end ? SystemFormatService::formatTime($end) : 'N/A',
+                'is_overdue' => false,
+                'is_upcoming' => true,
+                'status' => 'upcoming',
+                'status_label' => 'Reserved',
+                'minutes' => $minutes,
+                'time_text' => $start ? 'Scheduled check-in at '.SystemFormatService::formatDateTime($start) : 'Reserved Stay',
+                'total_amount' => $deposit,
+                'total_amount_formatted' => '₱'.number_format($deposit, 2),
+                'sort_order' => 3,
+                'raw_time' => $start ? $start->timestamp : 0,
+            ]);
+        }
+
+        // Sort: Overdue (sort_order 1) -> Due Soon (sort_order 2) -> Upcoming (sort_order 3)
+        $dueGuests = $dueGuestsList->sort(function ($a, $b) {
+            if ($a['sort_order'] !== $b['sort_order']) {
+                return $a['sort_order'] <=> $b['sort_order'];
+            }
+
+            return $a['raw_time'] <=> $b['raw_time'];
         })->values();
 
-        // 2. Cancellation revenue loss (Reservations & Bookings cancelled)
-        $cancelledReservations = Reservation::where('status', 'cancelled')
-            ->orderByDesc('updated_at')
-            ->get()
-            ->map(function ($res) use ($formatRoomDetails) {
-                $deposit = (float) ($res->deposit ?? 0);
-                $roomInfo = $formatRoomDetails($res->selected_rooms);
-                $start = $res->reservation_start_date ? Carbon::parse($res->reservation_start_date)->format('M d, Y') : null;
-                $end = $res->reservation_end_date ? Carbon::parse($res->reservation_end_date)->format('M d, Y') : null;
-                $dates = ($start && $end) ? "{$start} &ndash; {$end}" : ($start ?: 'N/A');
-
-                return [
-                    'id' => $res->id,
-                    'type' => 'Reservation',
-                    'guest_name' => $res->guest_name ?? 'Guest',
-                    'room_number' => $roomInfo['numbers'],
-                    'booked_rooms_details' => $roomInfo['details'],
-                    'dates' => $dates,
-                    'stay_type' => 'Reserved Stay',
-                    'deposit' => $deposit,
-                    'deposit_formatted' => '₱'.number_format($deposit, 2),
-                    'cancelled_at' => $res->updated_at ? SystemFormatService::formatDateTime($res->updated_at) : 'N/A',
-                    'raw_time' => $res->updated_at ? Carbon::parse($res->updated_at)->timestamp : 0,
-                ];
-            });
-
-        $cancelledBookings = Booking::with('guest')
+        // -------------------------------------------------------------
+        // 2. Cancellation revenue loss (Actual room charges & applicable fees)
+        // -------------------------------------------------------------
+        $cancelledBookings = Booking::with(['guest', 'invoice', 'charges'])
             ->where('status', 'cancelled')
             ->orderByDesc('updated_at')
             ->get()
-            ->map(function ($b) use ($formatRoomDetails) {
-                $deposit = (float) ($b->deposit ?? 0);
+            ->map(function ($b) use ($formatRoomDetails, $roomsMap) {
+                // Calculate actual room charges and applicable fees
+                $roomCharges = 0.0;
+                $extraCharges = 0.0;
+                $lostAmount = 0.0;
+
+                if ($b->invoice) {
+                    $roomCharges = (float) $b->invoice->room_charges;
+                    $extraCharges = (float) $b->invoice->extra_charges_total;
+                    $grandTotal = (float) $b->invoice->grand_total;
+                    $lostAmount = $grandTotal > 0 ? $grandTotal : ($roomCharges + $extraCharges);
+                }
+
+                if ($lostAmount <= 0 && $b->charges && $b->charges->isNotEmpty()) {
+                    $roomCharges = (float) $b->charges->where('type', 'room')->sum('amount');
+                    $extraCharges = (float) $b->charges->where('type', '!=', 'room')->sum('amount');
+                    $lostAmount = $roomCharges + $extraCharges;
+                }
+
+                if ($lostAmount <= 0 && (float) ($b->deposit ?? 0) > 0) {
+                    $lostAmount = (float) $b->deposit;
+                    $roomCharges = $lostAmount;
+                    $extraCharges = 0.0;
+                }
+
+                // Fallback to room standard rates if charges/invoice not recorded
+                if ($lostAmount <= 0) {
+                    $roomIds = is_array($b->booked_rooms) ? $b->booked_rooms : (json_decode($b->booked_rooms, true) ?? []);
+                    $isShort = ($b->stay_type === 'short_stay');
+                    $calculatedRoomTotal = 0.0;
+                    foreach ($roomIds as $rId) {
+                        $rm = $roomsMap->get($rId) ?? $roomsMap->firstWhere('room_number', (string) $rId);
+                        if ($rm) {
+                            $calculatedRoomTotal += $isShort ? (float) $rm->short_stay_rate : (float) $rm->overnight_rate;
+                        }
+                    }
+                    if ($calculatedRoomTotal > 0) {
+                        $roomCharges = $calculatedRoomTotal;
+                        $lostAmount = $calculatedRoomTotal;
+                    }
+                }
+
                 $roomInfo = $formatRoomDetails($b->booked_rooms);
                 $guestName = trim(($b->guest->fname ?? 'Guest').' '.($b->guest->lname ?? ''));
                 $start = $b->check_in_datetime ? Carbon::parse($b->check_in_datetime)->format('M d, Y') : null;
@@ -1590,10 +1744,67 @@ class DashboardApiController
                     'booked_rooms_details' => $roomInfo['details'],
                     'dates' => $dates,
                     'stay_type' => ucwords(str_replace('_', ' ', $b->stay_type ?? 'overnight')),
-                    'deposit' => $deposit,
-                    'deposit_formatted' => '₱'.number_format($deposit, 2),
+                    'deposit' => $lostAmount,
+                    'deposit_formatted' => '₱'.number_format($lostAmount, 2),
+                    'lost_revenue' => $lostAmount,
+                    'lost_revenue_formatted' => '₱'.number_format($lostAmount, 2),
+                    'room_charges' => $roomCharges,
+                    'room_charges_formatted' => '₱'.number_format($roomCharges, 2),
+                    'extra_charges' => $extraCharges,
+                    'extra_charges_formatted' => '₱'.number_format($extraCharges, 2),
                     'cancelled_at' => $b->updated_at ? SystemFormatService::formatDateTime($b->updated_at) : 'N/A',
                     'raw_time' => $b->updated_at ? Carbon::parse($b->updated_at)->timestamp : 0,
+                ];
+            });
+
+        $cancelledReservations = Reservation::where('status', 'cancelled')
+            ->orderByDesc('updated_at')
+            ->get()
+            ->map(function ($res) use ($formatRoomDetails, $roomsMap) {
+                $deposit = (float) ($res->deposit ?? 0);
+                $roomInfo = $formatRoomDetails($res->selected_rooms);
+                $start = $res->reservation_start_date ? Carbon::parse($res->reservation_start_date)->format('M d, Y') : null;
+                $end = $res->reservation_end_date ? Carbon::parse($res->reservation_end_date)->format('M d, Y') : null;
+                $dates = ($start && $end) ? "{$start} &ndash; {$end}" : ($start ?: 'N/A');
+
+                $roomCharges = $deposit;
+                $extraCharges = 0.0;
+                $lostAmount = $deposit;
+
+                if ($lostAmount <= 0) {
+                    $roomIds = is_array($res->selected_rooms) ? $res->selected_rooms : (json_decode($res->selected_rooms, true) ?? []);
+                    $isShort = ($res->stay_type === 'short_stay');
+                    $calculatedRoomTotal = 0.0;
+                    foreach ($roomIds as $rId) {
+                        $rm = $roomsMap->get($rId) ?? $roomsMap->firstWhere('room_number', (string) $rId);
+                        if ($rm) {
+                            $calculatedRoomTotal += $isShort ? (float) $rm->short_stay_rate : (float) $rm->overnight_rate;
+                        }
+                    }
+                    if ($calculatedRoomTotal > 0) {
+                        $roomCharges = $calculatedRoomTotal;
+                        $lostAmount = $calculatedRoomTotal;
+                    }
+                }
+
+                return [
+                    'id' => $res->id,
+                    'type' => 'Reservation',
+                    'guest_name' => $res->guest_name ?? 'Guest',
+                    'room_number' => $roomInfo['numbers'],
+                    'booked_rooms_details' => $roomInfo['details'],
+                    'dates' => $dates,
+                    'stay_type' => 'Reserved Stay',
+                    'deposit' => $lostAmount,
+                    'deposit_formatted' => '₱'.number_format($lostAmount, 2),
+                    'lost_revenue' => $lostAmount,
+                    'lost_revenue_formatted' => '₱'.number_format($lostAmount, 2),
+                    'room_charges' => $roomCharges,
+                    'room_charges_formatted' => '₱'.number_format($roomCharges, 2),
+                    'extra_charges' => $extraCharges,
+                    'extra_charges_formatted' => '₱'.number_format($extraCharges, 2),
+                    'cancelled_at' => $res->updated_at ? SystemFormatService::formatDateTime($res->updated_at) : 'N/A',
+                    'raw_time' => $res->updated_at ? Carbon::parse($res->updated_at)->timestamp : 0,
                 ];
             });
 
@@ -1601,7 +1812,7 @@ class DashboardApiController
             ->sortByDesc('raw_time')
             ->values();
 
-        $lostRevenueTotal = (float) $cancellations->sum('deposit');
+        $lostRevenueTotal = (float) $cancellations->sum('lost_revenue');
 
         return response()->json([
             'due_guests' => $dueGuests,
@@ -1611,6 +1822,6 @@ class DashboardApiController
             'lost_revenue_total' => $lostRevenueTotal,
             'lost_revenue_total_formatted' => '₱'.number_format($lostRevenueTotal, 2),
             'server_time' => $now->toIso8601String(),
-        ]);
+        ])->header('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
 }

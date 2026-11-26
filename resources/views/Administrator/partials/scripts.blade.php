@@ -492,12 +492,13 @@
 
             // Initialize Revenue Target Gauge Chart (ApexCharts)
             if (gaugeElement && window.ApexCharts) {
+                const targetAchievedLabel = document.getElementById('monthlyTargetAchievedLabel');
                 const gaugeOptions = {
                     series: [0],
                     chart: {
                         type: 'radialBar',
-                        height: 320,
-                        offsetY: 0,
+                        height: 290,
+                        offsetY: -10,
                         sparkline: {
                             enabled: false
                         }
@@ -524,10 +525,10 @@
                                 },
                                 value: {
                                     offsetSum: 0,
-                                    fontSize: '24px',
+                                    fontSize: '28px',
                                     fontWeight: 'bold',
                                     color: '#212529',
-                                    offsetY: 28,
+                                    offsetY: 10,
                                     formatter: function (val) {
                                         return val + "%";
                                     }
@@ -874,6 +875,11 @@
                             gaugeChart.updateOptions({
                                 labels: ['Achieved of ' + targetText + ' Goal']
                             }, false, false);
+
+                            const targetAchievedLabel = document.getElementById('monthlyTargetAchievedLabel');
+                            if (targetAchievedLabel) {
+                                targetAchievedLabel.textContent = 'Achieved of ' + targetText + ' Goal';
+                            }
                         }
 
                         // Lost Revenue (Cancellations)
@@ -977,9 +983,12 @@
                 updateSalesFilterSlider(true);
             }
 
-            // Sync slider position on load & window resize
+            // Sync slider position on load & window resize & scroll
             setTimeout(() => updateSalesFilterSlider(false), 50);
             window.addEventListener('resize', () => updateSalesFilterSlider(false));
+            if (salesFilterGroup) {
+                salesFilterGroup.addEventListener('scroll', () => updateSalesFilterSlider(false), { passive: true });
+            }
 
             salesFilterBtns.forEach(btn => {
                 btn.addEventListener('click', function () {
@@ -1422,21 +1431,52 @@
             }
 
             function buildDueGuestItem(guest, isModal = false) {
-                const timeText = guest.is_overdue
-                    ? `<span class="text-danger fw-semibold">was due at ${escapeNotifHtml(guest.checkout_time)} (overdue)</span>`
-                    : `${escapeNotifHtml(guest.checkout_time)} is due checkout (${escapeNotifHtml(guest.minutes)}m left)`;
+                let timeText = '';
+                let badgeClass = 'bg-warning text-dark';
+                let badgeLabel = 'Due Soon';
+                let bulletClass = 'text-warning';
 
-                const roomDetails = (isModal && guest.booked_rooms_details)
-                    ? `<div class="text-secondary mt-1" style="font-size: 0.73rem;"><strong>Booked Room(s):</strong> ${escapeNotifHtml(guest.booked_rooms_details)} &bull; <strong>Stay:</strong> ${escapeNotifHtml(guest.stay_type)}</div>`
-                    : '';
+                if (guest.is_overdue) {
+                    badgeClass = 'bg-danger text-white';
+                    badgeLabel = 'Overdue';
+                    bulletClass = 'text-danger';
+                    timeText = `<span class="text-danger fw-semibold">${escapeNotifHtml(guest.time_text || `was due at ${guest.checkout_time} (overdue)`)}</span>`;
+                } else if (guest.is_upcoming) {
+                    badgeClass = 'bg-primary text-white';
+                    badgeLabel = guest.status_label || 'Upcoming';
+                    bulletClass = 'text-primary';
+                    timeText = `<span class="text-primary fw-semibold">${escapeNotifHtml(guest.time_text || `Scheduled check-in: ${guest.check_in_time}`)}</span>`;
+                } else {
+                    timeText = escapeNotifHtml(guest.time_text || `${guest.checkout_time} is due checkout (${guest.minutes}m left)`);
+                }
+
+                let roomDetails = '';
+                if (isModal) {
+                    const parts = [];
+                    if (guest.booked_rooms_details) {
+                        parts.push(`<strong>Booked Room(s):</strong> ${escapeNotifHtml(guest.booked_rooms_details)}`);
+                    }
+                    if (guest.stay_type) {
+                        parts.push(`<strong>Stay:</strong> ${escapeNotifHtml(guest.stay_type)}`);
+                    }
+                    if (guest.check_in_time && guest.check_in_time !== 'N/A' && !guest.is_upcoming) {
+                        parts.push(`<strong>Check-in:</strong> ${escapeNotifHtml(guest.check_in_time)}`);
+                    }
+                    if (guest.total_amount_formatted && guest.total_amount > 0) {
+                        parts.push(`<strong>Total:</strong> ${escapeNotifHtml(guest.total_amount_formatted)}`);
+                    }
+                    if (parts.length > 0) {
+                        roomDetails = `<div class="text-secondary mt-1" style="font-size: 0.73rem;">${parts.join(' &bull; ')}</div>`;
+                    }
+                }
 
                 return `
                     <div class="d-flex align-items-start gap-2 py-2 border-bottom small">
-                        <span class="text-warning fw-bold fs-6">&bull;</span>
+                        <span class="${bulletClass} fw-bold fs-6">&bull;</span>
                         <div class="flex-grow-1">
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="fw-semibold text-dark">RM ${escapeNotifHtml(guest.room_number)} &mdash; ${escapeNotifHtml(guest.name)}</span>
-                                <span class="badge ${guest.is_overdue ? 'bg-danger' : 'bg-warning text-dark'}" style="font-size: 0.65rem;">${guest.is_overdue ? 'Overdue' : 'Due Soon'}</span>
+                                <span class="badge ${badgeClass}" style="font-size: 0.65rem;">${escapeNotifHtml(badgeLabel)}</span>
                             </div>
                             <div class="text-muted" style="font-size: 0.75rem;">${timeText}</div>
                             ${roomDetails}
@@ -1446,9 +1486,24 @@
             }
 
             function buildCancellationItem(item, isModal = false) {
-                const roomDetails = (isModal && item.booked_rooms_details)
-                    ? `<div class="text-secondary mt-1" style="font-size: 0.73rem;"><strong>Room(s):</strong> ${escapeNotifHtml(item.booked_rooms_details)} &bull; <strong>Dates:</strong> ${item.dates || 'N/A'}</div>`
-                    : '';
+                let roomDetails = '';
+                if (isModal) {
+                    const parts = [];
+                    if (item.booked_rooms_details) {
+                        parts.push(`<strong>Room(s):</strong> ${escapeNotifHtml(item.booked_rooms_details)}`);
+                    }
+                    if (item.dates && item.dates !== 'N/A') {
+                        parts.push(`<strong>Dates:</strong> ${item.dates}`);
+                    }
+                    if ((item.room_charges && item.room_charges > 0) || (item.extra_charges && item.extra_charges > 0)) {
+                        parts.push(`<strong>Room Charges:</strong> ${escapeNotifHtml(item.room_charges_formatted || '₱0.00')} &bull; <strong>Fees:</strong> ${escapeNotifHtml(item.extra_charges_formatted || '₱0.00')}`);
+                    }
+                    if (parts.length > 0) {
+                        roomDetails = `<div class="text-secondary mt-1" style="font-size: 0.73rem;">${parts.join(' &bull; ')}</div>`;
+                    }
+                }
+
+                const amountText = item.lost_revenue_formatted || item.deposit_formatted || '₱0.00';
 
                 return `
                     <div class="d-flex align-items-start gap-2 py-2 border-bottom small">
@@ -1460,7 +1515,7 @@
                             </div>
                             <div class="d-flex justify-content-between align-items-center mt-1">
                                 <span class="text-muted" style="font-size: 0.72rem;">Room: ${escapeNotifHtml(item.room_number)} &bull; ${escapeNotifHtml(item.cancelled_at)}</span>
-                                <span class="fw-bold text-danger" style="font-size: 0.75rem;">-${escapeNotifHtml(item.deposit_formatted)}</span>
+                                <span class="fw-bold text-danger" style="font-size: 0.75rem;">-${escapeNotifHtml(amountText)}</span>
                             </div>
                             ${roomDetails}
                         </div>
@@ -1490,14 +1545,14 @@
                     }
                 }
 
-                // 2. See More Modal: Show all revenue losses and due/overdue records with booked room details
+                // 2. See More Modal: Show all revenue losses and upcoming/due records with booked room details
                 if (adminNotifModalBody) {
                     const dueHtml = dueGuests.length > 0
                         ? dueGuests.map(g => buildDueGuestItem(g, true)).join('')
                         : `
                             <div class="text-center py-3 text-secondary">
-                                <p class="mb-0 fw-semibold fst-italic" style="font-style: italic;">No rooms due within the next 30 minutes.</p>
-                                <small class="text-muted d-block mt-1">Guests nearing their check-out time appear here automatically.</small>
+                                <p class="mb-0 fw-semibold fst-italic" style="font-style: italic;">No upcoming or due bookings found.</p>
+                                <small class="text-muted d-block mt-1">Upcoming bookings and guests nearing their check-out time appear here automatically.</small>
                             </div>
                         `;
 
@@ -1527,10 +1582,10 @@
                             </div>
                         </div>
 
-                        <!-- Section 1: Upcoming & Due Checkouts -->
+                        <!-- Section 1: Upcoming & Due Guest Bookings -->
                         <div class="mb-4">
                             <h6 class="fw-bold text-dark border-bottom pb-2 mb-2 d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
-                                <span>UPCOMING &amp; DUE CHECKOUTS (30-MIN ALERT)</span>
+                                <span>UPCOMING &amp; DUE GUEST BOOKINGS</span>
                                 <span class="badge bg-secondary" style="font-size: 0.65rem;">${dueGuests.length}</span>
                             </h6>
                             <div>${dueHtml}</div>
@@ -1549,10 +1604,11 @@
             }
 
             function fetchAdminNotifications() {
-                fetch('/api/admin/notifications', {
+                fetch('/api/admin/notifications?_t=' + Date.now(), {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
                     }
                 })
                     .then(response => {
@@ -1567,9 +1623,17 @@
                     });
             }
 
-            // Initial fetch & poll every 5 seconds
+            // Initial fetch & poll every 5 seconds for real-time synchronization
             fetchAdminNotifications();
             setInterval(fetchAdminNotifications, 5000);
+
+            // Immediately refresh when the modal is opened
+            const adminNotificationsModalEl = document.getElementById('adminNotificationsModal');
+            if (adminNotificationsModalEl) {
+                adminNotificationsModalEl.addEventListener('show.bs.modal', function () {
+                    fetchAdminNotifications();
+                });
+            }
         }
 
     });

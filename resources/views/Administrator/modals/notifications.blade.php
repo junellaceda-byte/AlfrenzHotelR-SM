@@ -9,7 +9,7 @@
                         Notifications &amp; Revenue Losses
                     </h5>
                     <small class="text-white-50" style="font-size: 0.78rem;">
-                        Real-time overdue guest checkouts and revenue lost from cancellations
+                        Real-time upcoming &amp; due guest bookings and revenue lost from cancellations
                     </small>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>

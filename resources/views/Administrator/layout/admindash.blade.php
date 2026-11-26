@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Alfrenzo's Hotel - Admin Dashboard</title>
 
@@ -34,7 +34,7 @@
                 @include('Administrator.partials.topbar')
 
                 <!-- Main Content Box -->
-                <main class="p-3 p-xl-4 flex-grow-1 overflow-y-auto overflow-x-hidden" style="background-color: #fbedfb;">
+                <main class="p-2.5 p-sm-3 p-xl-4 flex-grow-1 overflow-y-auto overflow-x-hidden admin-main-content" style="background-color: #fbedfb;">
                     @php
                         $section = request('section', 'overview');
                     @endphp

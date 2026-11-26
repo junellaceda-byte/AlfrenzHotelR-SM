@@ -24,6 +24,59 @@
         background-color: #382c20;
         border-left: 4px solid #F5F7DF;
     }
+
+    /* ── Account Management notice ── */
+    .accman-notice {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    .accman-notice-body {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .accman-notice-icon {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        min-height: 38px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #2b2219;
+        color: #ffffff;
+    }
+    .accman-notice-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        word-break: break-word;
+    }
+    .accman-notice-btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        white-space: normal;
+        word-break: break-word;
+        font-size: clamp(0.72rem, 2.2vw, 0.85rem);
+        padding: clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 3vw, 1.25rem);
+        background-color: rgba(245, 247, 223, 0.15);
+        color: #F5F7DF;
+        border-color: rgba(245, 247, 223, 0.3) !important;
+        margin-top: auto;
+        flex-shrink: 0;
+        line-height: 1.4;
+    }
+    .accman-notice-btn:hover,
+    .accman-notice-btn:focus {
+        background-color: rgba(245, 247, 223, 0.25);
+        color: #F5F7DF;
+    }
 </style>
 
 <div class="card p-4 border-0 rounded shadow-sm" style="background-color: #443627; color: #ffffff;">
@@ -50,20 +103,20 @@
     @endif
 
     <!-- Information Notice: Administrator Credentials Moved to Account Management -->
-    <div class="alert border d-flex justify-content-between align-items-center mb-4 p-3 rounded" style="background-color: #382c20; border-color: rgba(245, 247, 223, 0.2) !important; color: #ffffff;">
-        <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 38px; height: 38px; background-color: #2b2219;">
+    <div class="alert border accman-notice mb-4 p-3 rounded" style="background-color: #382c20; border-color: rgba(245, 247, 223, 0.2) !important; color: #ffffff;">
+        <div class="accman-notice-body">
+            <div class="accman-notice-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
                     <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
                 </svg>
             </div>
-            <div>
+            <div class="accman-notice-text">
                 <strong class="d-block text-white">Administrator Credentials Management</strong>
                 <span class="small" style="color: #F5F7DF; opacity: 0.85;">Administrator username and password credentials are now managed in <strong>Account Management</strong>, positioned immediately after Receptionist Credentials.</span>
             </div>
         </div>
-        <a href="{{ url('/admindashboard?section=accman#adminCredentialsSection') }}" class="btn btn-sm fw-semibold text-nowrap px-3 border" style="background-color: rgba(245, 247, 223, 0.15); color: #F5F7DF; border-color: rgba(245, 247, 223, 0.3) !important;">
+        <a href="{{ url('/admindashboard?section=accman#adminCredentialsSection') }}" class="btn btn-sm fw-semibold accman-notice-btn border">
             Go to Account Management &rarr;
         </a>
     </div>
