@@ -637,6 +637,7 @@ Route::get('/bookings/export', [BookingController::class, 'export'])->name('book
 Route::post('/bookings', [BookingController::class, 'store'])->name('booking.store');
 Route::post('/bookings/amenities/add-to-room', [BookingController::class, 'addAmenityToRoom'])->name('booking.addAmenityToRoom');
 Route::post('/bookings/{id}/amenities', [BookingController::class, 'addAmenities'])->name('booking.addAmenities');
+Route::post('/bookings/{id}/extra-hours', [BookingController::class, 'addExtraHours'])->name('booking.addExtraHours');
 
 // Update Booking Status Route
 Route::put('/bookings/{id}/status', [BookingController::class, 'updateStatus'])->name('booking.updateStatus');

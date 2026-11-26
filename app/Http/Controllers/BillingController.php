@@ -44,7 +44,7 @@ class BillingController
         // This is the logic for selected invoice
         $selectedInvoice = null;
         if ($request->has('edit_id') && ! $request->has('confirmed_page')) {
-            $selectedInvoice = Invoice::with(['booking.guest', 'availableAmenities'])
+            $selectedInvoice = Invoice::with(['booking.guest', 'booking.charges', 'availableAmenities'])
                 ->find($request->edit_id);
         }
 

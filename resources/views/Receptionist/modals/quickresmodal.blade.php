@@ -431,14 +431,22 @@
                                         </div>
                                     @endif
                                     
-                                    <!-- Display Added Amenities -->
-                                    @if($selectedInvoice->amenities && $selectedInvoice->amenities->count() > 0)
-                                        <div class="mt-3 mb-2 fw-bold small px-2" style="color: #000000;">Added Incidentals</div>
+                                    <!-- Display Added Amenities & Extra Charges -->
+                                    @php
+                                        $nonRoomCharges = ($selectedInvoice->booking && $selectedInvoice->booking->relationLoaded('charges'))
+                                            ? $selectedInvoice->booking->charges->where('type', '!=', 'room')
+                                            : collect();
+                                        $displayItems = $selectedInvoice->amenities && $selectedInvoice->amenities->count() > 0
+                                            ? $selectedInvoice->amenities->map(fn($a) => ['name' => $a->item_name, 'qty' => $a->quantity, 'amount' => $a->total_amount])
+                                            : $nonRoomCharges->map(fn($c) => ['name' => $c->description, 'qty' => $c->quantity, 'amount' => $c->amount]);
+                                    @endphp
+                                    @if($displayItems->count() > 0)
+                                        <div class="mt-3 mb-2 fw-bold small px-2" style="color: #000000;">Added Charges & Incidentals</div>
                                         <div class="px-2" style="color: #000000;">
-                                        @foreach($selectedInvoice->amenities as $amenity)
+                                        @foreach($displayItems as $item)
                                             <div class="d-flex justify-content-between mb-2 small" style="color: #000000;">
-                                                <span style="color: #000000;">{{ $amenity->item_name }} (x{{ $amenity->quantity }})</span>
-                                                <span style="color: #000000;">₱ {{ number_format($amenity->total_amount, 2) }}</span>
+                                                <span style="color: #000000;">{{ $item['name'] }} (x{{ $item['qty'] }})</span>
+                                                <span style="color: #000000;">₱ {{ number_format($item['amount'], 2) }}</span>
                                             </div>
                                         @endforeach
                                         </div>

@@ -146,10 +146,10 @@
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/></svg>
                                         </button>
                                         @if($statusText !== 'Completed')
-                                            <!-- Add amenities: plus icon -->
-                                            <button type="button" class="btn btn-sm btn-brown btn-add-amenity" title="Add amenities"
-                                                    data-bs-toggle="modal" data-bs-target="#addAmenityModal"
-                                                    data-action="{{ route('booking.addAmenities', $booking->id) }}"
+                                            <!-- Add Extra Hours: plus icon -->
+                                            <button type="button" class="btn btn-sm btn-brown btn-add-extra-hours" title="Add extra hours"
+                                                    data-bs-toggle="modal" data-bs-target="#addExtraHoursModal"
+                                                    data-action="{{ route('booking.addExtraHours', $booking->id) }}"
                                                     data-guest="{{ $details['no'] }} - {{ trim($guestName . ' ' . ($lastName === '-' ? '' : $lastName)) }}"
                                                     @if($paid || $cancelled) disabled @endif>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>
@@ -229,41 +229,46 @@
     </div>
 </div>
 
-<!-- Add amenities to a booking -->
-<div class="modal fade" id="addAmenityModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+<!-- Add extra hours to a booking modal -->
+<div class="modal fade" id="addExtraHoursModal" tabindex="-1" aria-labelledby="addExtraHoursModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add amenities</h5>
+                <h5 class="modal-title fw-bold" id="addExtraHoursModalLabel">ADD EXTRA HOURS</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="addAmenityForm" method="POST" action="">
+            <form id="addExtraHoursForm" method="POST" action="">
                 @csrf
                 <div class="modal-body">
-                    <div class="mb-3"><span class="text-muted small">Guest</span><div class="fw-semibold" id="aa_guest"></div></div>
-                    <div class="small text-muted mb-2">Enter a quantity for each item the guest wants.</div>
-                    @php
-                        $activeAmenities = isset($availableAmenities)
-                            ? collect($availableAmenities)->filter(fn($a) => (bool) ($a->offered ?? $a->is_available ?? false))
-                            : \App\Models\Amenity::where('offered', true)->get();
-                    @endphp
-                    <div id="bookingAddAmenitiesList">
-                        @forelse($activeAmenities as $item)
-                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom" data-amenity-id="{{ $item->id }}">
-                                <div>
-                                    <div class="fw-semibold">{{ $item->name }}</div>
-                                    <div class="small text-muted">₱{{ number_format($item->price, 2) }} per {{ $item->charged ?? 'item' }}</div>
-                                </div>
-                                <input type="number" name="qty[{{ $item->id }}]" value="0" min="0" max="20" class="form-control form-control-sm text-center" style="width: 5rem;">
-                            </div>
-                        @empty
-                            <div class="py-3 text-center text-muted small">No amenities currently offered.</div>
-                        @endforelse
+                    <div class="mb-3">
+                        <span class="text-muted small">Guest</span>
+                        <div class="fw-semibold fs-6" id="aeh_guest">-</div>
+                    </div>
+                    <div class="p-3 rounded mb-3" style="background-color: #F8F9FA; border: 1px solid #E9ECEF;">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small">Hourly Extension Rate:</span>
+                            <span class="fw-bold text-dark">₱150.00 / hour</span>
+                        </div>
+                        <div class="small text-muted">Each added hour extends the guest's checkout date and time automatically.</div>
+                    </div>
+
+                    <!-- MINUS - NUMBER DISPLAY - PLUS Control -->
+                    <div class="d-flex flex-column align-items-center justify-content-center my-4">
+                        <label class="form-label fw-bold text-muted small text-uppercase mb-2">Number of Extra Hours</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-secondary px-3 py-2 fw-bold fs-5" id="aeh_btn_minus" style="min-width: 45px;" aria-label="Decrease hours" onclick="if(window.aehChangeHours){window.aehChangeHours(-1);return false;}">-</button>
+                            <input type="number" name="extra_hours" id="aeh_hours_input" class="form-control text-center fw-bold fs-4" value="1" min="1" max="72" step="1" style="width: 80px;" readonly>
+                            <button type="button" class="btn btn-outline-secondary px-3 py-2 fw-bold fs-5" id="aeh_btn_plus" style="min-width: 45px;" aria-label="Increase hours" onclick="if(window.aehChangeHours){window.aehChangeHours(1);return false;}">+</button>
+                        </div>
+                        <div class="mt-3 text-center">
+                            <span class="text-muted small">Charge: </span>
+                            <span class="fw-bold text-success fs-5" id="aeh_total_charge">₱150.00</span>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-brown">Add to bill</button>
+                    <button type="submit" class="btn btn-brown" id="aeh_submit_btn">Add to Bill</button>
                 </div>
             </form>
         </div>
@@ -340,12 +345,86 @@
             });
         });
 
-        // Add: point the form at this booking and clear the quantities
-        document.querySelectorAll('.btn-add-amenity').forEach(function (btn) {
+        // Add Extra Hours modal setup and strictly 1-hour minus-plus controls
+        const extraHoursInput = document.getElementById('aeh_hours_input');
+        const extraHoursMinusBtn = document.getElementById('aeh_btn_minus');
+        const extraHoursPlusBtn = document.getElementById('aeh_btn_plus');
+        const extraHoursChargeDisplay = document.getElementById('aeh_total_charge');
+        const addExtraHoursModal = document.getElementById('addExtraHoursModal');
+        const ratePerHour = 150;
+
+        // Idempotent handler to strictly change by +1 or -1 hour per click
+        window.aehChangeHours = function (delta) {
+            const input = document.getElementById('aeh_hours_input');
+            const chargeDisplay = document.getElementById('aeh_total_charge');
+            if (!input) return;
+
+            let current = parseInt(input.value, 10);
+            if (isNaN(current) || current < 1) {
+                current = 1;
+            }
+
+            if (delta > 0) {
+                current += 1; // Exactly 1 hour per click
+            } else if (delta < 0) {
+                current = Math.max(1, current - 1); // Exactly 1 hour reduction down to 1
+            }
+
+            if (current > 72) {
+                current = 72;
+            }
+
+            input.value = current;
+
+            if (chargeDisplay) {
+                const total = current * ratePerHour;
+                chargeDisplay.textContent = '₱' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+        };
+
+        // Assign directly to onclick to guarantee only 1 handler exists and prevent duplicate registrations
+        if (extraHoursMinusBtn) {
+            extraHoursMinusBtn.onclick = function (e) {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                window.aehChangeHours(-1);
+            };
+        }
+
+        if (extraHoursPlusBtn) {
+            extraHoursPlusBtn.onclick = function (e) {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                window.aehChangeHours(1);
+            };
+        }
+
+        // Reset to 1 whenever the modal is shown
+        if (addExtraHoursModal) {
+            addExtraHoursModal.addEventListener('show.bs.modal', function () {
+                if (extraHoursInput) {
+                    extraHoursInput.value = 1;
+                }
+                if (extraHoursChargeDisplay) {
+                    extraHoursChargeDisplay.textContent = '₱150.00';
+                }
+            });
+        }
+
+        document.querySelectorAll('.btn-add-extra-hours').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                document.getElementById('addAmenityForm').action = this.dataset.action;
-                document.getElementById('aa_guest').textContent = this.dataset.guest;
-                document.querySelectorAll('#addAmenityForm input[type=number]').forEach(function (input) { input.value = 0; });
+                const form = document.getElementById('addExtraHoursForm');
+                if (form) {
+                    form.action = this.dataset.action;
+                }
+                const guestDisplay = document.getElementById('aeh_guest');
+                if (guestDisplay) {
+                    guestDisplay.textContent = this.dataset.guest;
+                }
+                if (extraHoursInput) {
+                    extraHoursInput.value = 1;
+                }
+                if (extraHoursChargeDisplay) {
+                    extraHoursChargeDisplay.textContent = '₱150.00';
+                }
             });
         });
     });
@@ -353,6 +432,14 @@
 @endpush
 
 <style>
+    #aeh_hours_input::-webkit-outer-spin-button,
+    #aeh_hours_input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    #aeh_hours_input[type=number] {
+        -moz-appearance: textfield;
+    }
     .booking-history-table {
         table-layout: fixed !important;
         width: 100% !important;

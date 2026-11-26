@@ -335,6 +335,11 @@ class BookingController
     /** Adds amenities to an unpaid booking's bill and recalculates the total and the discount */
     public function addAmenities(Request $request, int $id, InvoiceService $invoices)
     {
+        // If extra hours were submitted through this route for compatibility
+        if ($request->has('extra_hours') || $request->has('hours')) {
+            return $this->addExtraHours($request, $id, $invoices);
+        }
+
         $request->validate([
             'qty' => 'required|array',
             'qty.*' => 'nullable|integer|min:0|max:20',
@@ -408,6 +413,75 @@ class BookingController
         $total = Invoice::where('booking_id', $booking->id)->value('grand_total');
 
         return back()->with('success', 'Amenities added. New total: ₱'.number_format($total, 2));
+    }
+
+    /**
+     * Adds extra hours to an active unpaid booking, extending checkout date/time and stay duration,
+     * and adding the charge (₱150/hr) to billing balance.
+     */
+    public function addExtraHours(Request $request, int $id, InvoiceService $invoices)
+    {
+        $hours = (int) ($request->input('extra_hours') ?? $request->input('hours', 0));
+
+        if ($hours < 1) {
+            return back()->withErrors(['extra_hours' => 'Please select at least 1 extra hour.']);
+        }
+
+        $booking = Booking::with('invoice')->findOrFail($id);
+
+        if ($booking->status === 'cancelled' || $booking->status === 'checked_out' || optional($booking->invoice)->status === 'paid') {
+            return back()->withErrors(['extra_hours' => 'Extra hours can only be added to an active, unpaid booking.']);
+        }
+
+        $ratePerHour = 150.00;
+        $totalAmount = $hours * $ratePerHour;
+
+        // 1. Extend checkout datetime
+        $currentCheckout = Carbon::parse($booking->check_out_datetime);
+        $newCheckout = $currentCheckout->copy()->addHours($hours);
+
+        // 2. Extend room stay duration
+        $updates = [
+            'check_out_datetime' => $newCheckout,
+        ];
+
+        if ($booking->stay_type === 'short_stay') {
+            $updates['short_stay_hours'] = ((int) ($booking->short_stay_hours ?: 0)) + $hours;
+        }
+
+        $booking->update($updates);
+
+        // 3. Create Charge record (type extra_hours)
+        $description = 'Extra Hours ('.$hours.' hr'.($hours > 1 ? 's' : '').')';
+        Charge::create([
+            'booking_id' => $booking->id,
+            'type' => 'extra_hours',
+            'description' => $description,
+            'quantity' => $hours,
+            'unit_price' => $ratePerHour,
+            'amount' => $totalAmount,
+            'is_paid' => false,
+        ]);
+
+        // 4. Create AvailableAmenity entry for invoice itemization compatibility
+        if ($booking->invoice) {
+            AvailableAmenity::create([
+                'booking_id' => $booking->id,
+                'invoice_id' => $booking->invoice->id,
+                'item_name' => $description,
+                'quantity' => $hours,
+                'unit_price' => $ratePerHour,
+                'total_amount' => $totalAmount,
+                'is_available' => true,
+            ]);
+        }
+
+        // 5. Recalculate invoice billing balance
+        $invoices->recalculate($booking);
+
+        $grandTotal = Invoice::where('booking_id', $booking->id)->value('grand_total');
+
+        return back()->with('success', "{$hours} extra hour(s) added successfully. Checkout extended to {$newCheckout->format('M d, Y g:i A')}. New total: ₱".number_format($grandTotal, 2));
     }
 
     /**
