@@ -804,12 +804,19 @@
             }
 
             let isFetchingSalesReport = false;
+            let pendingSalesReportRefresh = false;
             let activeSalesFilter = 'today';
             let customSelectedDate = '';
 
             // Main Data Fetcher
-            function fetchSalesReport() {
-                if (isFetchingSalesReport) return;
+            // Original: function fetchSalesReport() { if (isFetchingSalesReport) return;
+            function fetchSalesReport(force = false) {
+                if (isFetchingSalesReport) {
+                    if (force) {
+                        pendingSalesReportRefresh = true;
+                    }
+                    return;
+                }
                 isFetchingSalesReport = true;
 
                 const yearSelect = document.getElementById('salesFilterYear');
@@ -860,12 +867,19 @@
                         const adrValEl = document.getElementById('salesAdrValue');
                         const bookingsValEl = document.getElementById('salesTotalBookingsValue');
                         const targetValEl = document.getElementById('monthlyTargetValue');
+                        const targetPeriodEl = document.getElementById('monthlyTargetPeriodLabel');
 
                         if (revTitleEl) revTitleEl.textContent = data.revenue_card_title || 'Total Revenue';
                         if (revValEl) revValEl.textContent = data.total_revenue_formatted || '₱0.00';
                         if (adrValEl) adrValEl.textContent = data.adr_formatted || '₱0.00';
                         if (bookingsValEl) bookingsValEl.textContent = (data.total_bookings || 0).toLocaleString();
-                        if (targetValEl) targetValEl.textContent = data.monthly_target_formatted || '₱150,000';
+                        if (targetValEl) targetValEl.textContent = data.monthly_target_formatted || '₱150,000.00';
+                        if (targetPeriodEl && data.monthly_target_month && data.monthly_target_year) {
+                            const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                            const mIdx = parseInt(data.monthly_target_month, 10) - 1;
+                            const mLabel = monthNamesShort[mIdx] || '';
+                            targetPeriodEl.textContent = (mLabel ? mLabel + ' ' : '') + data.monthly_target_year + (data.has_custom_target ? ' (Saved)' : ' (Default)');
+                        }
 
                         // Gauge Chart Update
                         if (gaugeChart) {
@@ -912,6 +926,10 @@
                     })
                     .finally(() => {
                         isFetchingSalesReport = false;
+                        if (pendingSalesReportRefresh) {
+                            pendingSalesReportRefresh = false;
+                            fetchSalesReport(false);
+                        }
                     });
             }
 
@@ -1115,7 +1133,34 @@
             });
 
             // ==========================================
-            // Excel Export Modal & Live Preview
+            // Direct Excel Export (.xlsx) Matching Active Filters
+            // ==========================================
+            const salesExportExcelBtn = document.getElementById('salesExportExcelBtn');
+            if (salesExportExcelBtn) {
+                salesExportExcelBtn.addEventListener('click', function () {
+                    const yVal = yearSelect ? yearSelect.value : new Date().getFullYear();
+                    const mVal = monthSelect ? monthSelect.value : (new Date().getMonth() + 1);
+
+                    const params = new URLSearchParams();
+                    params.append('format', 'xlsx');
+                    params.append('timeframe', activeSalesFilter || 'today');
+                    if (yVal) params.append('year', yVal);
+                    if (mVal) params.append('month', mVal);
+
+                    if (activeSalesFilter === 'custom' && customSelectedDate) {
+                        params.append('date', customSelectedDate);
+                    } else if (activeSalesFilter === 'today') {
+                        const now = new Date();
+                        const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+                        params.append('date', todayStr);
+                    }
+
+                    window.location.assign('/admin/sales-report/export?' + params.toString());
+                });
+            }
+
+            // ==========================================
+            // Excel Export Modal & Live Preview (Preserved)
             // ==========================================
             const exportModalEl = document.getElementById('salesExportExcelModal');
             const exportTimeframeInput = document.getElementById('exportTimeframeInput');
@@ -1162,12 +1207,20 @@
             syncColorPair(summaryColorInput, summaryColorPicker);
 
             function updateExcelPreview() {
-                const hBg = headerBgInput ? headerBgInput.value : '#443627';
-                const hText = headerTextInput ? headerTextInput.value : '#FFFFFF';
-                const bText = bodyTextInput ? bodyTextInput.value : '#212529';
-                const accent = accentColorInput ? accentColorInput.value : '#6A4435';
-                const rBg = rowBgInput ? rowBgInput.value : '#F8F9FA';
-                const sColor = summaryColorInput ? summaryColorInput.value : '#2E7D32';
+                // Fixed Vintage Brown & Beige System Palette
+                // Original:
+                // const hBg = headerBgInput ? headerBgInput.value : '#443627';
+                // const hText = headerTextInput ? headerTextInput.value : '#FFFFFF';
+                // const bText = bodyTextInput ? bodyTextInput.value : '#212529';
+                // const accent = accentColorInput ? accentColorInput.value : '#6A4435';
+                // const rBg = rowBgInput ? rowBgInput.value : '#F8F9FA';
+                // const sColor = summaryColorInput ? summaryColorInput.value : '#2E7D32';
+                const hBg = '#443627';
+                const hText = '#F5F7DF';
+                const bText = '#2C221A';
+                const accent = '#6A4435';
+                const rBg = '#F5F7DF';
+                const sColor = '#443627';
 
                 const secHeader = document.getElementById('prevSectionHeader');
                 if (secHeader) {
@@ -1196,7 +1249,7 @@
                 const prevTotalRow = document.getElementById('prevTotalRow');
                 if (prevTotalRow) {
                     prevTotalRow.style.borderTopColor = sColor;
-                    prevTotalRow.style.backgroundColor = rBg;
+                    prevTotalRow.style.backgroundColor = '#EFEABB';
                 }
 
                 const prevTotalLabel = document.getElementById('prevTotalLabel');
@@ -1267,22 +1320,98 @@
                 });
             }
 
-            // Target Modal AJAX Submission
+            // Target Modal Pre-fill & AJAX Submission
+            const setTargetModalEl = document.getElementById('setTargetModal');
             const setTargetForm = document.getElementById('setTargetForm');
+            const targetInput = document.getElementById('monthlyTargetInput');
+            const modalMonthSelect = document.getElementById('monthlyTargetMonthSelect');
+            const modalYearSelect = document.getElementById('monthlyTargetYearSelect');
+            const setTargetAlertBox = document.getElementById('setTargetAlert');
+            const setTargetHint = document.getElementById('setTargetCurrentHint');
+
+            function loadModalTargetForPeriod(yearVal, monthVal) {
+                if (!yearVal || !monthVal) return;
+
+                fetch(`/api/admin/monthly-target?year=${encodeURIComponent(yearVal)}&month=${encodeURIComponent(monthVal)}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(res => res.ok ? res.json() : null)
+                    .then(resData => {
+                        if (!resData || resData.status !== 'success') return;
+                        if (targetInput) {
+                            targetInput.value = resData.target_amount;
+                        }
+                        if (setTargetHint) {
+                            setTargetHint.textContent = resData.has_custom_target
+                                ? `Current saved target for this month: ${resData.target_formatted} (${resData.progress_percent}% achieved of ${resData.month_revenue_formatted}).`
+                                : `No custom target saved yet for this month. Showing default (${resData.target_formatted}).`;
+                        }
+                    })
+                    .catch(() => {});
+            }
+
+            if (setTargetModalEl) {
+                setTargetModalEl.addEventListener('show.bs.modal', function () {
+                    if (setTargetAlertBox) setTargetAlertBox.classList.add('d-none');
+
+                    let initialYear = cachedSalesData && cachedSalesData.monthly_target_year
+                        ? String(cachedSalesData.monthly_target_year)
+                        : (yearSelect ? yearSelect.value : String(new Date().getFullYear()));
+                    let initialMonth = cachedSalesData && cachedSalesData.monthly_target_month
+                        ? String(cachedSalesData.monthly_target_month)
+                        : (monthSelect && monthSelect.value !== 'all' ? monthSelect.value : String(new Date().getMonth() + 1));
+
+                    if (modalYearSelect && Array.from(modalYearSelect.options).some(opt => opt.value === initialYear)) {
+                        modalYearSelect.value = initialYear;
+                    }
+                    if (modalMonthSelect && Array.from(modalMonthSelect.options).some(opt => opt.value === initialMonth)) {
+                        modalMonthSelect.value = initialMonth;
+                    }
+
+                    const chosenYear = modalYearSelect ? modalYearSelect.value : initialYear;
+                    const chosenMonth = modalMonthSelect ? modalMonthSelect.value : initialMonth;
+                    loadModalTargetForPeriod(chosenYear, chosenMonth);
+                });
+            }
+
+            if (modalMonthSelect) {
+                modalMonthSelect.addEventListener('change', function () {
+                    loadModalTargetForPeriod(modalYearSelect ? modalYearSelect.value : new Date().getFullYear(), this.value);
+                });
+            }
+
+            if (modalYearSelect) {
+                modalYearSelect.addEventListener('change', function () {
+                    loadModalTargetForPeriod(this.value, modalMonthSelect ? modalMonthSelect.value : (new Date().getMonth() + 1));
+                });
+            }
+
             if (setTargetForm) {
                 setTargetForm.addEventListener('submit', function (e) {
                     e.preventDefault();
                     const formAction = this.getAttribute('action') || '/api/admin/monthly-target';
-                    const targetInput = document.getElementById('monthlyTargetInput');
-                    const modalMonthSelect = document.getElementById('monthlyTargetMonthSelect');
-                    const modalYearSelect = document.getElementById('monthlyTargetYearSelect');
-                    const alertBox = document.getElementById('setTargetAlert');
+                    const alertBox = setTargetAlertBox;
                     const submitBtn = document.getElementById('saveTargetSubmitBtn');
 
                     if (alertBox) alertBox.classList.add('d-none');
+
+                    const parsedTarget = parseFloat(targetInput ? targetInput.value : 0);
+                    if (isNaN(parsedTarget) || parsedTarget < 1) {
+                        if (alertBox) {
+                            alertBox.textContent = 'Please enter a valid monthly target amount of at least ₱1.00.';
+                            alertBox.classList.remove('d-none');
+                        }
+                        return;
+                    }
+
                     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
 
                     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                    const submittedYear = parseInt(modalYearSelect ? modalYearSelect.value : new Date().getFullYear(), 10);
+                    const submittedMonth = parseInt(modalMonthSelect ? modalMonthSelect.value : (new Date().getMonth() + 1), 10);
 
                     fetch(formAction, {
                         method: 'POST',
@@ -1293,25 +1422,79 @@
                             'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: JSON.stringify({
-                            year: parseInt(modalYearSelect ? modalYearSelect.value : new Date().getFullYear(), 10),
-                            month: parseInt(modalMonthSelect ? modalMonthSelect.value : (new Date().getMonth() + 1), 10),
-                            target_amount: parseFloat(targetInput ? targetInput.value : 0)
+                            year: submittedYear,
+                            month: submittedMonth,
+                            target_amount: parsedTarget
                         })
                     })
-                        .then(res => res.json())
-                        .then(resData => {
+                        .then(async res => {
+                            const resData = await res.json().catch(() => ({}));
+                            return { ok: res.ok, data: resData };
+                        })
+                        .then(({ ok, data: resData }) => {
                             if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save Target'; }
 
-                            if (resData.status === 'success') {
+                            if (ok && resData.status === 'success') {
                                 const modalEl = document.getElementById('setTargetModal');
                                 if (modalEl && window.bootstrap && bootstrap.Modal) {
                                     const modalInstance = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
                                     if (modalInstance) modalInstance.hide();
                                 }
-                                fetchSalesReport();
+
+                                // Sync report filter if admin saved a target for a different month/year
+                                const currentTargetYear = cachedSalesData ? parseInt(cachedSalesData.monthly_target_year, 10) : (yearSelect ? parseInt(yearSelect.value, 10) : null);
+                                const currentTargetMonth = cachedSalesData ? parseInt(cachedSalesData.monthly_target_month, 10) : (monthSelect && monthSelect.value !== 'all' ? parseInt(monthSelect.value, 10) : null);
+
+                                if (submittedYear !== currentTargetYear || submittedMonth !== currentTargetMonth) {
+                                    if (yearSelect && Array.from(yearSelect.options).some(opt => parseInt(opt.value, 10) === submittedYear)) {
+                                        yearSelect.value = String(submittedYear);
+                                    }
+                                    if (monthSelect && Array.from(monthSelect.options).some(opt => parseInt(opt.value, 10) === submittedMonth)) {
+                                        monthSelect.value = String(submittedMonth);
+                                    }
+                                    if (activeSalesFilter === 'today' || activeSalesFilter === 'weekly' || activeSalesFilter === 'custom') {
+                                        if (clearDateBtn) clearDateBtn.classList.add('d-none');
+                                        if (customDateInput) customDateInput.value = '';
+                                        customSelectedDate = '';
+                                        if (nativeDatePicker) nativeDatePicker.value = '';
+                                        setActiveFilterBtn('this_month');
+                                    }
+                                }
+
+                                // Immediately reflect saved target & progress in the UI
+                                const targetValEl = document.getElementById('monthlyTargetValue');
+                                const targetPeriodEl = document.getElementById('monthlyTargetPeriodLabel');
+                                const targetAchievedLabel = document.getElementById('monthlyTargetAchievedLabel');
+                                const targetText = resData.target_formatted || '₱150,000.00';
+                                const progress = resData.progress_percent || 0;
+
+                                if (targetValEl) targetValEl.textContent = targetText;
+                                if (targetPeriodEl) {
+                                    const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                    const mLabel = monthNamesShort[submittedMonth - 1] || '';
+                                    targetPeriodEl.textContent = (mLabel ? mLabel + ' ' : '') + submittedYear + ' (Saved)';
+                                }
+                                if (gaugeChart) {
+                                    gaugeChart.updateSeries([progress], false);
+                                    gaugeChart.updateOptions({
+                                        labels: ['Achieved of ' + targetText + ' Goal']
+                                    }, false, false);
+                                }
+                                if (targetAchievedLabel) {
+                                    targetAchievedLabel.textContent = 'Achieved of ' + targetText + ' Goal';
+                                }
+
+                                fetchSalesReport(true);
                             } else {
                                 if (alertBox) {
-                                    alertBox.textContent = resData.message || 'Error updating monthly target.';
+                                    let errMsg = resData.message || 'Error updating monthly target.';
+                                    if (resData.errors) {
+                                        const firstKey = Object.keys(resData.errors)[0];
+                                        if (firstKey && Array.isArray(resData.errors[firstKey]) && resData.errors[firstKey][0]) {
+                                            errMsg = resData.errors[firstKey][0];
+                                        }
+                                    }
+                                    alertBox.textContent = errMsg;
                                     alertBox.classList.remove('d-none');
                                 }
                             }

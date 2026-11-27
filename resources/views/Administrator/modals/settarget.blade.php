@@ -55,7 +55,7 @@
                             placeholder="e.g. 150000"
                             required>
                     </div>
-                    <small class="text-muted mt-2 d-block" style="font-size: 0.8rem;">
+                    <small id="setTargetCurrentHint" class="text-muted mt-2 d-block" style="font-size: 0.8rem;">
                         This sets the monthly revenue goal for the selected month to track real-time progress on the target gauge.
                     </small>
                 </div>

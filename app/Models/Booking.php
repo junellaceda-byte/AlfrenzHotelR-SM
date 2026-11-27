@@ -123,4 +123,28 @@ class Booking extends Model
 
         return '24 Hours';
     }
+
+    /**
+     * Format the booking's booked_rooms list with leading zeros for single-digit rooms (01-09).
+     */
+    public function formattedBookedRooms(): string
+    {
+        $rooms = $this->booked_rooms;
+
+        if (is_string($rooms)) {
+            $decoded = json_decode($rooms, true);
+            $rooms = is_array($decoded) ? $decoded : array_map('trim', explode(',', $rooms));
+        }
+
+        if (! is_array($rooms)) {
+            $rooms = ($rooms !== null && $rooms !== '') ? [$rooms] : [];
+        }
+
+        $formatted = array_filter(
+            array_map(fn ($room) => Room::formatRoomNumber($room), $rooms),
+            fn (string $value) => $value !== ''
+        );
+
+        return implode(', ', $formatted);
+    }
 }

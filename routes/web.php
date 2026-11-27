@@ -413,6 +413,10 @@ Route::get('/api/system/settings', function () {
     return response()->json([
         'date_format' => $dateFormat,
         'time_format' => $timeFormat,
+        'display_date_format' => SystemFormatService::displayDateFormat($dateFormat),
+        'display_time_format' => SystemFormatService::displayTimeFormat($timeFormat),
+        'is_24_hour' => SystemFormatService::is24Hour(),
+        'time_mode_label' => SystemFormatService::timeFormatModeLabel($timeFormat),
         'formatted_date' => $now->format($dateFormat),
         'formatted_time' => $now->format($timeFormat),
         'server_time' => $now->toIso8601String(),
@@ -464,9 +468,14 @@ Route::put('/amenities/{id}/update', function (Request $request, $id) {
         'name' => 'required|string|max:255',
         'price' => 'required|numeric',
         'charged' => 'required|string|max:255',
-        'offered' => 'required|boolean',
+        // Original: 'offered' => 'required|boolean',
+        'offered' => 'nullable|boolean',
         'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
     ]);
+
+    if (! array_key_exists('offered', $validated) || $validated['offered'] === null) {
+        unset($validated['offered']);
+    }
 
     $amenity = Amenity::findOrFail($id);
 
@@ -546,7 +555,8 @@ Route::post('/staff/store', function (Request $request) {
         'last_name' => 'required|string|max:255',
         'email' => 'required_without:gmail|nullable|string|email|max:255',
         'gmail' => 'required_without:email|nullable|string|email|max:255',
-        'contact_number' => 'nullable|string|max:255',
+        // Original: 'contact_number' => 'nullable|string|max:255',
+        'contact_number' => ['required', 'string', 'regex:/^\+\d{1,4}\d{7,14}$/'],
         'username' => 'required|string|max:255|unique:staff',
         'password' => 'required|string|min:6',
     ]);
@@ -573,7 +583,8 @@ Route::put('/staff/{id}/update', function (Request $request, $id) {
         'last_name' => 'required|string|max:255',
         'email' => 'required_without:gmail|nullable|string|email|max:255',
         'gmail' => 'required_without:email|nullable|string|email|max:255',
-        'contact_number' => 'nullable|string|max:255',
+        // Original: 'contact_number' => 'nullable|string|max:255',
+        'contact_number' => ['required', 'string', 'regex:/^\+\d{1,4}\d{7,14}$/'],
         // The unique rule ignores the current staff ID so they can keep their existing username
         'username' => 'required|string|max:255|unique:staff,username,'.$id,
         'password' => 'required|string|min:6',
@@ -683,6 +694,7 @@ Route::get('/api/admin/stay-type-stats', [DashboardApiController::class, 'stayTy
 Route::get('/api/admin/notifications', [DashboardApiController::class, 'adminNotifications'])->name('api.admin.notifications');
 Route::get('/api/admin/sales-report', [DashboardApiController::class, 'salesReport'])->name('api.admin.sales-report');
 Route::get('/api/admin/sales-report/amenities-comparison', [DashboardApiController::class, 'amenitiesComparison'])->name('api.admin.sales-report.amenities-comparison');
+Route::get('/api/admin/monthly-target', [DashboardApiController::class, 'getMonthlyTarget'])->name('api.admin.monthly-target.show');
 Route::post('/api/admin/monthly-target', [DashboardApiController::class, 'saveMonthlyTarget'])->name('api.admin.monthly-target');
 Route::get('/api/amenities', [DashboardApiController::class, 'amenities'])->name('api.amenities');
 
@@ -784,13 +796,23 @@ Route::get('/admin/sales-report/export', function (Request $request) {
             'date' => $request->input('date'),
         ];
 
+        // Fixed Vintage Brown & Beige palette (customizable theme option removed per specification)
+        // Original:
+        // $colors = [
+        //     'header_bg' => (string) $request->input('header_bg', '#443627'),
+        //     'header_text' => (string) $request->input('header_text', '#FFFFFF'),
+        //     'body_text' => (string) $request->input('body_text', '#212529'),
+        //     'accent_color' => (string) $request->input('accent_color', '#6A4435'),
+        //     'row_bg' => (string) $request->input('row_bg', '#F8F9FA'),
+        //     'summary_color' => (string) $request->input('summary_color', '#2E7D32'),
+        // ];
         $colors = [
-            'header_bg' => (string) $request->input('header_bg', '#443627'),
-            'header_text' => (string) $request->input('header_text', '#FFFFFF'),
-            'body_text' => (string) $request->input('body_text', '#212529'),
-            'accent_color' => (string) $request->input('accent_color', '#6A4435'),
-            'row_bg' => (string) $request->input('row_bg', '#F8F9FA'),
-            'summary_color' => (string) $request->input('summary_color', '#2E7D32'),
+            'header_bg' => '#443627',
+            'header_text' => '#F5F7DF',
+            'body_text' => '#2C221A',
+            'accent_color' => '#6A4435',
+            'row_bg' => '#F5F7DF',
+            'summary_color' => '#443627',
         ];
 
         return app(SalesReportExcelExportService::class)->export($filterParams, $colors);

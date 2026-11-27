@@ -179,7 +179,8 @@
                 </ul>
             </div>
         @endif
-
+        
+        <!-- Administrator credentials form -->
         <form id="adminCredentialsForm" action="{{ route('admin.credentials.update') }}" method="POST">
             @csrf
             @method('PUT')

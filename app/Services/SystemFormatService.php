@@ -40,6 +40,48 @@ class SystemFormatService
     }
 
     /**
+     * Map a PHP date format string to a human-readable format label (e.g. 'M d, Y' -> 'MMM DD, YYYY').
+     */
+    public static function displayDateFormat(?string $format = null): string
+    {
+        $activeFormat = $format ?? static::dateFormat();
+
+        return match ($activeFormat) {
+            'M d, Y' => 'MMM DD, YYYY',
+            'F d, Y' => 'MMMM DD, YYYY',
+            'F j, Y' => 'MMMM D, YYYY',
+            'Y-m-d' => 'YYYY-MM-DD',
+            'm/d/Y' => 'MM/DD/YYYY',
+            'd/m/Y' => 'DD/MM/YYYY',
+            default => $activeFormat,
+        };
+    }
+
+    /**
+     * Map a PHP time format string to a human-readable format label (e.g. 'h:i A' -> 'HH:MM').
+     */
+    public static function displayTimeFormat(?string $format = null): string
+    {
+        $activeFormat = $format ?? static::timeFormat();
+
+        return match ($activeFormat) {
+            'h:i A', 'H:i' => 'HH:MM',
+            'h:i:s A', 'H:i:s' => 'HH:MM:SS',
+            default => $activeFormat,
+        };
+    }
+
+    /**
+     * Get the human-readable time format mode label for Receptionist Settings.
+     */
+    public static function timeFormatModeLabel(?string $format = null): string
+    {
+        $activeFormat = $format ?? static::timeFormat();
+
+        return str_contains($activeFormat, 'H') ? '24-Hour Standard Time' : 'HH:MM AM/PM';
+    }
+
+    /**
      * Format a date string or Carbon instance using system-wide date format.
      */
     public static function formatDate(mixed $date): string

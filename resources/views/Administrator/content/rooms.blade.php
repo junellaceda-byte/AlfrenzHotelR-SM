@@ -142,7 +142,7 @@
                 <div class="room-card-body p-3">
                     <div class="d-flex justify-content-between align-items-baseline mb-1">
                         <h6 class="room-number-heading fw-bold m-0 text-dark">Room {{ $roomNumberStr }}</h6>
-                        <span class="small text-muted" style="font-size: 0.72rem;">ID: #{{ $room->id }}</span>
+                        {{-- Original: <span class="small text-muted" style="font-size: 0.72rem;">ID: #{{ $room->id }}</span> --}}
                     </div>
 
                     <!-- Room Rates -->

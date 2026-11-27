@@ -3,10 +3,10 @@
  * Change these values freely in the code to resize the cubes:
  * ======================================================== */
 :root {
-    --amenity-cube-size: 70px;       /* Table cube size (width & height) */
-    --amenity-cube-radius: 10px;     /* Cube corner roundness (8px–12px) */
-    --amenity-preview-size: 64px;    /* Add & Edit modal preview size */
-    --amenity-preview-radius: 10px;  /* Modal preview corner roundness (8px–12px) */
+    --amenity-cube-size: 70px; /* Table cube size (width & height) */
+    --amenity-cube-radius: 10px; /* Cube corner roundness (8px–12px) */
+    --amenity-preview-size: 64px; /* Add & Edit modal preview size */
+    --amenity-preview-radius: 10px; /* Modal preview corner roundness (8px–12px) */
 }
 
 .amenities-table {
@@ -14,7 +14,7 @@
     min-width: 540px;
     font-size: 0.92rem;
     table-layout: auto;
-    background-color: #F5F7DF;
+    background-color: #f5f7df;
 }
 
 .amenities-table thead,
@@ -29,7 +29,7 @@
 .amenities-table tbody tr,
 .amenities-table tbody td {
     background-color: #eeefe1 !important;
-    --bs-table-bg: #F5F7DF !important;
+    --bs-table-bg: #f5f7df !important;
 }
 
 .amenities-table .col-amenity {
@@ -71,7 +71,9 @@
     border: 1px solid #dee2e6;
     background-color: #f8f9fa;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
     display: block;
     cursor: pointer;
 }
@@ -148,10 +150,12 @@
 }
 
 .amenity-row {
-    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
-/* Non-toggleable Offered status switch in table */
+/* Original: Non-toggleable Offered status switch in table
 .amenities-table .form-check-input:disabled,
 .amenities-table .form-check-input[disabled] {
     opacity: 1;
@@ -161,6 +165,78 @@
 
 .amenities-table .form-switch {
     cursor: default;
+}
+*/
+
+/* Interactive Offered status switch in table: blue circle when ON, gray circle when OFF */
+.amenities-table .form-switch {
+    cursor: pointer;
+    padding-left: 0;
+}
+
+/* Previous SVG-based toggle styles preserved:
+.amenities-table .form-switch .amenity-toggle-switch {
+    width: 2.75rem;
+    height: 1.4rem;
+    margin-left: 0;
+    cursor: pointer;
+    background-color: #ffffff;
+    border: 1.5px solid #adb5bd;
+    border-radius: 999px;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%238c939a'/%3e%3c/svg%3e");
+    background-position: left center;
+    transition:
+        background-position 0.15s ease-in-out,
+        border-color 0.15s ease-in-out,
+        box-shadow 0.15s ease-in-out;
+}
+*/
+
+.amenities-table .form-switch .amenity-toggle-switch {
+    position: relative;
+    appearance: none;
+    -webkit-appearance: none;
+    width: 2.75rem;
+    height: 1.45rem;
+    margin-left: 0;
+    cursor: pointer;
+    background-color: #ffffff;
+    background-image: none !important;
+    border: 1.5px solid #adb5bd;
+    border-radius: 999px;
+    transition:
+        border-color 0.15s ease-in-out,
+        box-shadow 0.15s ease-in-out;
+}
+
+.amenities-table .form-switch .amenity-toggle-switch::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0.18rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background-color: #8c939a;
+    transform: translateY(-50%);
+    transition:
+        transform 0.18s ease-in-out,
+        background-color 0.15s ease-in-out;
+}
+
+.amenities-table .form-switch .amenity-toggle-switch:checked {
+    background-color: #ffffff;
+    background-image: none !important;
+    border-color: #0d6efd;
+}
+
+.amenities-table .form-switch .amenity-toggle-switch:checked::before {
+    background-color: #0d6efd;
+    transform: translate(1.2rem, -50%);
+}
+
+.amenities-table .form-switch .amenity-toggle-switch:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 
 /* Tablet & Mobile Responsive Tweaks */
@@ -200,6 +276,22 @@
         height: 1.1rem;
     }
 
+    .amenities-table .form-switch .amenity-toggle-switch {
+        width: 2.25rem;
+        height: 1.2rem;
+    }
+
+    .amenities-table .form-switch .amenity-toggle-switch::before {
+        left: 0.14rem;
+        width: 0.82rem;
+        height: 0.82rem;
+        border-radius: 50%;
+    }
+
+    .amenities-table .form-switch .amenity-toggle-switch:checked::before {
+        transform: translate(0.97rem, -50%);
+    }
+
     .amenities-table .btn-sm {
         padding: 0.25rem 0.5rem;
         font-size: 0.8rem;
@@ -213,7 +305,7 @@
     .amenities-table.mode-edit tbody tr:hover,
     .amenities-table.mode-edit tbody tr:active {
         background-color: #f7ede8 !important;
-        box-shadow: inset 4px 0 0 #6A4435;
+        box-shadow: inset 4px 0 0 #6a4435;
     }
 
     .amenities-table.mode-delete tbody tr {

@@ -80,7 +80,8 @@
                             <td class="py-2.5 py-sm-3 px-2 px-sm-3 px-md-4 text-center text-nowrap" style="background-color: #F5F7DF;">
                                 <div class="d-flex justify-content-center align-items-center">
                                     <div class="form-check form-switch mb-0 d-inline-block">
-                                        <input class="form-check-input amenity-toggle-switch" type="checkbox" role="switch" data-id="{{ $amenity->id }}" {{ $amenity->offered ? 'checked' : '' }} disabled tabindex="-1" aria-disabled="true" style="cursor: default;" title="{{ $amenity->offered ? 'Offered' : 'Not Offered' }}">
+                                        {{-- Original: <input class="form-check-input amenity-toggle-switch" type="checkbox" role="switch" data-id="{{ $amenity->id }}" {{ $amenity->offered ? 'checked' : '' }} disabled tabindex="-1" aria-disabled="true" style="cursor: default;" title="{{ $amenity->offered ? 'Offered' : 'Not Offered' }}"> --}}
+                                        <input class="form-check-input amenity-toggle-switch" type="checkbox" role="switch" data-id="{{ $amenity->id }}" {{ $amenity->offered ? 'checked' : '' }} style="cursor: pointer;" title="{{ $amenity->offered ? 'Offered' : 'Not Offered' }}" aria-label="Toggle {{ $amenity->name }} status">
                                     </div>
                                 </div>
                             </td>
@@ -126,12 +127,38 @@
 window.previewEditAmenityImage = function(event, id) {
     const input = event.target;
     const preview = document.getElementById('editAmenityPreview' + id);
+    const removeBtn = document.getElementById('removeEditAmenityImageBtn' + id);
     if (input.files && input.files[0] && preview) {
         const reader = new FileReader();
         reader.onload = function(e) {
             preview.src = e.target.result;
         };
         reader.readAsDataURL(input.files[0]);
+        if (removeBtn) {
+            removeBtn.classList.remove('d-none');
+        }
+    } else {
+        if (preview && preview.dataset.originalSrc) {
+            preview.src = preview.dataset.originalSrc;
+        }
+        if (removeBtn) {
+            removeBtn.classList.add('d-none');
+        }
+    }
+};
+
+window.removeEditAmenityImage = function(id) {
+    const input = document.getElementById('editAmenityImage' + id);
+    const preview = document.getElementById('editAmenityPreview' + id);
+    const removeBtn = document.getElementById('removeEditAmenityImageBtn' + id);
+    if (input) {
+        input.value = '';
+    }
+    if (preview && preview.dataset.originalSrc) {
+        preview.src = preview.dataset.originalSrc;
+    }
+    if (removeBtn) {
+        removeBtn.classList.add('d-none');
     }
 };
 
@@ -280,10 +307,59 @@ window.previewEditAmenityImage = function(event, id) {
         }
     }
 
+    // Interactive Status Toggle Switch
+    const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrfToken = csrfTokenMeta ? csrfTokenMeta.getAttribute('content') : '{{ csrf_token() }}';
+
+    document.querySelectorAll('.amenity-toggle-switch').forEach(function(toggle) {
+        toggle.addEventListener('change', function() {
+            const checkbox = this;
+            const id = checkbox.getAttribute('data-id');
+            const previousState = !checkbox.checked;
+
+            checkbox.disabled = true;
+
+            fetch('/amenities/' + id + '/toggle', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function(res) {
+                if (!res.ok) {
+                    throw new Error('Failed to toggle amenity status');
+                }
+                return res.json();
+            })
+            .then(function(data) {
+                const isOffered = Boolean(data.offered);
+                checkbox.checked = isOffered;
+                checkbox.title = isOffered ? 'Offered' : 'Not Offered';
+
+                {{-- Original: sync Edit modal offered select (removed from Edit modal)
+                const editSelect = document.querySelector('#editAmenityModal' + id + ' select[name="offered"]');
+                if (editSelect) {
+                    editSelect.value = isOffered ? '1' : '0';
+                }
+                --}}
+
+                broadcastAmenitiesSync();
+            })
+            .catch(function() {
+                checkbox.checked = previousState;
+            })
+            .finally(function() {
+                checkbox.disabled = false;
+            });
+        });
+    });
+
     // Row click handler on mobile: requires clicking a table row
     document.querySelectorAll('.amenity-row').forEach(function(row) {
         row.addEventListener('click', function(e) {
-            if (e.target.closest('button') || e.target.closest('form')) {
+            if (e.target.closest('button') || e.target.closest('form') || e.target.closest('.form-switch')) {
                 return;
             }
 

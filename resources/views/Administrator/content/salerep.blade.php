@@ -91,8 +91,9 @@
                 </button>
             </div>
 
-            <!-- Export to Excel Button (Opens Excel Formatting Modal) -->
-            <button type="button" id="salesExportExcelBtn" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#salesExportExcelModal" title="Export report data to Excel with custom styling">
+            <!-- Export to Excel Button (Immediate .xlsx Download) -->
+            {{-- Original: <button type="button" id="salesExportExcelBtn" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#salesExportExcelModal" title="Export report data to Excel with custom styling"> --}}
+            <button type="button" id="salesExportExcelBtn" class="btn btn-sm btn-success d-inline-flex align-items-center gap-1" title="Export Sales Reports data and charts to Excel (.xlsx)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                     <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
@@ -130,6 +131,15 @@
     </div>
 
     <!-- Card 4: Monthly Target Goal -->
+    @php
+        $initialTargetNow = now()->setTimezone('Asia/Manila');
+        $initialTargetRecord = \App\Models\MonthlyTarget::where('year', (int) $initialTargetNow->format('Y'))
+            ->where('month', (int) $initialTargetNow->format('n'))
+            ->first();
+        $initialTargetAmount = $initialTargetRecord ? (float) $initialTargetRecord->target_amount : 150000.00;
+        $initialTargetFormatted = '₱'.number_format($initialTargetAmount, 2);
+        $initialTargetPeriod = $initialTargetNow->format('M Y');
+    @endphp
     <div class="col-6 col-lg-3">
         <div class="card h-100 rounded p-2 p-sm-3 highlight-pink-flat monthly-target-card">
             <div class="monthly-target-header d-flex justify-content-between align-items-center mb-1 mb-sm-2 gap-1 flex-wrap">
@@ -141,7 +151,9 @@
                     Set Target
                 </button>
             </div>
-            <div id="monthlyTargetValue" class="fs-4 fs-sm-3 fw-bold text-dark monthly-target-amount">₱150,000</div>
+            {{-- Original: <div id="monthlyTargetValue" class="fs-4 fs-sm-3 fw-bold text-dark monthly-target-amount">₱150,000</div> --}}
+            <div id="monthlyTargetValue" class="fs-4 fs-sm-3 fw-bold text-dark monthly-target-amount">{{ $initialTargetFormatted }}</div>
+            <small id="monthlyTargetPeriodLabel" class="text-muted d-block mt-1" style="font-size: 0.75rem;">{{ $initialTargetPeriod }}</small>
         </div>
     </div>
 </div>
@@ -174,8 +186,9 @@
                 <!-- ApexCharts Gauge container -->
                 <div id="revenueGaugeChart" style="width: 100%; min-height: 270px;"></div>
                 <!-- Repositioned Achieved Goal Label directly below the Arc Progress Chart -->
+                {{-- Original: <div id="monthlyTargetAchievedLabel" class="text-center fw-bold monthly-target-achieved-text mt-1" style="color: #443627;">Achieved of ₱150,000.00 Goal</div> --}}
                 <div id="monthlyTargetAchievedLabel" class="text-center fw-bold monthly-target-achieved-text mt-1" style="color: #443627;">
-                    Achieved of ₱150,000.00 Goal
+                    Achieved of {{ $initialTargetFormatted }} Goal
                 </div>
             </div>
         </div>
@@ -274,7 +287,7 @@
 </div>
 
 @include('Administrator.modals.settarget')
-@include('Administrator.modals.exportexcel')
+{{-- Original: @include('Administrator.modals.exportexcel') --}}
 
 <!-- Scripts for the charts -->
 <!-- 1. Local Chart.js for the Line Chart -->

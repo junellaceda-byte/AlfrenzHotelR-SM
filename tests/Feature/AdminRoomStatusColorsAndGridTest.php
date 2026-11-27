@@ -96,6 +96,43 @@ class AdminRoomStatusColorsAndGridTest extends TestCase
     }
 
     /**
+     * Test that the Room Status Grid does NOT display the room ID label (e.g. "ID: #1").
+     */
+    public function test_room_status_grid_does_not_show_room_id_label(): void
+    {
+        $admin = User::create([
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'username' => 'adminuser2',
+            'email' => 'admin2@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+        ]);
+
+        Room::create([
+            'room_number' => '5',
+            'short_stay_rate' => 400,
+            'overnight_rate' => 1500,
+            'status' => 'available',
+        ]);
+
+        $response = $this->withSession([
+            'admin_id' => $admin->id,
+            'role' => 'admin',
+            'admin_username' => $admin->username,
+            'admin_last_activity' => now()->timestamp,
+        ])->actingAs($admin)->get('/admindashboard?section=rooms');
+
+        $response->assertOk();
+
+        // Room ID label must NOT be visible in the grid
+        $response->assertDontSee('ID: #', false);
+
+        // Room number must still be shown (padded)
+        $response->assertSee('Room 05', false);
+    }
+
+    /**
      * Test grid overlay CSS contains gray occupied background, blue reserved, and keeps occupied overlay on hover.
      */
     public function test_grid_overlay_and_rooms_css_definitions(): void

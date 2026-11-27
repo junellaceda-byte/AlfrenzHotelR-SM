@@ -25,7 +25,7 @@
         border-left: 4px solid #443627;
     }
 </style>
-
+<!-- System Settings -->
 <div class="container-fluid p-0">
     <div class="card p-4 border-0 rounded shadow-sm" style="background-color: #443627; color: #ffffff;">
         <!-- Header -->
@@ -40,28 +40,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
-
-        <!-- Synchronization Status Banner -->
-        <div class="alert border d-flex justify-content-between align-items-center mb-4 p-3 rounded" style="background-color: #F2F6D0; border-color: rgba(245, 247, 223, 0.2) !important; color: #000000;">
-            <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 38px; height: 38px; background-color: #2b2219;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
-                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/>
-                    </svg>
-                </div>
-                <div>
-                    <div class="d-flex align-items-center gap-2">
-                        <strong style="color: #000000;">Synchronized System Timestamp</strong>
-                        <span class="badge bg-success bg-opacity-75 text-white small">Synchronized with Administrator</span>
-                    </div>
-                    <span class="small" style="color: #000000;">All booking records, payment records, Activity Logs, and dashboard displays operate under unified system-wide timestamp settings synchronized with Administrator settings.</span>
-                </div>
-            </div>
-            <div class="text-end d-none d-md-block">
-                <span class="badge border" style="background-color: rgba(0, 0, 0, 0.05); color: #000000; border-color: rgba(0, 0, 0, 0.2) !important;">Asia/Manila (GMT+8)</span>
-            </div>
-        </div>
 
         <!-- Section 1: Active Receptionist Profile Details -->
         <h6 class="fw-bold mb-3 pb-2 text-white" style="border-bottom: 1px solid rgba(245, 247, 223, 0.2);">Receptionist Account Profile</h6>
@@ -95,44 +73,48 @@
             </div>
         </div>
 
-        <div class="p-3 rounded border mb-4" style="background-color: #F2F6D0; border-color: rgba(245, 247, 223, 0.2) !important; color: #000000;">
+        <!-- Receptionist Warning Banner -->
+        <!-- <div class="p-3 rounded border mb-4" style="background-color: #F2F6D0; border-color: rgba(245, 247, 223, 0.2) !important; color: #000000;">
             <div class="d-flex align-items-center gap-2 small" style="color: #000000;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#000000" viewBox="0 0 16 16">
                     <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
                     <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
                 </svg>
-                <span style="color: #000000;">Receptionist account credentials and permissions are managed centrally by the Administrator under <strong style="color: #000000;">Account Management</strong>. Administrator-level credentials and system configurations are accessible exclusively by the Administrator.</span>
+                <span style="color: #000000;">Receptionist cannot change  are managed centrally by the Administrator under <strong style="color: #000000;">Account Management</strong>. Administrator-level credentials and system configurations are accessible exclusively by the Administrator.</span>
             </div>
-        </div>
+        </div> -->
 
         <!-- Section 2: Timestamp Display Format (Synchronized System Settings) -->
-        <h6 class="fw-bold mb-3 pb-2 text-white" style="border-bottom: 1px solid rgba(245, 247, 223, 0.2);">Timestamp Display Format</h6>
+        <h6 class="fw-bold mb-3 pb-2 text-white" style="border-bottom: 1px solid rgba(245, 247, 223, 0.2);">Time Display Format</h6>
         <div class="row g-3 mb-3">
             <div class="col-md-4">
                 <label class="form-label small fw-bold text-uppercase mb-1" style="color: #F5F7DF; opacity: 0.8;">Time Format Mode</label>
                 <div class="p-2.5 px-3 rounded border" style="background-color: #F2F6D0; border-color: rgba(245, 247, 223, 0.2) !important; color: #000000;">
-                    <span class="badge bg-secondary text-white me-2">
+                    <span id="receptionist_time_mode_badge" class="badge bg-secondary text-white me-2">
                         {{ \App\Services\SystemFormatService::is24Hour() ? '24-Hour' : '12-Hour (AM/PM)' }}
                     </span>
-                    <span class="fw-semibold" style="color: #000000;">
-                        {{ \App\Services\SystemFormatService::is24Hour() ? '24-Hour Standard Time' : '12-Hour Clock (with AM/PM)' }}
+                    {{-- Original: <span class="fw-semibold" style="color: #000000;">{{ \App\Services\SystemFormatService::is24Hour() ? '24-Hour Standard Time' : '12-Hour Clock (with AM/PM)' }}</span> --}}
+                    <span id="receptionist_time_mode_label" class="fw-semibold" style="color: #000000;">
+                        {{ \App\Services\SystemFormatService::timeFormatModeLabel() }}
                     </span>
                 </div>
             </div>
-
+            <!-- Active Time format -->
             <div class="col-md-4">
                 <label class="form-label small fw-bold text-uppercase mb-1" style="color: #F5F7DF; opacity: 0.8;">Active Time Format</label>
                 <div class="p-2.5 px-3 rounded border fw-semibold" style="background-color: #F2F6D0; border-color: rgba(245, 247, 223, 0.2) !important; color: #000000;">
-                    <code style="color: #000000;">{{ $timeFormat ?? \App\Services\SystemFormatService::timeFormat() }}</code>
-                    <span class="ms-2 small" style="color: #000000;">({{ \App\Services\SystemFormatService::formatTime(now()) }})</span>
+                    {{-- Original: <code style="color: #000000;">{{ $timeFormat ?? \App\Services\SystemFormatService::timeFormat() }}</code> --}}
+                    <code id="receptionist_active_time_format" style="color: #000000;">{{ \App\Services\SystemFormatService::displayTimeFormat($timeFormat ?? null) }}</code>
+                    <span id="receptionist_active_time_sample" class="ms-2 small" style="color: #000000;">({{ \App\Services\SystemFormatService::formatTime(now()) }})</span>
                 </div>
             </div>
-
+            <!-- Active Date format -->
             <div class="col-md-4">
                 <label class="form-label small fw-bold text-uppercase mb-1" style="color: #F5F7DF; opacity: 0.8;">Active Date Format</label>
                 <div class="p-2.5 px-3 rounded border fw-semibold" style="background-color: #F2F6D0; border-color: rgba(245, 247, 223, 0.2) !important; color: #000000;">
-                    <code style="color: #000000;">{{ $dateFormat ?? \App\Services\SystemFormatService::dateFormat() }}</code>
-                    <span class="ms-2 small" style="color: #000000;">({{ \App\Services\SystemFormatService::formatDate(now()) }})</span>
+                    {{-- Original: <code style="color: #000000;">{{ $dateFormat ?? \App\Services\SystemFormatService::dateFormat() }}</code> --}}
+                    <code id="receptionist_active_date_format" style="color: #000000;">{{ \App\Services\SystemFormatService::displayDateFormat($dateFormat ?? null) }}</code>
+                    <span id="receptionist_active_date_sample" class="ms-2 small" style="color: #000000;">({{ \App\Services\SystemFormatService::formatDate(now()) }})</span>
                 </div>
             </div>
         </div>
@@ -146,10 +128,10 @@
                         {{ \App\Services\SystemFormatService::formatDateTime(now()) }}
                     </span>
                 </div>
-                <div class="d-flex align-items-center gap-2">
+                <!-- <div class="d-flex align-items-center gap-2">
                     <span class="spinner-grow spinner-grow-sm text-success" role="status" aria-hidden="true"></span>
                     <span class="small" style="color: #F5F7DF;">Synchronized Live Clock (Asia/Manila)</span>
-                </div>
+                </div> -->
             </div>
         </div>
 
@@ -228,8 +210,14 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             var liveEl = document.getElementById('receptionist_live_timestamp');
-            var dateFormat = '{{ $dateFormat ?? "M d, Y" }}';
-            var timeFormat = '{{ $timeFormat ?? "h:i A" }}';
+            var timeModeBadgeEl = document.getElementById('receptionist_time_mode_badge');
+            var timeModeLabelEl = document.getElementById('receptionist_time_mode_label');
+            var activeTimeFormatEl = document.getElementById('receptionist_active_time_format');
+            var activeTimeSampleEl = document.getElementById('receptionist_active_time_sample');
+            var activeDateFormatEl = document.getElementById('receptionist_active_date_format');
+            var activeDateSampleEl = document.getElementById('receptionist_active_date_sample');
+            var dateFormat = '{{ $dateFormat ?? \App\Services\SystemFormatService::dateFormat() }}';
+            var timeFormat = '{{ $timeFormat ?? \App\Services\SystemFormatService::timeFormat() }}';
 
             function updateLive() {
                 var now = new Date();
@@ -237,6 +225,12 @@
                 var tStr = formatPhpDate(now, timeFormat);
                 if (liveEl) {
                     liveEl.textContent = dStr + ' ' + tStr;
+                }
+                if (activeTimeSampleEl) {
+                    activeTimeSampleEl.textContent = '(' + tStr + ')';
+                }
+                if (activeDateSampleEl) {
+                    activeDateSampleEl.textContent = '(' + dStr + ')';
                 }
             }
 
@@ -246,6 +240,18 @@
                     .then(function(data) {
                         if (data && data.date_format) dateFormat = data.date_format;
                         if (data && data.time_format) timeFormat = data.time_format;
+                        if (data && data.display_date_format && activeDateFormatEl) {
+                            activeDateFormatEl.textContent = data.display_date_format;
+                        }
+                        if (data && data.display_time_format && activeTimeFormatEl) {
+                            activeTimeFormatEl.textContent = data.display_time_format;
+                        }
+                        if (data && typeof data.is_24_hour === 'boolean' && timeModeBadgeEl) {
+                            timeModeBadgeEl.textContent = data.is_24_hour ? '24-Hour' : '12-Hour (AM/PM)';
+                        }
+                        if (data && data.time_mode_label && timeModeLabelEl) {
+                            timeModeLabelEl.textContent = data.time_mode_label;
+                        }
                         updateLive();
                     })
                     .catch(function() {});

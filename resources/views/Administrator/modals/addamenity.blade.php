@@ -17,7 +17,11 @@
                                 <img id="addAmenityPreview" src="{{ asset('images/amenities/default-amenity.svg') }}" alt="Amenity Preview" class="w-100 h-100" style="object-fit: cover;">
                             </div>
                             <div class="flex-grow-1">
-                                <input type="file" name="image" id="addAmenityImage" class="form-control" accept="image/*">
+                                {{-- Original: <input type="file" name="image" id="addAmenityImage" class="form-control" accept="image/*"> --}}
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="file" name="image" id="addAmenityImage" class="form-control" accept="image/*">
+                                    <button type="button" id="removeAddAmenityImageBtn" class="btn btn-outline-danger btn-sm d-none flex-shrink-0" title="Remove selected image" aria-label="Remove selected image">&times;</button>
+                                </div>
                                 <div class="form-text text-muted small">Select an image for the amenity cube (PNG, JPG, SVG, WebP up to 2MB). Optional.</div>
                             </div>
                         </div>
@@ -49,6 +53,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const addImgInput = document.getElementById('addAmenityImage');
     const addImgPreview = document.getElementById('addAmenityPreview');
+    const removeAddImgBtn = document.getElementById('removeAddAmenityImageBtn');
     const defaultImgSrc = "{{ asset('images/amenities/default-amenity.svg') }}";
 
     if (addImgInput && addImgPreview) {
@@ -60,9 +65,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     addImgPreview.src = evt.target.result;
                 };
                 reader.readAsDataURL(file);
+                if (removeAddImgBtn) {
+                    removeAddImgBtn.classList.remove('d-none');
+                }
             } else {
                 addImgPreview.src = defaultImgSrc;
+                if (removeAddImgBtn) {
+                    removeAddImgBtn.classList.add('d-none');
+                }
             }
+        });
+    }
+
+    if (removeAddImgBtn && addImgInput && addImgPreview) {
+        removeAddImgBtn.addEventListener('click', function() {
+            addImgInput.value = '';
+            addImgPreview.src = defaultImgSrc;
+            removeAddImgBtn.classList.add('d-none');
         });
     }
 });

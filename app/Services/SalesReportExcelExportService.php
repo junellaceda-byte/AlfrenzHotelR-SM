@@ -60,6 +60,17 @@ class SalesReportExcelExportService
         $monthInput = $params['month'] ?? (string) $currentMonth;
         $selectedDate = $params['date'] ?? null;
 
+        if ($selectedDate && str_contains((string) $selectedDate, '/')) {
+            try {
+                $selectedDate = Carbon::createFromFormat('n/j/Y', (string) $selectedDate, 'Asia/Manila')->toDateString();
+            } catch (\Throwable $e) {
+                try {
+                    $selectedDate = Carbon::parse((string) $selectedDate, 'Asia/Manila')->toDateString();
+                } catch (\Throwable $e) {
+                }
+            }
+        }
+
         $isSpecificDate = ! empty($selectedDate) && strtotime((string) $selectedDate) !== false;
 
         // Resolve range start and end based on timeframe / parameters
@@ -383,7 +394,9 @@ class SalesReportExcelExportService
             $guest = $booking?->guest;
             $guestName = $guest ? trim(($guest->fname ?? '').' '.($guest->lname ?? '')) : 'Guest';
             $rooms = $booking ? (is_array($booking->booked_rooms) ? $booking->booked_rooms : (json_decode($booking->booked_rooms, true) ?? [])) : [];
-            $roomStr = ! empty($rooms) ? implode(', ', $rooms) : 'N/A';
+            // Original: $roomStr = ! empty($rooms) ? implode(', ', $rooms) : 'N/A';
+            $formattedRooms = array_filter(array_map(fn ($r) => Room::formatRoomNumber($r), $rooms), fn (string $v) => $v !== '');
+            $roomStr = ! empty($formattedRooms) ? implode(', ', $formattedRooms) : 'N/A';
             $paidAt = $inv->updated_at ? Carbon::parse($inv->updated_at)->setTimezone('Asia/Manila')->format('Y-m-d h:i A') : 'N/A';
             $advanceDeposit = (float) ($inv->advance_deposit ?? 0.00);
 
@@ -479,12 +492,20 @@ class SalesReportExcelExportService
      */
     protected function generateXlsxFile(array $data, array $colors): string
     {
+        // Fixed Vintage Brown & Beige System Palette (preserving original defaults in comments)
+        // Original:
+        // $headerBg = $this->sanitizeColor($colors['header_bg'] ?? '#443627', '443627');
+        // $headerText = $this->sanitizeColor($colors['header_text'] ?? '#FFFFFF', 'FFFFFF');
+        // $bodyText = $this->sanitizeColor($colors['body_text'] ?? '#212529', '212529');
+        // $accentColor = $this->sanitizeColor($colors['accent_color'] ?? '#6A4435', '6A4435');
+        // $rowBg = $this->sanitizeColor($colors['row_bg'] ?? '#F8F9FA', 'F8F9FA');
+        // $summaryColor = $this->sanitizeColor($colors['summary_color'] ?? '#2E7D32', '2E7D32');
         $headerBg = $this->sanitizeColor($colors['header_bg'] ?? '#443627', '443627');
-        $headerText = $this->sanitizeColor($colors['header_text'] ?? '#FFFFFF', 'FFFFFF');
-        $bodyText = $this->sanitizeColor($colors['body_text'] ?? '#212529', '212529');
+        $headerText = $this->sanitizeColor($colors['header_text'] ?? '#F5F7DF', 'F5F7DF');
+        $bodyText = $this->sanitizeColor($colors['body_text'] ?? '#2C221A', '2C221A');
         $accentColor = $this->sanitizeColor($colors['accent_color'] ?? '#6A4435', '6A4435');
-        $rowBg = $this->sanitizeColor($colors['row_bg'] ?? '#F8F9FA', 'F8F9FA');
-        $summaryColor = $this->sanitizeColor($colors['summary_color'] ?? '#2E7D32', '2E7D32');
+        $rowBg = $this->sanitizeColor($colors['row_bg'] ?? '#F5F7DF', 'F5F7DF');
+        $summaryColor = $this->sanitizeColor($colors['summary_color'] ?? '#443627', '443627');
 
         $tempFile = tempnam(sys_get_temp_dir(), 'xlsx_');
         $zip = new ZipArchive;
@@ -503,6 +524,11 @@ class SalesReportExcelExportService
             .'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
             .'<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
             .'<Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+            .'<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>'
+            .'<Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>'
+            .'<Override PartName="/xl/charts/chart2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>'
+            .'<Override PartName="/xl/charts/chart3.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>'
+            .'<Override PartName="/xl/charts/chart4.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>'
             .'</Types>';
         $zip->addFromString('[Content_Types].xml', $contentTypes);
 
@@ -534,18 +560,41 @@ class SalesReportExcelExportService
             .'</workbook>';
         $zip->addFromString('xl/workbook.xml', $workbook);
 
-        // 5. xl/styles.xml with custom colors
+        // 5. xl/styles.xml with Vintage Brown & Beige palette
         $styles = $this->buildStylesXml($headerBg, $headerText, $bodyText, $accentColor, $rowBg, $summaryColor);
         $zip->addFromString('xl/styles.xml', $styles);
 
-        // 6. Worksheets
-        $sheet1 = $this->buildSheet1Xml($data);
+        // 6. Worksheets & Embedded Charts
+        $sheet1Meta = [];
+        $sheet1 = $this->buildSheet1Xml($data, $sheet1Meta);
         $sheet2 = $this->buildSheet2Xml($data);
         $sheet3 = $this->buildSheet3Xml($data);
 
         $zip->addFromString('xl/worksheets/sheet1.xml', $sheet1);
         $zip->addFromString('xl/worksheets/sheet2.xml', $sheet2);
         $zip->addFromString('xl/worksheets/sheet3.xml', $sheet3);
+
+        // 7. Sheet 1 Drawing & Embedded OpenXML Charts
+        $sheet1Rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>'
+            .'</Relationships>';
+        $zip->addFromString('xl/worksheets/_rels/sheet1.xml.rels', $sheet1Rels);
+
+        $drawingRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/>'
+            .'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart2.xml"/>'
+            .'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart3.xml"/>'
+            .'<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart4.xml"/>'
+            .'</Relationships>';
+        $zip->addFromString('xl/drawings/_rels/drawing1.xml.rels', $drawingRels);
+
+        $zip->addFromString('xl/drawings/drawing1.xml', $this->buildDrawing1Xml());
+        $zip->addFromString('xl/charts/chart1.xml', $this->buildRevenueBreakdownChartXml($data, $sheet1Meta));
+        $zip->addFromString('xl/charts/chart2.xml', $this->buildOccupancyTrendChartXml($data, $sheet1Meta));
+        $zip->addFromString('xl/charts/chart3.xml', $this->buildAmenitiesComparisonChartXml($data, $sheet1Meta));
+        $zip->addFromString('xl/charts/chart4.xml', $this->buildMonthlyTargetChartXml($data, $sheet1Meta));
 
         $zip->close();
 
@@ -595,23 +644,24 @@ class SalesReportExcelExportService
             .'<fill><patternFill patternType="solid"><fgColor rgb="FF'.$rowBg.'"/></patternFill></fill>'
             // 4: Accent Background Fill (Subtle Accent Tint)
             .'<fill><patternFill patternType="solid"><fgColor rgb="FF'.$accentColor.'"/></patternFill></fill>'
-            // 5: Summary Highlight Fill
-            .'<fill><patternFill patternType="solid"><fgColor rgb="FF'.$rowBg.'"/></patternFill></fill>'
+            // 5: Summary Highlight Fill (Vintage Warm Beige #EFEABB)
+            // Original: .'<fill><patternFill patternType="solid"><fgColor rgb="FF'.$rowBg.'"/></patternFill></fill>'
+            .'<fill><patternFill patternType="solid"><fgColor rgb="FFEFEABB"/></patternFill></fill>'
             .'</fills>'
             .'<borders count="3">'
             // 0: None
             .'<border><left/><right/><top/><bottom/><diagonal/></border>'
-            // 1: Thin Cell Border
+            // 1: Thin Cell Border (Warm Beige-Brown #C9B99F)
             .'<border>'
-            .'<left style="thin"><color rgb="FFD0D0D0"/></left>'
-            .'<right style="thin"><color rgb="FFD0D0D0"/></right>'
-            .'<top style="thin"><color rgb="FFD0D0D0"/></top>'
-            .'<bottom style="thin"><color rgb="FFD0D0D0"/></bottom>'
+            .'<left style="thin"><color rgb="FFC9B99F"/></left>'
+            .'<right style="thin"><color rgb="FFC9B99F"/></right>'
+            .'<top style="thin"><color rgb="FFC9B99F"/></top>'
+            .'<bottom style="thin"><color rgb="FFC9B99F"/></bottom>'
             .'</border>'
             // 2: Total Row Border (Top thin, bottom double)
             .'<border>'
-            .'<left style="thin"><color rgb="FFD0D0D0"/></left>'
-            .'<right style="thin"><color rgb="FFD0D0D0"/></right>'
+            .'<left style="thin"><color rgb="FFC9B99F"/></left>'
+            .'<right style="thin"><color rgb="FFC9B99F"/></right>'
             .'<top style="thin"><color rgb="FF'.$summaryColor.'"/></top>'
             .'<bottom style="double"><color rgb="FF'.$summaryColor.'"/></bottom>'
             .'</border>'
@@ -654,8 +704,10 @@ class SalesReportExcelExportService
      * Sheet 1: Sales & Financial Summary (KPIs, Breakdown, Occupancy, Amenities)
      *
      * @param  array<string, mixed>  $data
+     * @param  array<string, int>  $meta
      */
-    protected function buildSheet1Xml(array $data): string
+    // Original: protected function buildSheet1Xml(array $data): string
+    protected function buildSheet1Xml(array $data, array &$meta = []): string
     {
         $rows = [];
         $r = 1;
@@ -703,7 +755,13 @@ class SalesReportExcelExportService
             ['Pending Guests Count', $data['pending_guests_count'], 'number', 'Guests with outstanding balances'],
         ];
 
+        $meta['kpi_start_row'] = $r;
         foreach ($kpis as $idx => [$label, $val, $type, $notes]) {
+            if ($label === 'Total Revenue') {
+                $meta['kpi_revenue_row'] = $r;
+            } elseif ($label === 'Monthly Target Goal') {
+                $meta['kpi_target_row'] = $r;
+            }
             $sStyle = ($idx % 2 === 0) ? 2 : 3;
             $vStyle = ($idx % 2 === 0) ? 4 : 5;
             if ($type === 'percent') {
@@ -740,6 +798,7 @@ class SalesReportExcelExportService
             ['Extra Charges & Customizable Amenities', $data['total_extra_charges'], ($data['total_extra_charges'] / $totRev)],
         ];
 
+        $meta['breakdown_start_row'] = $r;
         foreach ($breakdownItems as $idx => [$label, $amt, $share]) {
             $sStyle = ($idx % 2 === 0) ? 2 : 3;
             $vStyle = ($idx % 2 === 0) ? 4 : 5;
@@ -752,6 +811,7 @@ class SalesReportExcelExportService
                 .'</row>';
             $r++;
         }
+        $meta['breakdown_end_row'] = $r - 1;
 
         // Total Row
         $rows[] = '<row r="'.$r.'" ht="22" customHeight="1">'
@@ -774,6 +834,7 @@ class SalesReportExcelExportService
             .'</row>';
         $r++;
 
+        $meta['occupancy_start_row'] = $r;
         foreach ($data['occupancy_rows'] as $idx => $occ) {
             $sStyle = ($idx % 2 === 0) ? 2 : 3;
             $pStyle = ($idx % 2 === 0) ? 10 : 11;
@@ -786,6 +847,7 @@ class SalesReportExcelExportService
                 .'</row>';
             $r++;
         }
+        $meta['occupancy_end_row'] = max($meta['occupancy_start_row'], $r - 1);
         $r += 2;
 
         // SECTION 4: BEST-SELLING AMENITIES COMPARISON
@@ -803,6 +865,7 @@ class SalesReportExcelExportService
             .'</row>';
         $r++;
 
+        $meta['amenities_start_row'] = $r;
         foreach ($data['amenities_ranked'] as $idx => $am) {
             $sStyle = ($idx % 2 === 0) ? 2 : 3;
             $cStyle = ($idx % 2 === 0) ? 4 : 5;
@@ -817,9 +880,10 @@ class SalesReportExcelExportService
                 .'</row>';
             $r++;
         }
+        $meta['amenities_end_row'] = max($meta['amenities_start_row'], $r - 1);
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            .'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            .'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             .'<cols>'
             .'<col min="1" max="1" width="38" customWidth="1"/>'
             .'<col min="2" max="2" width="26" customWidth="1"/>'
@@ -828,6 +892,7 @@ class SalesReportExcelExportService
             .'<col min="5" max="5" width="26" customWidth="1"/>'
             .'</cols>'
             .'<sheetData>'.implode('', $rows).'</sheetData>'
+            .'<drawing r:id="rId1"/>'
             .'</worksheet>';
     }
 
@@ -1039,6 +1104,227 @@ class SalesReportExcelExportService
             .'</cols>'
             .'<sheetData>'.implode('', $rows).'</sheetData>'
             .'</worksheet>';
+    }
+
+    /**
+     * Build the DrawingML container positioning all 4 embedded charts on Sheet 1 (Cols G-M).
+     */
+    protected function buildDrawing1Xml(): string
+    {
+        $charts = [
+            ['rId1', 1, 'Revenue Breakdown Chart', 4, 17],
+            ['rId2', 2, 'Occupancy & Revenue Trend Chart', 19, 34],
+            ['rId3', 3, 'Amenities Comparison Chart', 36, 51],
+            ['rId4', 4, 'Monthly Target Progress Chart', 53, 66],
+        ];
+
+        $anchors = '';
+        foreach ($charts as [$rId, $id, $name, $fromRow, $toRow]) {
+            $anchors .= '<xdr:twoCellAnchor>'
+                .'<xdr:from><xdr:col>6</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>'.$fromRow.'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>'
+                .'<xdr:to><xdr:col>12</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>'.$toRow.'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>'
+                .'<xdr:graphicFrame macro="">'
+                .'<xdr:nvGraphicFramePr>'
+                .'<xdr:cNvPr id="'.$id.'" name="'.$this->escapeXml($name).'"/>'
+                .'<xdr:cNvGraphicFramePr/>'
+                .'</xdr:nvGraphicFramePr>'
+                .'<xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm>'
+                .'<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">'
+                .'<c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="'.$rId.'"/>'
+                .'</a:graphicData></a:graphic>'
+                .'</xdr:graphicFrame>'
+                .'<xdr:clientData/>'
+                .'</xdr:twoCellAnchor>';
+        }
+
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/main">'
+            .$anchors
+            .'</xdr:wsDr>';
+    }
+
+    /**
+     * Chart 1: Revenue Breakdown (Base Room Charges vs Extra Charges)
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, int>  $meta
+     */
+    protected function buildRevenueBreakdownChartXml(array $data, array $meta): string
+    {
+        $start = $meta['breakdown_start_row'] ?? 22;
+        $end = $meta['breakdown_end_row'] ?? 23;
+
+        $categories = ['Base Room Charges', 'Extra Charges & Amenities'];
+        $values = [(float) $data['total_room_charges'], (float) $data['total_extra_charges']];
+
+        return $this->buildBarChartXml(
+            title: 'Revenue Breakdown: Room Rates vs Extra Charges (PHP)',
+            seriesTitle: 'Amount (PHP)',
+            catFormula: "'Sales Summary'!\$A\${$start}:\$A\${$end}",
+            valFormula: "'Sales Summary'!\$B\${$start}:\$B\${$end}",
+            categories: $categories,
+            values: $values,
+            barDir: 'col',
+            seriesColor: '443627',
+            numFormat: '&quot;₱&quot;#,##0'
+        );
+    }
+
+    /**
+     * Chart 2: Occupancy & Revenue Trend
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, int>  $meta
+     */
+    protected function buildOccupancyTrendChartXml(array $data, array $meta): string
+    {
+        $start = $meta['occupancy_start_row'] ?? 28;
+        $end = $meta['occupancy_end_row'] ?? $start;
+
+        $occRows = $data['occupancy_rows'] ?? [];
+        $categories = array_map(fn (array $row) => (string) $row['period'], $occRows);
+        $values = array_map(fn (array $row) => (float) $row['revenue'], $occRows);
+
+        if (empty($categories)) {
+            $categories = ['No Data'];
+            $values = [0.0];
+        }
+
+        return $this->buildBarChartXml(
+            title: 'Revenue Trend ('.$data['period_title'].')',
+            seriesTitle: 'Period Revenue (PHP)',
+            catFormula: "'Sales Summary'!\$A\${$start}:\$A\${$end}",
+            valFormula: "'Sales Summary'!\$C\${$start}:\$C\${$end}",
+            categories: $categories,
+            values: $values,
+            barDir: 'col',
+            seriesColor: '6A4435',
+            numFormat: '&quot;₱&quot;#,##0'
+        );
+    }
+
+    /**
+     * Chart 3: Amenities Comparison (Horizontal Bar Chart)
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, int>  $meta
+     */
+    protected function buildAmenitiesComparisonChartXml(array $data, array $meta): string
+    {
+        $start = $meta['amenities_start_row'] ?? 36;
+        $end = $meta['amenities_end_row'] ?? $start;
+
+        $amRows = collect($data['amenities_ranked'] ?? [])->values()->all();
+        $categories = array_map(fn (array $row) => (string) $row['name'], $amRows);
+        $values = array_map(fn (array $row) => (float) $row['revenue'], $amRows);
+
+        if (empty($categories)) {
+            $categories = ['No Amenities'];
+            $values = [0.0];
+        }
+
+        return $this->buildBarChartXml(
+            title: 'Amenities Comparison (Revenue PHP)',
+            seriesTitle: 'Amenities Revenue (PHP)',
+            catFormula: "'Sales Summary'!\$B\${$start}:\$B\${$end}",
+            valFormula: "'Sales Summary'!\$D\${$start}:\$D\${$end}",
+            categories: $categories,
+            values: $values,
+            barDir: 'bar',
+            seriesColor: '734F46',
+            numFormat: '&quot;₱&quot;#,##0'
+        );
+    }
+
+    /**
+     * Chart 4: Monthly Target Goal vs Total Revenue
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string, int>  $meta
+     */
+    protected function buildMonthlyTargetChartXml(array $data, array $meta): string
+    {
+        $revRow = $meta['kpi_revenue_row'] ?? 7;
+        $targetRow = $meta['kpi_target_row'] ?? 10;
+
+        $categories = ['Total Revenue', 'Monthly Target Goal'];
+        $values = [(float) $data['total_revenue'], (float) $data['monthly_target']];
+
+        return $this->buildBarChartXml(
+            title: 'Monthly Target vs Revenue ('.$data['target_progress'].'% Achieved)',
+            seriesTitle: 'PHP Amount',
+            catFormula: "'Sales Summary'!\$A\${$revRow},'Sales Summary'!\$A\${$targetRow}",
+            valFormula: "'Sales Summary'!\$B\${$revRow},'Sales Summary'!\$B\${$targetRow}",
+            categories: $categories,
+            values: $values,
+            barDir: 'bar',
+            seriesColor: 'BF9B7A',
+            numFormat: '&quot;₱&quot;#,##0'
+        );
+    }
+
+    /**
+     * Generate a complete ECMA-376 OpenXML Bar/Column Chart styled with the Vintage Brown & Beige palette.
+     *
+     * @param  array<int, string>  $categories
+     * @param  array<int, float>  $values
+     */
+    protected function buildBarChartXml(
+        string $title,
+        string $seriesTitle,
+        string $catFormula,
+        string $valFormula,
+        array $categories,
+        array $values,
+        string $barDir = 'col',
+        string $seriesColor = '443627',
+        string $numFormat = 'General'
+    ): string {
+        $count = count($categories);
+        $catPts = '';
+        $valPts = '';
+        foreach ($categories as $i => $cat) {
+            $catPts .= '<c:pt idx="'.$i.'"><c:v>'.$this->escapeXml($cat).'</c:v></c:pt>';
+            $valPts .= '<c:pt idx="'.$i.'"><c:v>'.($values[$i] ?? 0).'</c:v></c:pt>';
+        }
+
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            .'<c:lang val="en-US"/>'
+            .'<c:spPr>'
+            .'<a:solidFill><a:srgbClr val="F5F7DF"/></a:solidFill>'
+            .'<a:ln w="12700"><a:solidFill><a:srgbClr val="6A4435"/></a:solidFill></a:ln>'
+            .'</c:spPr>'
+            .'<c:chart>'
+            .'<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="1200" b="1"><a:solidFill><a:srgbClr val="443627"/></a:solidFill></a:defRPr></a:pPr><a:r><a:rPr lang="en-US" sz="1200" b="1"><a:solidFill><a:srgbClr val="443627"/></a:solidFill></a:rPr><a:t>'.$this->escapeXml($title).'</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>'
+            .'<c:autoTitleDeleted val="0"/>'
+            .'<c:plotArea>'
+            .'<c:layout/>'
+            .'<c:barChart>'
+            .'<c:barDir val="'.$barDir.'"/>'
+            .'<c:grouping val="clustered"/>'
+            .'<c:varyColors val="0"/>'
+            .'<c:ser>'
+            .'<c:idx val="0"/>'
+            .'<c:order val="0"/>'
+            .'<c:tx><c:v>'.$this->escapeXml($seriesTitle).'</c:v></c:tx>'
+            .'<c:spPr>'
+            .'<a:solidFill><a:srgbClr val="'.$seriesColor.'"/></a:solidFill>'
+            .'<a:ln w="6350"><a:solidFill><a:srgbClr val="443627"/></a:solidFill></a:ln>'
+            .'</c:spPr>'
+            .'<c:cat><c:strRef><c:f>'.$this->escapeXml($catFormula).'</c:f><c:strCache><c:ptCount val="'.$count.'"/>'.$catPts.'</c:strCache></c:strRef></c:cat>'
+            .'<c:val><c:numRef><c:f>'.$this->escapeXml($valFormula).'</c:f><c:numCache><c:formatCode>'.$numFormat.'</c:formatCode><c:ptCount val="'.$count.'"/>'.$valPts.'</c:numCache></c:numRef></c:val>'
+            .'</c:ser>'
+            .'<c:axId val="101"/><c:axId val="102"/>'
+            .'</c:barChart>'
+            .'<c:catAx><c:axId val="101"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="'.($barDir === 'bar' ? 'l' : 'b').'"/><c:tickLblPos val="nextTo"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="900"><a:solidFill><a:srgbClr val="443627"/></a:solidFill></a:defRPr></a:pPr></a:p></c:txPr><c:crossAx val="102"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/></c:catAx>'
+            .'<c:valAx><c:axId val="102"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="'.($barDir === 'bar' ? 'b' : 'l').'"/><c:majorGridlines><c:spPr><a:ln w="6350"><a:solidFill><a:srgbClr val="D8D3B8"/></a:solidFill></a:ln></c:spPr></c:majorGridlines><c:numFmt formatCode="'.$numFormat.'" sourceLinked="0"/><c:tickLblPos val="nextTo"/><c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="900"><a:solidFill><a:srgbClr val="443627"/></a:solidFill></a:defRPr></a:pPr></a:p></c:txPr><c:crossAx val="101"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>'
+            .'<c:spPr><a:solidFill><a:srgbClr val="FDFEF7"/></a:solidFill></c:spPr>'
+            .'</c:plotArea>'
+            .'<c:legend><c:legendPos val="b"/><c:overlay val="0"/></c:legend>'
+            .'<c:plotVisOnly val="1"/>'
+            .'</c:chart>'
+            .'</c:chartSpace>';
     }
 
     /**

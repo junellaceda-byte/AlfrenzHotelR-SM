@@ -20,25 +20,13 @@ Rule: never edit or delete old migrations, add new ones.
 
 - [x] Red overdue stopwatch on the room card (PHP 150 per extra hour, stops when paid)
 - [x] Top bar ADD AMENITIES saves to the guest's bill (Booking History already does)
-- [ ] Amenities list from the admin side (replace the temporary list in config/hotel.php)
-- [ ] Billing page lists the amenity lines
-- [ ] Login, receptionist account and 15-minute timeout
-- [ ] Discount and refund requests
-- [ ] Settings and Extra pages
-- [ ] Remove the old unused popups (res-modal, avail-modal) and their scripts
-
-## Known issues
-
-- Notifications refresh on page load only
-- booking.updateStatus route has no method (nothing calls it)
-- Billing still shows rooms without the leading zero (Room::formatList not added)
-
-## Open questions for the client
-
-- No-show: how long is a reservation held?
-- Cancellation: is the deposit refunded?
-- Payment methods at check-out?
-- Can a short stay be upgraded to 24 hours?
+- [x] Amenities list from the admin side (replace the temporary list in config/hotel.php)
+- [x] Billing page lists the amenity lines
+- [x] Login, receptionist account and 15-minute timeout
+- [x] Discount and refund requests
+- [x] Settings and Extra pages
+- [x] Remove the old unused popups (res-modal, avail-modal) and their scripts
+- [x] System Format in Administrator side
 
 ## DO THIS
 
@@ -64,7 +52,7 @@ Rule: never edit or delete old migrations, add new ones.
 
 ## Nov 20, 2026
 
-## Unfinished tasks
+## Finished tasks
 
 ## Backend development
 
@@ -105,8 +93,35 @@ In Activity Logs. This is where it shows what the receptionist actively did in t
 
 ## Displaying Problem?
 
-- [ ] problem in modal when reserving or book, it doesn't register the deposit, which less the pay. Because the guest already advance deposit. When they are already check in, the guest can't get refund their payments.
+- [x] problem in modal when reserving or book, it doesn't register the deposit, which less the pay. Because the guest already advance deposit. When they are already check in, the guest can't get refund their payments.
 
 ## Displaying in Real-time problem, removing the quantity option?
 
-- [ ] the problem in amenities modal, the quantity does not function anything because it has in the right side a list of amenities that was added, and also when the admin edit a item from the amenities section, while the receptionist is adding amenities in the room the selected amenities list is not updating in real-time. Is it okay though?
+- [x] the problem in amenities modal, the quantity does not function anything because it has in the right side a list of amenities that was added, and also when the admin edit a item from the amenities section, while the receptionist is adding amenities in the room the selected amenities list is not updating in real-time. Is it okay though?
+
+## Nov 26, 2026
+
+## Finished
+
+- [x] Time Display format in Receptionist side in the Settings and also in the topbar.
+
+## Unfinished task
+
+- [x] Problems in contact number has letters and it should be digits 0-9, and allows 7-15 digits (the international standard for phone numbers). Either provide a separate country code dropdown (like +63) or allow users to type the + symbol at the beginning.
+
+- [x] The Monthly Target wasn't working properly, it was suppose to update, save and set the target in the Sales Reports.
+
+- [x] In the Receptionist side, the Billing section, when the reading the header called Room, it display digit 1-9, but it should display with leading zeros (01, 02, 03, 04, 05, 06, 07, 08, 09). As it will be misleading to the eye of the user.
+
+## Unfinished tasks
+
+- [] When Export the Sales reports charts and data in Administrator side into PDF, and/or Excel.
+
+## Finished tasks (Nov 27, 2026)
+
+- [x] Amenities (Admin): Interactive ON/OFF status toggle with circular handle in the Amenity Management table Status column (moved out of Edit Amenity modal, directly updates database status and controls visibility in Receptionist → Add Amenities to Room) and image upload Remove button to clear selected file and restore default state.
+- [x] Account Management (Admin): Contact number validation restricting inputs to 7–15 digits (0–9) with international country code dropdown / optional `+` prefix support.
+- [x] Monthly Sales Target (Admin): Fixed setting, updating, and saving monthly revenue targets in the database, reflected in Sales Reports and target progress calculations.
+- [x] Billing (Receptionist): Room number formatting in the Room column to display single-digit room numbers with leading zeros (`01`–`09`) while keeping `10` and above unchanged.
+- [x] Sales Reports (Admin) – Excel Export & Charts: Removed customizable theme option in favor of the vintage brown and beige palette, enabled immediate Excel download matching the selected date, month, or year filter, and automatically generated native Excel charts replicating the Sales Reports charts.
+- [x] Room Management (Admin) – Room Status Grid: Removed the room ID label (e.g., `ID: #1`) beside the room number so only the room number is displayed.

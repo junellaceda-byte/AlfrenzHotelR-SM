@@ -8,7 +8,8 @@
                         <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                         <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
                     </svg>
-                    <h5 class="modal-title fw-bold m-0" id="salesExportExcelModalLabel">Export to Excel Customization</h5>
+                    {{-- Original: <h5 class="modal-title fw-bold m-0" id="salesExportExcelModalLabel">Export to Excel Customization</h5> --}}
+                    <h5 class="modal-title fw-bold m-0" id="salesExportExcelModalLabel">Export Sales Report to Excel</h5>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -31,6 +32,8 @@
                         <span class="badge bg-secondary rounded-pill px-2.5 py-1.5" id="exportModalFilterBadge">TODAY</span>
                     </div>
 
+                    {{-- Customizable theme options removed — fixed Vintage Brown & Beige palette enforced --}}
+                    {{-- Original:
                     <!-- Preset Color Themes -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-secondary small text-uppercase mb-1.5">Color Palette Presets</label>
@@ -114,12 +117,13 @@
                             </div>
                         </div>
                     </div>
+                    --}}
 
-                    <!-- Live Excel Table Preview -->
-                    <div class="border rounded p-3 bg-light" id="excelPreviewContainer">
+                    <!-- Live Excel Table Preview (Vintage Brown & Beige System Palette) -->
+                    <div class="border rounded p-3" id="excelPreviewContainer" style="background-color: #F5F7DF; border-color: rgba(68, 54, 39, 0.25) !important;">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="small text-muted fw-bold text-uppercase">Live Excel Styling Preview</span>
-                            <small class="text-muted fst-italic">Applied across all sheets in the generated .xlsx workbook</small>
+                            <span class="small fw-bold text-uppercase" style="color: #443627;">Excel Report Styling Preview</span>
+                            <small class="fst-italic" style="color: #6A4435;">Vintage Brown &amp; Beige Theme (Applied Automatically)</small>
                         </div>
 
                         <div class="table-responsive border rounded bg-white" style="max-height: 240px;">
@@ -130,7 +134,7 @@
                                             1. KEY FINANCIAL PERFORMANCE METRICS
                                         </th>
                                     </tr>
-                                    <tr id="prevHeaderRow" style="background-color: #443627; color: #ffffff;">
+                                    <tr id="prevHeaderRow" style="background-color: #443627; color: #F5F7DF;">
                                         <th class="p-2 text-start" style="color: inherit;">Metric Description</th>
                                         <th class="p-2 text-center" style="color: inherit;">Category</th>
                                         <th class="p-2 text-end" style="color: inherit;">Value / Amount (PHP)</th>
@@ -138,13 +142,13 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr id="prevRow1" style="background-color: #ffffff; color: #212529;">
+                                    <tr id="prevRow1" style="background-color: #ffffff; color: #2C221A;">
                                         <td class="p-2">Base Room Charges</td>
                                         <td class="p-2 text-center">Accommodation</td>
                                         <td class="p-2 text-end font-monospace">₱108,500.00</td>
                                         <td class="p-2 text-end">87.1%</td>
                                     </tr>
-                                    <tr id="prevRow2" style="background-color: #F8F9FA; color: #212529;">
+                                    <tr id="prevRow2" style="background-color: #F5F7DF; color: #2C221A;">
                                         <td class="p-2">Extra Charges &amp; Add-ons</td>
                                         <td class="p-2 text-center">Amenities</td>
                                         <td class="p-2 text-end font-monospace">₱16,000.00</td>
@@ -152,23 +156,23 @@
                                     </tr>
                                 </tbody>
                                 <tfoot>
-                                    <tr id="prevTotalRow" style="border-top: 2px solid #2E7D32; font-weight: bold; background-color: #F8F9FA;">
-                                        <td class="p-2" id="prevTotalLabel" style="color: #2E7D32;">Total Gross Revenue</td>
-                                        <td class="p-2 text-center" style="color: #2E7D32;">Settled</td>
-                                        <td class="p-2 text-end font-monospace" id="prevTotalValue" style="color: #2E7D32;">₱124,500.00</td>
-                                        <td class="p-2 text-end" style="color: #2E7D32;">100.0%</td>
+                                    <tr id="prevTotalRow" style="border-top: 2px solid #443627; font-weight: bold; background-color: #EFEABB;">
+                                        <td class="p-2" id="prevTotalLabel" style="color: #443627;">Total Gross Revenue</td>
+                                        <td class="p-2 text-center" style="color: #443627;">Settled</td>
+                                        <td class="p-2 text-end font-monospace" id="prevTotalValue" style="color: #443627;">₱124,500.00</td>
+                                        <td class="p-2 text-end" style="color: #443627;">100.0%</td>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
                     </div>
 
-                    <!-- Worksheets Included Notice -->
+                    <!-- Worksheets & Charts Included Notice -->
                     <div class="mt-3 small text-muted d-flex align-items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#443627" viewBox="0 0 16 16">
                             <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
                         </svg>
-                        <span>Includes 3 structured sheets: <strong>Sales Summary</strong>, <strong>Confirmed Payments</strong>, and <strong>Cancellations &amp; Pending</strong>.</span>
+                        <span>Includes 3 structured sheets (<strong>Sales Summary</strong>, <strong>Confirmed Payments</strong>, and <strong>Cancellations &amp; Pending</strong>) with <strong>4 embedded charts</strong>.</span>
                     </div>
                 </div>
 

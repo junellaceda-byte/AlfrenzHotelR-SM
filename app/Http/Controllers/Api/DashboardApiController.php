@@ -935,29 +935,23 @@ class DashboardApiController
         }
 
         // 4. Monthly Target & Monthly Target Progress
-        $targetYear = $selectedYear;
-        $targetMonth = $selectedMonth ?: $currentMonth;
-        $targetRecord = MonthlyTarget::where('year', $targetYear)->where('month', $targetMonth)->first();
-        $monthlyTargetAmount = $targetRecord ? (float) $targetRecord->target_amount : 150000.00;
-
-        $monthTargetStart = Carbon::create($targetYear, $targetMonth, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
-        $monthTargetEnd = $monthTargetStart->copy()->endOfMonth();
-        $targetMonthRevenue = (float) PaymentLog::where('status', 'successful')
-            ->where(function ($q) use ($monthTargetStart, $monthTargetEnd) {
-                $q->whereBetween('paid_at', [$monthTargetStart, $monthTargetEnd])
-                    ->orWhere(function ($sub) use ($monthTargetStart, $monthTargetEnd) {
-                        $sub->whereNull('paid_at')->whereBetween('created_at', [$monthTargetStart, $monthTargetEnd]);
-                    });
-            })
-            ->sum('amount_paid');
-        if ($targetMonthRevenue == 0) {
-            $targetMonthRevenue = (float) Invoice::where('status', 'paid')
-                ->whereBetween('updated_at', [$monthTargetStart, $monthTargetEnd])
-                ->sum('grand_total');
+        // Original:
+        // $targetYear = $selectedYear;
+        // $targetMonth = $selectedMonth ?: $currentMonth;
+        // $targetRecord = MonthlyTarget::where('year', $targetYear)->where('month', $targetMonth)->first();
+        // $monthlyTargetAmount = $targetRecord ? (float) $targetRecord->target_amount : 150000.00;
+        if ($timeframe === 'custom' || $isSpecificDate) {
+            $targetYear = (int) $rangeStart->format('Y');
+            $targetMonth = (int) $rangeStart->format('n');
+        } else {
+            $targetYear = $selectedYear;
+            $targetMonth = $selectedMonth ?: $currentMonth;
         }
-        $monthlyTargetProgress = $monthlyTargetAmount > 0
-            ? min(100, round(($targetMonthRevenue / $monthlyTargetAmount) * 100))
-            : 0;
+
+        $targetMetrics = $this->calculateMonthlyTargetMetrics($targetYear, $targetMonth);
+        $monthlyTargetAmount = $targetMetrics['target_amount'];
+        $targetMonthRevenue = $targetMetrics['month_revenue'];
+        $monthlyTargetProgress = $targetMetrics['progress_percent'];
 
         // 5. Lost Revenue (Cancellations)
         $cancelledReservations = Reservation::where('status', 'cancelled')
@@ -1247,6 +1241,11 @@ class DashboardApiController
             'monthly_target' => $monthlyTargetAmount,
             'monthly_target_formatted' => '₱'.number_format($monthlyTargetAmount, 2),
             'monthly_target_progress' => $monthlyTargetProgress,
+            'monthly_target_year' => $targetYear,
+            'monthly_target_month' => $targetMonth,
+            'monthly_target_revenue' => $targetMonthRevenue,
+            'monthly_target_revenue_formatted' => '₱'.number_format($targetMonthRevenue, 2),
+            'has_custom_target' => $targetMetrics['has_custom_target'],
             'lost_revenue' => $lostRevenue,
             'lost_revenue_formatted' => '-₱'.number_format($lostRevenue, 2),
             'cancellations_count' => $cancellationsCount,
@@ -1425,27 +1424,16 @@ class DashboardApiController
     }
 
     /**
-     * Persist or update the monthly target set from the Administrator dashboard.
+     * Calculate monthly target goal, monthly revenue, and progress percentage for a given year and month.
+     *
+     * @return array{year: int, month: int, target_amount: float, target_formatted: string, month_revenue: float, month_revenue_formatted: string, progress_percent: float|int, has_custom_target: bool, target: ?MonthlyTarget}
      */
-    public function saveMonthlyTarget(Request $request)
+    private function calculateMonthlyTargetMetrics(int $year, int $month): array
     {
-        $validated = $request->validate([
-            'year' => 'required|integer|min:2020|max:2099',
-            'month' => 'required|integer|min:1|max:12',
-            'target_amount' => 'required|numeric|min:1',
-        ]);
+        $targetRecord = MonthlyTarget::where('year', $year)->where('month', $month)->first();
+        $targetAmount = $targetRecord ? (float) $targetRecord->target_amount : 150000.00;
 
-        $target = MonthlyTarget::updateOrCreate(
-            [
-                'year' => (int) $validated['year'],
-                'month' => (int) $validated['month'],
-            ],
-            [
-                'target_amount' => (float) $validated['target_amount'],
-            ]
-        );
-
-        $monthStart = Carbon::create((int) $target->year, (int) $target->month, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
+        $monthStart = Carbon::create($year, $month, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
         $monthEnd = $monthStart->copy()->endOfMonth();
 
         $monthRevenue = (float) PaymentLog::where('status', 'successful')
@@ -1463,17 +1451,90 @@ class DashboardApiController
                 ->sum('grand_total');
         }
 
-        $targetAmount = (float) $target->target_amount;
         $progressPercent = $targetAmount > 0 ? min(100, round(($monthRevenue / $targetAmount) * 100)) : 0;
+
+        return [
+            'year' => $year,
+            'month' => $month,
+            'target_amount' => $targetAmount,
+            'target_formatted' => '₱'.number_format($targetAmount, 2),
+            'month_revenue' => $monthRevenue,
+            'month_revenue_formatted' => '₱'.number_format($monthRevenue, 2),
+            'progress_percent' => $progressPercent,
+            'has_custom_target' => $targetRecord !== null,
+            'target' => $targetRecord,
+        ];
+    }
+
+    /**
+     * Retrieve the saved monthly target and progress for a specific year and month.
+     */
+    public function getMonthlyTarget(Request $request)
+    {
+        $now = now()->setTimezone('Asia/Manila');
+        $year = (int) $request->input('year', $now->format('Y'));
+        $month = (int) $request->input('month', $now->format('n'));
+
+        if ($month < 1 || $month > 12) {
+            $month = (int) $now->format('n');
+        }
+        if ($year < 2020 || $year > 2099) {
+            $year = (int) $now->format('Y');
+        }
+
+        $metrics = $this->calculateMonthlyTargetMetrics($year, $month);
+
+        return response()->json([
+            'status' => 'success',
+            'year' => $metrics['year'],
+            'month' => $metrics['month'],
+            'target_amount' => $metrics['target_amount'],
+            'target_formatted' => $metrics['target_formatted'],
+            'has_custom_target' => $metrics['has_custom_target'],
+            'month_revenue' => $metrics['month_revenue'],
+            'month_revenue_formatted' => $metrics['month_revenue_formatted'],
+            'progress_percent' => $metrics['progress_percent'],
+        ]);
+    }
+
+    /**
+     * Persist or update the monthly target set from the Administrator dashboard.
+     */
+    public function saveMonthlyTarget(Request $request)
+    {
+        $validated = $request->validate([
+            'year' => 'required|integer|min:2020|max:2099',
+            'month' => 'required|integer|min:1|max:12',
+            // Original: 'target_amount' => 'required|numeric|min:1',
+            'target_amount' => 'required|numeric|min:1|max:999999999.99',
+        ]);
+
+        $target = MonthlyTarget::updateOrCreate(
+            [
+                'year' => (int) $validated['year'],
+                'month' => (int) $validated['month'],
+            ],
+            [
+                'target_amount' => round((float) $validated['target_amount'], 2),
+            ]
+        );
+
+        // Original:
+        // $monthStart = Carbon::create((int) $target->year, (int) $target->month, 1, 0, 0, 0, 'Asia/Manila')->startOfMonth();
+        // $monthEnd = $monthStart->copy()->endOfMonth();
+        // ...
+        // $targetAmount = (float) $target->target_amount;
+        // $progressPercent = $targetAmount > 0 ? min(100, round(($monthRevenue / $targetAmount) * 100)) : 0;
+        $metrics = $this->calculateMonthlyTargetMetrics((int) $target->year, (int) $target->month);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Monthly target updated successfully.',
             'target' => $target,
-            'target_formatted' => '₱'.number_format($targetAmount, 2),
-            'month_revenue' => $monthRevenue,
-            'month_revenue_formatted' => '₱'.number_format($monthRevenue, 2),
-            'progress_percent' => $progressPercent,
+            'target_formatted' => $metrics['target_formatted'],
+            'month_revenue' => $metrics['month_revenue'],
+            'month_revenue_formatted' => $metrics['month_revenue_formatted'],
+            'progress_percent' => $metrics['progress_percent'],
         ]);
     }
 

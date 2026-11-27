@@ -55,21 +55,10 @@ class AdminSalesReportExcelModalTest extends TestCase
         // 3. Occupancy chart separate timeframe buttons are removed
         $response->assertDontSee('occupancy-trend-btn');
 
-        // 4. Export to Excel button links to the customization modal
+        // 4. Export to Excel button triggers direct download without opening a customization modal
         $response->assertSee('id="salesExportExcelBtn"', false);
-        $response->assertSee('data-bs-target="#salesExportExcelModal"', false);
-
-        // 5. Excel customization modal elements
-        $response->assertSee('id="salesExportExcelModal"', false);
-        $response->assertSee('Export to Excel Customization');
-        $response->assertSee('id="excelHeaderBg"', false);
-        $response->assertSee('id="excelHeaderText"', false);
-        $response->assertSee('id="excelBodyText"', false);
-        $response->assertSee('id="excelAccentColor"', false);
-        $response->assertSee('id="excelRowBg"', false);
-        $response->assertSee('id="excelSummaryColor"', false);
-        $response->assertSee('id="excelPreviewTable"', false);
-        $response->assertSee('Download Excel (.xlsx)');
+        $response->assertDontSee('id="salesExportExcelModal"', false);
+        $response->assertSee('/admin/sales-report/export?', false);
     }
 
     public function test_sales_report_api_supports_all_timeframes_and_connects_occupancy_chart(): void
@@ -127,18 +116,55 @@ class AdminSalesReportExcelModalTest extends TestCase
         $zip = new ZipArchive;
         $this->assertTrue($zip->open($tempPath));
 
-        // Check required OpenXML files
+        // Check required OpenXML files including embedded drawing & 4 charts
         $this->assertNotFalse($zip->getFromName('[Content_Types].xml'));
         $this->assertNotFalse($zip->getFromName('xl/workbook.xml'));
         $this->assertNotFalse($zip->getFromName('xl/styles.xml'));
         $this->assertNotFalse($zip->getFromName('xl/worksheets/sheet1.xml'));
         $this->assertNotFalse($zip->getFromName('xl/worksheets/sheet2.xml'));
         $this->assertNotFalse($zip->getFromName('xl/worksheets/sheet3.xml'));
+        $this->assertNotFalse($zip->getFromName('xl/worksheets/_rels/sheet1.xml.rels'));
+        $this->assertNotFalse($zip->getFromName('xl/drawings/drawing1.xml'));
+        $this->assertNotFalse($zip->getFromName('xl/drawings/_rels/drawing1.xml.rels'));
+        $this->assertNotFalse($zip->getFromName('xl/charts/chart1.xml'));
+        $this->assertNotFalse($zip->getFromName('xl/charts/chart2.xml'));
+        $this->assertNotFalse($zip->getFromName('xl/charts/chart3.xml'));
+        $this->assertNotFalse($zip->getFromName('xl/charts/chart4.xml'));
 
-        // Verify custom colors are injected into xl/styles.xml
+        // Verify fixed Vintage Brown & Beige palette is enforced (even if query params are passed)
         $stylesXml = $zip->getFromName('xl/styles.xml');
-        $this->assertStringContainsString('1E3A8A', $stylesXml);
-        $this->assertStringContainsString('059669', $stylesXml);
+        $this->assertStringContainsString('443627', $stylesXml);
+        $this->assertStringContainsString('F5F7DF', $stylesXml);
+        $this->assertStringContainsString('6A4435', $stylesXml);
+        $this->assertStringContainsString('EFEABB', $stylesXml);
+        $this->assertStringNotContainsString('1E3A8A', $stylesXml);
+        $this->assertStringNotContainsString('059669', $stylesXml);
+
+        // Verify chart XML contains Vintage Brown & Beige styling and valid chart tags
+        $chart1Xml = $zip->getFromName('xl/charts/chart1.xml');
+        $this->assertStringContainsString('Revenue Breakdown', $chart1Xml);
+        $this->assertStringContainsString('F5F7DF', $chart1Xml);
+        $this->assertStringContainsString('443627', $chart1Xml);
+
+        // Verify all generated XML parts are well-formed
+        foreach ([
+            '[Content_Types].xml',
+            'xl/workbook.xml',
+            'xl/styles.xml',
+            'xl/worksheets/sheet1.xml',
+            'xl/worksheets/sheet2.xml',
+            'xl/worksheets/sheet3.xml',
+            'xl/worksheets/_rels/sheet1.xml.rels',
+            'xl/drawings/drawing1.xml',
+            'xl/drawings/_rels/drawing1.xml.rels',
+            'xl/charts/chart1.xml',
+            'xl/charts/chart2.xml',
+            'xl/charts/chart3.xml',
+            'xl/charts/chart4.xml',
+        ] as $xmlEntry) {
+            $dom = new \DOMDocument;
+            $this->assertTrue($dom->loadXML($zip->getFromName($xmlEntry)), "Invalid XML in {$xmlEntry}");
+        }
 
         $zip->close();
         @unlink($tempPath);

@@ -369,12 +369,15 @@
                                     
                                     <div class="mb-3 px-2">
                                         <label class="form-label small fw-bold mb-0" style="color: #000000;">Room Number</label>
-                                        <div style="color: #000000;">
+                                        {{-- Original:
                                             @if(is_array($selectedInvoice->booking->booked_rooms))
                                                 {{ implode(', ', $selectedInvoice->booking->booked_rooms) }}
                                             @else
                                                 {{ $selectedInvoice->booking->booked_rooms }}
                                             @endif
+                                        --}}
+                                        <div style="color: #000000;">
+                                            {{ $selectedInvoice->booking?->formattedBookedRooms() ?? '' }}
                                         </div>
                                     </div>
                                     <div class="mb-3 px-2">
